@@ -1,0 +1,89 @@
+{
+  "experiment_type": "raptor_hover",
+  "variant": "raptor",
+  "created_at": "2026-10-09T19:57:12.076266+08:00",
+  "seed": 42,
+  "seed_scope": "recorded; Gazebo/PX4 do not expose a verified universal seed",
+  "initial_pose": "0,0,0,0,0,0",
+  "source_commit": "4ae21a5e569d3d89c2f6366688cbacb3e93437c9",
+  "source_diff_sha256": "ad7e0d067d220f909b45b18b7b26db5b257f3b7cf85125d64a16d10db6a84001",
+  "binary": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4",
+  "binary_sha256": "17292c5b2e6e425bb14ebb1520f628e7048db6de0aab540068d28655fd204073",
+  "environment": {
+    "GZ_SIM_RESOURCE_PATH": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/models:/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds:/opt/ros/jazzy/share",
+    "GZ_SIM_SYSTEM_PLUGIN_PATH": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/src/modules/simulation/gz_plugins",
+    "GZ_CONFIG_PATH": "/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz",
+    "PX4_SOURCE_DIR": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor",
+    "PX4_SNAPSHOT_DIR": "/home/car/uav_handover/uav_lab/sources/px4-raptor",
+    "GZ_SIM_SERVER_CONFIG_PATH": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/server.config",
+    "PX4_RUNTIME_DIR": "/home/car/uav_handover/uav_lab/.local/runtime/px4-raptor",
+    "PX4_MSGS_DIR": "/home/car/uav_handover/uav_lab/sources/px4-msgs-raptor",
+    "GZ_PARTITION": "handover-d27973d083584627ac0389c6df0aebf0",
+    "PX4_GZ_STANDALONE": "1",
+    "PX4_SYS_AUTOSTART": "4001",
+    "PX4_SIM_MODEL": "gz_x500",
+    "PX4_GZ_WORLD": "default",
+    "PX4_GZ_MODELS": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/models",
+    "PX4_GZ_WORLDS": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds",
+    "PX4_GZ_MODEL_POSE": "0,0,0,0,0,0",
+    "PX4_UXRCE_DDS_NS": "",
+    "ROS_DOMAIN_ID": "71",
+    "PX4_UXRCE_DDS_PORT": "18888",
+    "PX4_PARAM_NAV_DLL_ACT": "0",
+    "PX4_PARAM_COM_RC_IN_MODE": "4",
+    "PX4_PARAM_MIS_TAKEOFF_ALT": "3",
+    "PX4_PARAM_IMU_GYRO_RATEMAX": "250",
+    "PX4_PARAM_SDLOG_MODE": "1",
+    "PX4_PARAM_MC_RAPTOR_ENABLE": "1",
+    "PX4_PARAM_MC_RAPTOR_OFFB": "0"
+  },
+  "processes": [
+    {
+      "name": "agent",
+      "pid": 748334,
+      "command": [
+        "/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent",
+        "udp4",
+        "-p",
+        "18888",
+        "-v",
+        "4"
+      ]
+    },
+    {
+      "name": "gazebo",
+      "pid": 748335,
+      "command": [
+        "gz",
+        "sim",
+        "-r",
+        "-s",
+        "-v",
+        "3",
+        "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf"
+      ]
+    },
+    {
+      "name": "px4",
+      "pid": 748374,
+      "command": [
+        "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4",
+        "-d",
+        "-i",
+        "21",
+        "-w",
+        "/home/car/uav_handover/data/acceptance-raptor-01/rootfs",
+        "/home/car/uav_handover/data/acceptance-raptor-01/rootfs/etc"
+      ]
+    }
+  ],
+  "policy_sha256": "5327c83dc57f094ca1977a2533ebce318645be010e16b9354c96c337cd5c278b",
+  "raptor_mode_id": 23,
+  "ulog_sha256": "7d21a6ded5f8fc8b4702c039d9623909dbd2cdd819c1f328d692cc143c1cbfac",
+  "checks": {
+    "telemetry": "PASS",
+    "bidirectional_dds": "PASS",
+    "policy_selftest": "PASS",
+    "flight_sequence": "PASS"
+  }
+}

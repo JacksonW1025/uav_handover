@@ -1,0 +1,300 @@
+{
+  "timestamp": "2026-10-09T20:24:19.903605+08:00",
+  "python": "/home/car/uav_handover/uav_lab/.local/venv/bin/python",
+  "checks": [
+    {
+      "name": "system",
+      "command": [
+        "uname",
+        "-a"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/system.log"
+    },
+    {
+      "name": "os",
+      "command": [
+        "cat",
+        "/etc/os-release"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/os.log"
+    },
+    {
+      "name": "cpu",
+      "command": [
+        "lscpu"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/cpu.log"
+    },
+    {
+      "name": "memory",
+      "command": [
+        "free",
+        "-h"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/memory.log"
+    },
+    {
+      "name": "disk",
+      "command": [
+        "df",
+        "-h",
+        "/home/car/uav_handover"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/disk.log"
+    },
+    {
+      "name": "gpu",
+      "command": [
+        "nvidia-smi"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/gpu.log"
+    },
+    {
+      "name": "cuda",
+      "command": [
+        "/usr/local/cuda/bin/nvcc",
+        "--version"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/cuda.log"
+    },
+    {
+      "name": "l4t",
+      "command": [
+        "dpkg-query",
+        "-W",
+        "nvidia-l4t-core"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/l4t.log"
+    },
+    {
+      "name": "compiler",
+      "command": [
+        "g++",
+        "--version"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/compiler.log"
+    },
+    {
+      "name": "cmake",
+      "command": [
+        "cmake",
+        "--version"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/cmake.log"
+    },
+    {
+      "name": "ninja",
+      "command": [
+        "ninja",
+        "--version"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/ninja.log"
+    },
+    {
+      "name": "git",
+      "command": [
+        "git",
+        "--version"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/git.log"
+    },
+    {
+      "name": "pip",
+      "command": [
+        "python",
+        "-m",
+        "pip",
+        "check"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/pip.log"
+    },
+    {
+      "name": "gazebo",
+      "command": [
+        "gz",
+        "sim",
+        "--versions"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/gazebo.log"
+    },
+    {
+      "name": "ros",
+      "command": [
+        "ros2",
+        "pkg",
+        "list"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/ros.log"
+    },
+    {
+      "name": "lab",
+      "command": [
+        "python",
+        "/home/car/uav_handover/uav_lab/scripts/check_lab.py",
+        "--full"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/lab.log"
+    },
+    {
+      "name": "tracked_lab",
+      "command": [
+        "git",
+        "-C",
+        "/home/car/uav_handover",
+        "ls-files",
+        "uav_lab"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/tracked_lab.log"
+    },
+    {
+      "name": "ignore",
+      "command": [
+        "git",
+        "-C",
+        "/home/car/uav_handover",
+        "check-ignore",
+        "uav_lab/env.sh"
+      ],
+      "exit_code": 0,
+      "status": "PASS",
+      "log": "data/environment-20261009/final-health-classic/ignore.log"
+    }
+  ],
+  "dependencies": {
+    "pyulog": {
+      "status": "PASS",
+      "version": "1.2.4",
+      "file": "/home/car/uav_handover/uav_lab/.local/venv/lib/python3.12/site-packages/pyulog/__init__.py"
+    },
+    "pymavlink": {
+      "status": "PASS",
+      "version": "2.4.50",
+      "file": "/home/car/uav_handover/uav_lab/.local/venv/lib/python3.12/site-packages/pymavlink/__init__.py"
+    },
+    "kconfiglib": {
+      "status": "PASS",
+      "version": "14.1.0",
+      "file": "/home/car/uav_handover/uav_lab/.local/venv/lib/python3.12/site-packages/kconfiglib.py"
+    },
+    "empy": {
+      "status": "PASS",
+      "version": "3.3.4",
+      "file": "/usr/lib/python3/dist-packages/em.py"
+    },
+    "Jinja2": {
+      "status": "PASS",
+      "version": "3.1.2",
+      "file": "/usr/lib/python3/dist-packages/jinja2/__init__.py"
+    },
+    "numpy": {
+      "status": "PASS",
+      "version": "1.26.4",
+      "file": "/usr/lib/python3/dist-packages/numpy/__init__.py"
+    },
+    "PyYAML": {
+      "status": "PASS",
+      "version": "6.0.1",
+      "file": "/usr/lib/python3/dist-packages/yaml/__init__.py"
+    },
+    "packaging": {
+      "status": "PASS",
+      "version": "24.0",
+      "file": "/usr/lib/python3/dist-packages/packaging/__init__.py"
+    },
+    "jsonschema": {
+      "status": "PASS",
+      "version": "4.10.3",
+      "file": "/usr/lib/python3/dist-packages/jsonschema/__init__.py"
+    },
+    "typeguard": {
+      "status": "PASS",
+      "version": "4.1.5",
+      "file": "/usr/lib/python3/dist-packages/typeguard/__init__.py"
+    },
+    "pandas": {
+      "status": "PASS",
+      "version": "2.1.4+dfsg",
+      "file": "/usr/lib/python3/dist-packages/pandas/__init__.py"
+    },
+    "scipy": {
+      "status": "PASS",
+      "version": "1.11.4",
+      "file": "/usr/lib/python3/dist-packages/scipy/__init__.py"
+    },
+    "matplotlib": {
+      "status": "PASS",
+      "version": "3.6.3",
+      "file": "/usr/lib/python3/dist-packages/matplotlib/__init__.py"
+    },
+    "pytest": {
+      "status": "PASS",
+      "version": "7.4.4",
+      "file": "/usr/lib/python3/dist-packages/pytest/__init__.py"
+    },
+    "psutil": {
+      "status": "PASS",
+      "version": "5.9.8",
+      "file": "/usr/lib/python3/dist-packages/psutil/__init__.py"
+    },
+    "rclpy": {
+      "status": "PASS",
+      "version": "7.1.5",
+      "file": "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py"
+    },
+    "colcon-core": {
+      "status": "PASS",
+      "version": "0.20.0",
+      "file": "/usr/lib/python3/dist-packages/colcon_core/__init__.py"
+    },
+    "pyros-genmsg": {
+      "status": "PASS",
+      "version": "0.5.8",
+      "file": "/home/car/uav_handover/uav_lab/.local/venv/lib/python3.12/site-packages/genmsg/__init__.py"
+    },
+    "nunavut": {
+      "status": "PASS",
+      "version": "2.3.1",
+      "file": "/home/car/uav_handover/uav_lab/.local/venv/lib/python3.12/site-packages/nunavut/__init__.py"
+    },
+    "px4_msgs": {
+      "status": "PASS",
+      "version": "2.0.1",
+      "file": "/home/car/uav_handover/uav_lab/workspaces/classic/install/px4_msgs/lib/python3.12/site-packages/px4_msgs/__init__.py"
+    }
+  },
+  "status": "PASS"
+}

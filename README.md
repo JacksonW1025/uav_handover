@@ -1,14 +1,22 @@
 # PX4 / RAPTOR Handover
 
-研究 PX4 经典控制与 RAPTOR 的双向交接；先开展独立悬停和 C → N → C，再研究状态初始化与反复交接。
+NVIDIA Jetson AGX Thor 上的 PX4 经典控制、RAPTOR 神经控制、C → N → C 双向交接及控制器状态干预研究。2026-10-09 已完成本机环境建设和真实 headless SITL 验证。
 
-实验项目资源统一放在本仓库的 [uav_lab/](uav_lab/README.md)。不依赖 `/home/car/uav_sf` 或原 `/home/car/uav-lab` 的源码、模型、策略或通信组件；Python、ROS 2、Gazebo、CUDA 等系统软件继续使用本机安装。
+- [环境检查](Environment%20Check.md)
+- [实验状态](Experiment%20Status.md)
+- [实验 Quickstart](docs/THOR_EXPERIMENT_QUICKSTART.md)
+- [最终验收报告](docs/THOR_ENVIRONMENT_FINAL_REPORT.md)与[验收矩阵](docs/THOR_ACCEPTANCE_MATRIX.md)
+- [机体和电机映射](docs/THOR_PLATFORM_MAPPING.md)
+- [环境锁定](environment.lock)、[实验配置](config/experiment.json)、[数据索引](data/README.md)
 
-- [Lab 资源与使用说明](uav_lab/README.md)
-- [当前环境检查报告](Environment%20Check.md)：整合后的资源位置、最新轻量验证结果及待验证项。
-- [资源来源与版本](uav_lab/manifests/sources.json)
-- [复制完整性校验](uav_lab/manifests/copy-verification.json)
+```bash
+./tools/experiment health
+./tools/experiment classic_hover
+./tools/experiment raptor_hover
+./tools/experiment handover_c_n_c
+./tools/experiment state_restore
+```
 
-本次只整理资源，没有安装依赖、编译项目或启动实验；不导入旧实验记录，新实验从空的数据目录开始。
+整个 `uav_lab/` 属于本机环境并被 Git 忽略。仓库保存研究源码、补丁、配置、原始实验日志和文档；克隆后需按锁清单准备 Lab。运行资源来自当前 Lab，系统 ROS 2、Gazebo、CUDA 继续使用本机安装。重建步骤见 Quickstart。
 
-Git 管理原则：整个 `uav_lab/` 仅保留在本机并忽略；远端保留 Lab 外的项目实验源码、数据和文档，克隆后需另行准备 Lab。
+当前验收范围为冻结 x500 配置的短时 SITL，神经控制窗口由经典控制起飞和降落。完整训练动力学元数据、长时间统计验证及完整 EKF/FlightTask 状态快照仍超出当前验证范围，详见最终报告。

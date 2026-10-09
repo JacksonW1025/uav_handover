@@ -1,0 +1,13 @@
+{
+  "name": "reproduction-artifacts",
+  "command": [
+    "python3",
+    "-c",
+    "import json,hashlib,tarfile,subprocess; from pathlib import Path; root=Path.cwd(); px=root/\"uav_lab/.local/checkouts/px4-raptor\"; subprocess.run([\"git\",\"-C\",str(px),\"apply\",\"--reverse\",\"--check\",str(root/\"patches/raptor-final.patch\")],check=True); lock=json.loads(Path(\"environment.lock\").read_text()); binary=px/\"build/px4_sitl_raptor/bin/px4\"; sha=hashlib.sha256(binary.read_bytes()).hexdigest(); assert sha==lock[\"sources\"][\"raptor\"][\"binary_sha256\"]; runs=list(Path(\"data\").glob(\"verified-*/metadata.json\")); assert all(json.loads(p.read_text())[\"binary_sha256\"]==sha for p in runs); archive=tarfile.open(\"patches/raptor-final-untracked.tar.gz\"); assert all(archive.extractfile(m).read()==(px/m.name).read_bytes() for m in archive.getmembers()); assert json.loads(Path(\"data/environment-20261009/research-apply-idempotence.json\").read_text())[\"status\"]==\"PASS\"; print(\"PASS: reverse patch check, source archive, idempotence, lock and\",len(runs),\"actual flight binaries\")"
+  ],
+  "exit_code": 0,
+  "status": "PASS",
+  "elapsed_s": 0.11426343000493944,
+  "finished_at": "2026-10-09T20:35:23.346277+08:00",
+  "log": "data/environment-20261009/final-commands/reproduction-artifacts.log"
+}

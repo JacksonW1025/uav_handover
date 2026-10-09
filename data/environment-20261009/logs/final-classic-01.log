@@ -1,0 +1,30 @@
+created {'thresholds': {'seed': 42, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 3, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500}}
+process_started {'name': 'agent', 'pid': 740634, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 740635, 'command': ['gz', 'sim', '-r', '-s', '-v', '3', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'px4', 'pid': 740668, 'command': ['/home/car/uav_handover/uav_lab/.local/runtime/px4-classic/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/final-classic-01/rootfs', '/home/car/uav_handover/data/final-classic-01/rootfs/etc']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1791546966052356}
+ready {'condition': 'PX4 DDS telemetry'}
+command_requested {'command': 176, 'params': {'param1': 1, 'param2': 4, 'param3': 3}}
+command_ack {'command': 176, 'result': 0, 'timestamp': 1791546970996364}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'valid local position'}
+command_requested {'command': 400, 'params': {'param1': 1}}
+command_ack {'command': 400, 'result': 0, 'timestamp': 1791546976244378}
+ready {'condition': 'command acknowledgement'}
+command_requested {'command': 22, 'params': {'param4': None, 'param5': None, 'param6': None, 'param7': 3.223523661494255}}
+command_ack {'command': 22, 'result': 0, 'timestamp': 1791546976340378}
+ready {'condition': 'command acknowledgement'}
+failure {'reason': 'takeoff altitude'}
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/run_experiment.py", line 284, in main
+    self.events.close()
+    ^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/run_experiment.py", line 226, in execute
+    if 'Checkpoint test passed' not in text:raise RuntimeError('policy self-test not confirmed')
+  File "/home/car/uav_handover/tools/run_experiment.py", line 149, in wait
+    raise TimeoutError(description)
+TimeoutError: takeoff altitude
+process_stopped {'name': 'px4', 'pid': 740668, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 740635, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 740634, 'exit_code': -2}
+/home/car/uav_handover/data/final-classic-01 FAIL

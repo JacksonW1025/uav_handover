@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+experiment_type="${1:-health}"
+if [[ $# -gt 0 ]]; then shift; fi
+variant=raptor
+case "$experiment_type" in
+  health|classic_hover) variant=classic ;;
+esac
+source "$project_root/tools/lab-env.sh" "$variant"
+case "$experiment_type" in
+  health) exec python "$project_root/tools/health.py" "$@" ;;
+  analyze) exec python "$project_root/tools/analyze.py" "$@" ;;
+  *) exec python "$project_root/tools/run_experiment.py" "$experiment_type" "$@" ;;
+esac

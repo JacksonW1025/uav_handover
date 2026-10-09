@@ -1,0 +1,117 @@
+{
+  "experiment_type": "classic_hover",
+  "variant": "classic",
+  "created_at": "2026-10-09T20:12:57.087449+08:00",
+  "seed": 42,
+  "seed_scope": "recorded; Gazebo/PX4 do not expose a verified universal seed",
+  "initial_pose": "0,0,0,0,0,0",
+  "source_commit": "d6f12ad1c4f70ad3230afd7d86e971421e02fef4",
+  "source_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "binary": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/build/px4_sitl_default/bin/px4",
+  "binary_sha256": "1ba9f063c60d7d8bf246e5a195e18e4230c6249192b14b95a17a43537458ae02",
+  "environment": {
+    "GZ_SIM_RESOURCE_PATH": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/Tools/simulation/gz/models:/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/Tools/simulation/gz/worlds:/opt/ros/jazzy/share",
+    "GZ_SIM_SYSTEM_PLUGIN_PATH": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/build/px4_sitl_default/src/modules/simulation/gz_plugins:/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/build/px4_sitl_default/src/modules/simulation/gz_plugins/optical_flow",
+    "GZ_CONFIG_PATH": "/opt/ros/jazzy/opt/gz_sim_vendor/share/gz:/opt/ros/jazzy/opt/sdformat_vendor/share/gz:/opt/ros/jazzy/opt/gz_gui_vendor/share/gz:/opt/ros/jazzy/opt/gz_transport_vendor/share/gz:/opt/ros/jazzy/opt/gz_rendering_vendor/share/gz:/opt/ros/jazzy/opt/gz_plugin_vendor/share/gz:/opt/ros/jazzy/opt/gz_fuel_tools_vendor/share/gz:/opt/ros/jazzy/opt/gz_msgs_vendor/share/gz:/opt/ros/jazzy/opt/gz_common_vendor/share/gz",
+    "PX4_SOURCE_DIR": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic",
+    "PX4_SNAPSHOT_DIR": "/home/car/uav_handover/uav_lab/sources/px4-classic",
+    "GZ_SIM_SERVER_CONFIG_PATH": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/Tools/simulation/gz/server.config",
+    "PX4_RUNTIME_DIR": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/build/px4_sitl_default",
+    "PX4_MSGS_DIR": "/home/car/uav_handover/uav_lab/sources/px4-msgs-classic",
+    "GZ_PARTITION": "handover-2917eb145c45415782325ecf0b6f8f13",
+    "PX4_GZ_STANDALONE": "1",
+    "PX4_SYS_AUTOSTART": "4001",
+    "PX4_SIM_MODEL": "gz_x500",
+    "PX4_GZ_WORLD": "default",
+    "PX4_GZ_MODELS": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/Tools/simulation/gz/models",
+    "PX4_GZ_WORLDS": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/Tools/simulation/gz/worlds",
+    "PX4_GZ_MODEL_POSE": "0,0,0,0,0,0",
+    "PX4_UXRCE_DDS_NS": "",
+    "ROS_DOMAIN_ID": "71",
+    "PX4_UXRCE_DDS_PORT": "18888",
+    "PX4_PARAM_NAV_DLL_ACT": "0",
+    "PX4_PARAM_COM_RC_IN_MODE": "4",
+    "PX4_PARAM_MIS_TAKEOFF_ALT": "3",
+    "PX4_PARAM_IMU_GYRO_RATEMAX": "250",
+    "PX4_PARAM_SDLOG_MODE": "1"
+  },
+  "processes": [
+    {
+      "name": "agent",
+      "pid": 776550,
+      "command": [
+        "/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent",
+        "udp4",
+        "-p",
+        "18888",
+        "-v",
+        "4"
+      ]
+    },
+    {
+      "name": "gazebo",
+      "pid": 776551,
+      "command": [
+        "gz",
+        "sim",
+        "-r",
+        "-s",
+        "-v",
+        "3",
+        "/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/Tools/simulation/gz/worlds/default.sdf"
+      ]
+    },
+    {
+      "name": "gz-stats",
+      "pid": 776552,
+      "command": [
+        "gz",
+        "topic",
+        "-e",
+        "-t",
+        "/world/default/stats"
+      ]
+    },
+    {
+      "name": "tegrastats",
+      "pid": 776553,
+      "command": [
+        "/usr/bin/tegrastats",
+        "--interval",
+        "1000"
+      ]
+    },
+    {
+      "name": "px4",
+      "pid": 776589,
+      "command": [
+        "/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/build/px4_sitl_default/bin/px4",
+        "-d",
+        "-i",
+        "21",
+        "-w",
+        "/home/car/uav_handover/data/final-classic_hover/rootfs",
+        "/home/car/uav_handover/data/final-classic_hover/rootfs/etc"
+      ]
+    },
+    {
+      "name": "agent-reconnected",
+      "pid": 777083,
+      "command": [
+        "/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent",
+        "udp4",
+        "-p",
+        "18888",
+        "-v",
+        "4"
+      ]
+    }
+  ],
+  "ulog_sha256": "19ccf549893b9c771d85ecb015e9c4fd4b492d4b6550833efbb1fa04dccd138e",
+  "checks": {
+    "telemetry": "PASS",
+    "mavlink": "PASS",
+    "dds_reconnection": "PASS",
+    "bidirectional_dds": "PASS"
+  }
+}

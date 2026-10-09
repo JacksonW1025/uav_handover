@@ -1,0 +1,1128 @@
+{
+  "generated_at": "2026-10-09T20:35:48.791819+08:00",
+  "experiment_status": "环境检查完成",
+  "status": "PASS",
+  "tests": [
+    {
+      "id": "TEST-01",
+      "title": "Lab 环境加载与路径隔离",
+      "status": "PASS",
+      "commands": [
+        {
+          "name": "final-health-classic",
+          "command": [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-c",
+            "source tools/lab-env.sh classic; python tools/health.py --full --output data/environment-20261009/final-health-classic"
+          ],
+          "exit_code": 0,
+          "status": "PASS",
+          "elapsed_s": 9.190239444957115,
+          "finished_at": "2026-10-09T20:24:28.550355+08:00",
+          "log": "data/environment-20261009/final-commands/final-health-classic.log"
+        },
+        {
+          "name": "final-health-raptor",
+          "command": [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-c",
+            "source tools/lab-env.sh raptor; python tools/health.py --output data/environment-20261009/final-health-raptor"
+          ],
+          "exit_code": 0,
+          "status": "PASS",
+          "elapsed_s": 5.779835424036719,
+          "finished_at": "2026-10-09T20:24:34.381523+08:00",
+          "log": "data/environment-20261009/final-commands/final-health-raptor.log"
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-02",
+      "title": "Python 关键依赖、ABI 与 pip check",
+      "status": "PASS",
+      "commands": [
+        {
+          "name": "final-health-classic",
+          "command": [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-c",
+            "source tools/lab-env.sh classic; python tools/health.py --full --output data/environment-20261009/final-health-classic"
+          ],
+          "exit_code": 0,
+          "status": "PASS",
+          "elapsed_s": 9.190239444957115,
+          "finished_at": "2026-10-09T20:24:28.550355+08:00",
+          "log": "data/environment-20261009/final-commands/final-health-classic.log"
+        },
+        {
+          "name": "final-health-raptor",
+          "command": [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-c",
+            "source tools/lab-env.sh raptor; python tools/health.py --output data/environment-20261009/final-health-raptor"
+          ],
+          "exit_code": 0,
+          "status": "PASS",
+          "elapsed_s": 5.779835424036719,
+          "finished_at": "2026-10-09T20:24:34.381523+08:00",
+          "log": "data/environment-20261009/final-commands/final-health-raptor.log"
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-03",
+      "title": "classic ROS overlay / Python / C++ pubsub",
+      "status": "PASS",
+      "commands": [
+        {
+          "name": "final-ros-classic",
+          "command": [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-c",
+            "source tools/lab-env.sh classic; export ROS_DOMAIN_ID=72; python tools/verify_ros.py && uav_lab/.local/ros-probe-classic/ros_probe"
+          ],
+          "exit_code": 0,
+          "status": "PASS",
+          "elapsed_s": 1.1166135969106108,
+          "finished_at": "2026-10-09T20:08:32.257271+08:00",
+          "log": "data/environment-20261009/final-commands/final-ros-classic.log"
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-04",
+      "title": "raptor ROS overlay / Python / C++ 接口",
+      "status": "PASS",
+      "commands": [
+        {
+          "name": "final-ros-raptor",
+          "command": [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-c",
+            "source tools/lab-env.sh raptor; export ROS_DOMAIN_ID=73; python tools/verify_ros.py && uav_lab/.local/ros-probe-raptor/ros_probe"
+          ],
+          "exit_code": 0,
+          "status": "PASS",
+          "elapsed_s": 1.1671164700528607,
+          "finished_at": "2026-10-09T20:08:33.478030+08:00",
+          "log": "data/environment-20261009/final-commands/final-ros-raptor.log"
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-05",
+      "title": "经典 PX4 SITL 正常启动",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "final-classic-relative-03",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "classic_hover",
+            "--output",
+            "data/final-classic-relative-03"
+          ],
+          "evidence": [
+            "data/final-classic-relative-03/validation.json",
+            "data/final-classic-relative-03/metrics.json",
+            "data/final-classic-relative-03/flight.ulg",
+            "data/final-classic-relative-03/events.jsonl",
+            "data/final-classic-relative-03/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-06",
+      "title": "Gazebo x500、传感器和电机插件实际工作",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "final-classic-relative-03",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "classic_hover",
+            "--output",
+            "data/final-classic-relative-03"
+          ],
+          "evidence": [
+            "data/final-classic-relative-03/validation.json",
+            "data/final-classic-relative-03/metrics.json",
+            "data/final-classic-relative-03/flight.ulg",
+            "data/final-classic-relative-03/events.jsonl",
+            "data/final-classic-relative-03/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-07",
+      "title": "经典控制短时悬停",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "final-classic-relative-03",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "classic_hover",
+            "--output",
+            "data/final-classic-relative-03"
+          ],
+          "evidence": [
+            "data/final-classic-relative-03/validation.json",
+            "data/final-classic-relative-03/metrics.json",
+            "data/final-classic-relative-03/flight.ulg",
+            "data/final-classic-relative-03/events.jsonl",
+            "data/final-classic-relative-03/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-08",
+      "title": "实际 PX4↔ROS 双向通信、Agent 重连",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "final-classic-relative-03",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "classic_hover",
+            "--output",
+            "data/final-classic-relative-03"
+          ],
+          "evidence": [
+            "data/final-classic-relative-03/validation.json",
+            "data/final-classic-relative-03/metrics.json",
+            "data/final-classic-relative-03/flight.ulg",
+            "data/final-classic-relative-03/events.jsonl",
+            "data/final-classic-relative-03/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-09",
+      "title": "生成并解析本轮新 ULog",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "final-classic-relative-03",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "classic_hover",
+            "--output",
+            "data/final-classic-relative-03"
+          ],
+          "evidence": [
+            "data/final-classic-relative-03/validation.json",
+            "data/final-classic-relative-03/metrics.json",
+            "data/final-classic-relative-03/flight.ulg",
+            "data/final-classic-relative-03/events.jsonl",
+            "data/final-classic-relative-03/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-10",
+      "title": "真正启用 MC_RAPTOR / RL Tools 的构建",
+      "status": "PASS",
+      "commands": [
+        {
+          "name": "final-build-raptor",
+          "command": [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-c",
+            "source tools/lab-env.sh raptor; make -C \"$PX4_SOURCE_DIR\" -j8 px4_sitl_raptor"
+          ],
+          "exit_code": 0,
+          "status": "PASS",
+          "elapsed_s": 3.5247163120657206,
+          "finished_at": "2026-10-09T20:33:10.421145+08:00",
+          "log": "data/environment-20261009/final-commands/final-build-raptor.log"
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-11",
+      "title": "RAPTOR 模块启动与动态模式注册",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-12",
+      "title": "冻结策略加载、自测、有限推理与时序",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-13",
+      "title": "机体/电机映射在当前冻结平台验证",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null,
+      "scope": "SDF/编号/坐标源码审查与 x500 实际短时控制；训练完整动力学元数据缺失，不证明与训练机体等同。详见 docs/THOR_PLATFORM_MAPPING.md。"
+    },
+    {
+      "id": "TEST-14",
+      "title": "神经独立控制窗口稳定悬停",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-15",
+      "title": "C→N 模式、实际执行器归属和悬停",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-16",
+      "title": "N→C 实际恢复经典执行器输出",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-17",
+      "title": "完整 C→N→C",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-repeated_handover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "repeated_handover",
+            "--output",
+            "data/verified-repeated_handover"
+          ],
+          "evidence": [
+            "data/verified-repeated_handover/validation.json",
+            "data/verified-repeated_handover/metrics.json",
+            "data/verified-repeated_handover/flight.ulg",
+            "data/verified-repeated_handover/events.jsonl",
+            "data/verified-repeated_handover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-18",
+      "title": "三类状态 READ / RESET / SNAPSHOT / HOLD / RESTORE",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "verified-state_reset",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "state_reset",
+            "--output",
+            "data/verified-state_reset"
+          ],
+          "evidence": [
+            "data/verified-state_reset/validation.json",
+            "data/verified-state_reset/metrics.json",
+            "data/verified-state_reset/flight.ulg",
+            "data/verified-state_reset/events.jsonl",
+            "data/verified-state_reset/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-state_hold",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "state_hold",
+            "--output",
+            "data/verified-state_hold"
+          ],
+          "evidence": [
+            "data/verified-state_hold/validation.json",
+            "data/verified-state_hold/metrics.json",
+            "data/verified-state_hold/flight.ulg",
+            "data/verified-state_hold/events.jsonl",
+            "data/verified-state_hold/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-state_restore",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "state_restore",
+            "--output",
+            "data/verified-state_restore"
+          ],
+          "evidence": [
+            "data/verified-state_restore/validation.json",
+            "data/verified-state_restore/metrics.json",
+            "data/verified-state_restore/flight.ulg",
+            "data/verified-state_restore/events.jsonl",
+            "data/verified-state_restore/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null,
+      "unit_test": {
+        "name": "state-unit",
+        "command": [
+          "bash",
+          "--noprofile",
+          "--norc",
+          "-c",
+          "g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined tests/state_ops_test.cpp -o uav_lab/.local/state_ops_test && uav_lab/.local/state_ops_test"
+        ],
+        "exit_code": 0,
+        "status": "PASS",
+        "elapsed_s": 0.21512078389059752,
+        "finished_at": "2026-10-09T20:08:33.763867+08:00",
+        "log": "data/environment-20261009/final-commands/state-unit.log"
+      }
+    },
+    {
+      "id": "TEST-19",
+      "title": "受控注入与非法输入/活动写入拒绝",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "verified-state_injection",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "state_injection",
+            "--output",
+            "data/verified-state_injection"
+          ],
+          "evidence": [
+            "data/verified-state_injection/validation.json",
+            "data/verified-state_injection/metrics.json",
+            "data/verified-state_injection/flight.ulg",
+            "data/verified-state_injection/events.jsonl",
+            "data/verified-state_injection/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-20",
+      "title": "执行器归属、交接与状态事件日志完整",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-state_restore",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "state_restore",
+            "--output",
+            "data/verified-state_restore"
+          ],
+          "evidence": [
+            "data/verified-state_restore/validation.json",
+            "data/verified-state_restore/metrics.json",
+            "data/verified-state_restore/flight.ulg",
+            "data/verified-state_restore/events.jsonl",
+            "data/verified-state_restore/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null,
+      "scope": "关键飞控数据连续记录；GRU/速度积分器及参考按操作与交接边界事件记录。"
+    },
+    {
+      "id": "TEST-21",
+      "title": "自动运行、降落、结束与数据保存",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "final-classic-relative-03",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "classic_hover",
+            "--output",
+            "data/final-classic-relative-03"
+          ],
+          "evidence": [
+            "data/final-classic-relative-03/validation.json",
+            "data/final-classic-relative-03/metrics.json",
+            "data/final-classic-relative-03/flight.ulg",
+            "data/final-classic-relative-03/events.jsonl",
+            "data/final-classic-relative-03/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-state_restore",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "state_restore",
+            "--output",
+            "data/verified-state_restore"
+          ],
+          "evidence": [
+            "data/verified-state_restore/validation.json",
+            "data/verified-state_restore/metrics.json",
+            "data/verified-state_restore/flight.ulg",
+            "data/verified-state_restore/events.jsonl",
+            "data/verified-state_restore/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-22",
+      "title": "日志解析、指标和可视化",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "final-classic-relative-03",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "classic_hover",
+            "--output",
+            "data/final-classic-relative-03"
+          ],
+          "evidence": [
+            "data/final-classic-relative-03/validation.json",
+            "data/final-classic-relative-03/metrics.json",
+            "data/final-classic-relative-03/flight.ulg",
+            "data/final-classic-relative-03/events.jsonl",
+            "data/final-classic-relative-03/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-raptor_hover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "raptor_hover",
+            "--output",
+            "data/verified-raptor_hover"
+          ],
+          "evidence": [
+            "data/verified-raptor_hover/validation.json",
+            "data/verified-raptor_hover/metrics.json",
+            "data/verified-raptor_hover/flight.ulg",
+            "data/verified-raptor_hover/events.jsonl",
+            "data/verified-raptor_hover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-23",
+      "title": "连续三轮基础实验与三次交接稳定性",
+      "status": "PASS",
+      "runs": [
+        {
+          "run": "final-classic-relative-01",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "classic_hover",
+            "--output",
+            "data/final-classic-relative-01"
+          ],
+          "evidence": [
+            "data/final-classic-relative-01/validation.json",
+            "data/final-classic-relative-01/metrics.json",
+            "data/final-classic-relative-01/flight.ulg",
+            "data/final-classic-relative-01/events.jsonl",
+            "data/final-classic-relative-01/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "final-classic-relative-02",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "classic_hover",
+            "--output",
+            "data/final-classic-relative-02"
+          ],
+          "evidence": [
+            "data/final-classic-relative-02/validation.json",
+            "data/final-classic-relative-02/metrics.json",
+            "data/final-classic-relative-02/flight.ulg",
+            "data/final-classic-relative-02/events.jsonl",
+            "data/final-classic-relative-02/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "final-classic-relative-03",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "classic_hover",
+            "--output",
+            "data/final-classic-relative-03"
+          ],
+          "evidence": [
+            "data/final-classic-relative-03/validation.json",
+            "data/final-classic-relative-03/metrics.json",
+            "data/final-classic-relative-03/flight.ulg",
+            "data/final-classic-relative-03/events.jsonl",
+            "data/final-classic-relative-03/logs/commands.log"
+          ],
+          "reason": null
+        },
+        {
+          "run": "verified-repeated_handover",
+          "status": "PASS",
+          "exit_code": 0,
+          "command": [
+            "tools/experiment",
+            "repeated_handover",
+            "--output",
+            "data/verified-repeated_handover"
+          ],
+          "evidence": [
+            "data/verified-repeated_handover/validation.json",
+            "data/verified-repeated_handover/metrics.json",
+            "data/verified-repeated_handover/flight.ulg",
+            "data/verified-repeated_handover/events.jsonl",
+            "data/verified-repeated_handover/logs/commands.log"
+          ],
+          "reason": null
+        }
+      ],
+      "reason": null,
+      "cleanup_audit": {
+        "name": "process-cleanup",
+        "command": [
+          "bash",
+          "--noprofile",
+          "--norc",
+          "-c",
+          "source tools/lab-env.sh raptor; python tools/verify_cleanup.py"
+        ],
+        "exit_code": 0,
+        "status": "PASS",
+        "elapsed_s": 0.5652168749365956,
+        "finished_at": "2026-10-09T20:34:11.422101+08:00",
+        "log": "data/environment-20261009/final-commands/process-cleanup.log"
+      }
+    },
+    {
+      "id": "TEST-24",
+      "title": "活动路径不依赖旧仓库",
+      "status": "PASS",
+      "commands": [
+        {
+          "name": "final-health-classic",
+          "command": [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-c",
+            "source tools/lab-env.sh classic; python tools/health.py --full --output data/environment-20261009/final-health-classic"
+          ],
+          "exit_code": 0,
+          "status": "PASS",
+          "elapsed_s": 9.190239444957115,
+          "finished_at": "2026-10-09T20:24:28.550355+08:00",
+          "log": "data/environment-20261009/final-commands/final-health-classic.log"
+        },
+        {
+          "name": "final-health-raptor",
+          "command": [
+            "bash",
+            "--noprofile",
+            "--norc",
+            "-c",
+            "source tools/lab-env.sh raptor; python tools/health.py --output data/environment-20261009/final-health-raptor"
+          ],
+          "exit_code": 0,
+          "status": "PASS",
+          "elapsed_s": 5.779835424036719,
+          "finished_at": "2026-10-09T20:24:34.381523+08:00",
+          "log": "data/environment-20261009/final-commands/final-health-raptor.log"
+        }
+      ],
+      "reason": null
+    },
+    {
+      "id": "TEST-25",
+      "title": "Git 忽略整个 Lab，保留实验源码和原始证据",
+      "status": "PASS",
+      "commands": [
+        {
+          "name": "git-boundaries",
+          "command": [
+            "python3",
+            "tools/verify_boundaries.py"
+          ],
+          "exit_code": 0,
+          "status": "PASS",
+          "elapsed_s": 0.9663910249946639,
+          "finished_at": "2026-10-09T20:35:48.738783+08:00",
+          "log": "data/environment-20261009/final-commands/git-boundaries.log"
+        }
+      ],
+      "reason": null
+    }
+  ],
+  "all_runs_including_failed_attempts": [
+    {
+      "run": "acceptance-classic-02",
+      "status": "FAIL",
+      "reason": "PX4 DDS telemetry"
+    },
+    {
+      "run": "acceptance-classic-03",
+      "status": "FAIL",
+      "reason": "PX4 instance already exists; refusing to attach"
+    },
+    {
+      "run": "acceptance-classic-04",
+      "status": "FAIL",
+      "reason": "command 400 rejected: 1"
+    },
+    {
+      "run": "acceptance-classic-05",
+      "status": "FAIL",
+      "reason": "takeoff altitude"
+    },
+    {
+      "run": "acceptance-classic-06",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "acceptance-raptor-01",
+      "status": "FAIL",
+      "reason": null
+    },
+    {
+      "run": "final-classic-01",
+      "status": "FAIL",
+      "reason": "takeoff altitude"
+    },
+    {
+      "run": "final-classic-02",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-classic-relative-01",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-classic-relative-02",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-classic-relative-03",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-classic_hover",
+      "status": "FAIL",
+      "reason": "takeoff altitude"
+    },
+    {
+      "run": "final-classic_hover-02",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-handover-01",
+      "status": "FAIL",
+      "reason": "Expecting ',' delimiter: line 1 column 127 (char 126)"
+    },
+    {
+      "run": "final-handover-02",
+      "status": "FAIL",
+      "reason": "Expecting ',' delimiter: line 1 column 127 (char 126)"
+    },
+    {
+      "run": "final-handover-03",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-raptor-hover",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-repeated_handover",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-state_hold",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-state_injection",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-state_reset",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-state_restore",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "final-state_restore-02",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "verified-raptor_hover",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "verified-repeated_handover",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "verified-state_hold",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "verified-state_injection",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "verified-state_reset",
+      "status": "PASS",
+      "reason": null
+    },
+    {
+      "run": "verified-state_restore",
+      "status": "PASS",
+      "reason": null
+    }
+  ],
+  "limits": [
+    "仅本机冻结配置短时 headless SITL；不包括真实飞行或长期统计显著性。",
+    "训练动力学元数据不完整；native 约125Hz与训练100Hz差异保留并记录。",
+    "完整 FlightTask/EKF/滤波器/Lissajous 状态快照未提供；当前状态参考实验限定 MC_RAPTOR_INTREF=0。",
+    "历史显式AMSL起飞路径间歇失败；当前入口用上游默认相对起飞语义，失败证据保留。"
+  ]
+}

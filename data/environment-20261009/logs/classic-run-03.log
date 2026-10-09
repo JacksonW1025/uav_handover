@@ -1,0 +1,11 @@
+created {'thresholds': {'seed': 42, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 3, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500}}
+failure {'reason': 'PX4 instance already exists; refusing to attach'}
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/run_experiment.py", line 273, in main
+    e.execute();status='PASS'
+    ^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/run_experiment.py", line 173, in execute
+    if Path(f'/tmp/px4_lock-{self.instance}').exists():raise RuntimeError('PX4 instance already exists; refusing to attach')
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: PX4 instance already exists; refusing to attach
+/home/car/uav_handover/data/acceptance-classic-03 FAIL

@@ -1,0 +1,19 @@
+created {'thresholds': {'seed': 42, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 3, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500}}
+process_started {'name': 'agent', 'pid': 729721, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 729722, 'command': ['gz', 'sim', '-r', '-s', '-v', '3', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'px4', 'pid': 729759, 'command': ['/home/car/uav_handover/uav_lab/.local/runtime/px4-classic/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/acceptance-classic-02/rootfs', '/home/car/uav_handover/data/acceptance-classic-02/rootfs/etc']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1791546441224586}
+failure {'reason': 'PX4 DDS telemetry'}
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/run_experiment.py", line 272, in main
+    e.execute();status='PASS'
+    ^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/run_experiment.py", line 188, in execute
+    self.wait(lambda:all(n in self.latest for n in ['vehicle_status','vehicle_odometry','vehicle_local_position','vehicle_attitude']),self.cfg['startup_timeout_s'],'PX4 DDS telemetry')
+  File "/home/car/uav_handover/tools/run_experiment.py", line 145, in wait
+    raise TimeoutError(description)
+TimeoutError: PX4 DDS telemetry
+process_stopped {'name': 'px4', 'pid': 729759, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 729722, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 729721, 'exit_code': -2}
+/home/car/uav_handover/data/acceptance-classic-02 FAIL

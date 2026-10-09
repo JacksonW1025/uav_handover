@@ -1,0 +1,134 @@
+{
+  "variant": "raptor",
+  "checks": {
+    "overlay_isolation": "PASS",
+    "local_pubsub": "PASS",
+    "native_typesupport": "PASS"
+  },
+  "message_fields": {
+    "VehicleStatus": {
+      "version": 4,
+      "fields": {
+        "timestamp": "uint64",
+        "armed_time": "uint64",
+        "takeoff_time": "uint64",
+        "arming_state": "uint8",
+        "latest_arming_reason": "uint8",
+        "latest_disarming_reason": "uint8",
+        "nav_state_timestamp": "uint64",
+        "nav_state_user_intention": "uint8",
+        "nav_state": "uint8",
+        "executor_in_charge": "uint8",
+        "nav_state_display": "uint8",
+        "accepts_offboard_setpoints": "boolean",
+        "valid_nav_states_mask": "uint32",
+        "can_set_nav_states_mask": "uint32",
+        "hil_state": "uint8",
+        "vehicle_type": "uint8",
+        "failsafe": "boolean",
+        "failsafe_and_user_took_over": "boolean",
+        "failsafe_defer_state": "uint8",
+        "gcs_connection_lost": "boolean",
+        "gcs_connection_lost_counter": "uint8",
+        "high_latency_data_link_lost": "boolean",
+        "is_vtol": "boolean",
+        "is_vtol_tailsitter": "boolean",
+        "in_transition_mode": "boolean",
+        "in_transition_to_fw": "boolean",
+        "system_type": "uint8",
+        "system_id": "uint8",
+        "component_id": "uint8",
+        "safety_button_available": "boolean",
+        "safety_off": "boolean",
+        "power_input_valid": "boolean",
+        "usb_connected": "boolean",
+        "open_drone_id_system_present": "boolean",
+        "open_drone_id_system_healthy": "boolean",
+        "parachute_system_present": "boolean",
+        "parachute_system_healthy": "boolean",
+        "traffic_avoidance_system_present": "boolean",
+        "rc_calibration_in_progress": "boolean",
+        "calibration_enabled": "boolean",
+        "pre_flight_checks_pass": "boolean"
+      }
+    },
+    "VehicleCommand": {
+      "version": 0,
+      "fields": {
+        "timestamp": "uint64",
+        "param1": "float",
+        "param2": "float",
+        "param3": "float",
+        "param4": "float",
+        "param5": "double",
+        "param6": "double",
+        "param7": "float",
+        "command": "uint32",
+        "target_system": "uint8",
+        "target_component": "uint8",
+        "source_system": "uint8",
+        "source_component": "uint16",
+        "confirmation": "uint8",
+        "from_external": "boolean"
+      }
+    },
+    "VehicleCommandAck": {
+      "version": 1,
+      "fields": {
+        "timestamp": "uint64",
+        "command": "uint32",
+        "result": "uint8",
+        "result_param1": "uint8",
+        "result_param2": "int32",
+        "target_system": "uint8",
+        "target_component": "uint16",
+        "from_external": "boolean"
+      }
+    },
+    "VehicleOdometry": {
+      "version": 0,
+      "fields": {
+        "timestamp": "uint64",
+        "timestamp_sample": "uint64",
+        "pose_frame": "uint8",
+        "position": "float[3]",
+        "q": "float[4]",
+        "velocity_frame": "uint8",
+        "velocity": "float[3]",
+        "angular_velocity": "float[3]",
+        "position_variance": "float[3]",
+        "orientation_variance": "float[3]",
+        "velocity_variance": "float[3]",
+        "reset_counter": "uint8",
+        "quality": "int8"
+      }
+    },
+    "OffboardControlMode": {
+      "version": 0,
+      "fields": {
+        "timestamp": "uint64",
+        "position": "boolean",
+        "velocity": "boolean",
+        "acceleration": "boolean",
+        "attitude": "boolean",
+        "body_rate": "boolean",
+        "thrust_and_torque": "boolean",
+        "direct_actuator": "boolean"
+      }
+    },
+    "TrajectorySetpoint": {
+      "version": 0,
+      "fields": {
+        "timestamp": "uint64",
+        "position": "float[3]",
+        "velocity": "float[3]",
+        "acceleration": "float[3]",
+        "jerk": "float[3]",
+        "yaw": "float",
+        "yawspeed": "float"
+      }
+    }
+  },
+  "python": "/home/car/uav_handover/uav_lab/.local/venv/bin/python",
+  "package_path": "/home/car/uav_handover/uav_lab/workspaces/raptor/install/px4_msgs/lib/python3.12/site-packages/px4_msgs/__init__.py"
+}

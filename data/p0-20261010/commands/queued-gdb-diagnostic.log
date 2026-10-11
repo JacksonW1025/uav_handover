@@ -1,0 +1,25 @@
+created {'thresholds': {'seed': 42, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 3, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500, 'settling_band_m': 0.2, 'settling_dwell_s': 2.0, 'joint_recovery': {'position_reference_ned_m': [0, 0, -3], 'velocity_reference_ned_m_s': [0, 0, 0], 'angular_velocity_reference_frd_rad_s': [0, 0, 0], 'position_threshold_m': 0.2, 'velocity_threshold_m_s': 0.1, 'angular_velocity_threshold_rad_s': 0.1, 'dwell_s': 2.0, 'max_observation_gap_s': 0.02}, 'p0_strict': True}}
+process_started {'name': 'agent', 'pid': 2230992, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 2230993, 'command': ['gz', 'sim', '-r', '-s', '-v', '3', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'gz-stats', 'pid': 2230994, 'command': ['gz', 'topic', '-e', '-t', '/world/default/stats']}
+process_started {'name': 'tegrastats', 'pid': 2230995, 'command': ['/usr/bin/tegrastats', '--interval', '1000']}
+process_started {'name': 'px4', 'pid': 2231064, 'command': ['gdb', '--batch', '-ex', 'set pagination off', '-ex', 'run', '-ex', 'thread apply all bt', '--args', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/p0-20261010-queued-gdb-diagnostic/rootfs', '/home/car/uav_handover/data/p0-20261010-queued-gdb-diagnostic/rootfs/etc']}
+failure {'reason': 'px4 exited: 0'}
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/run_experiment.py", line 419, in main
+    e.execute();status='PASS'
+    ^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/run_experiment.py", line 264, in execute
+    self.wait(lambda:all(n in self.latest for n in ['vehicle_status','vehicle_odometry','vehicle_local_position','vehicle_attitude']),self.cfg['startup_timeout_s'],'PX4 DDS telemetry')
+  File "/home/car/uav_handover/tools/run_experiment.py", line 173, in wait
+    self.pump()
+  File "/home/car/uav_handover/tools/run_experiment.py", line 144, in pump
+    if p.poll() is not None and name not in self.expected_stopped:raise RuntimeError(f'{name} exited: {p.returncode}')
+                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: px4 exited: 0
+process_stopped {'name': 'px4', 'pid': 2231064, 'exit_code': 0}
+process_stopped {'name': 'tegrastats', 'pid': 2230995, 'exit_code': -2}
+process_stopped {'name': 'gz-stats', 'pid': 2230994, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 2230993, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 2230992, 'exit_code': -2}
+/home/car/uav_handover/data/p0-20261010-queued-gdb-diagnostic FAIL

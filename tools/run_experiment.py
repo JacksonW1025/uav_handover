@@ -17,6 +17,8 @@ import sys
 import time
 import traceback
 import uuid
+import resource
+from readiness import Readiness
 import psutil
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,6 +35,7 @@ def digest(path):
 class Experiment:
     def __init__(self,args):
         self.args=args
+        self.startup_only=args.startup_only
         self.cfg=json.loads(args.config.read_text())
         if args.hover_s is not None:self.cfg['hover_s']=args.hover_s
         self.variant='classic' if args.kind=='classic_hover' else 'raptor'
@@ -50,9 +53,9 @@ class Experiment:
         self.source=LAB/'.local/checkouts'/('px4-'+self.variant)
         built=self.source/('build/px4_sitl_default' if self.variant=='classic' else 'build/px4_sitl_raptor')
         self.runtime=built if (built/'bin/px4').exists() else LAB/'.local/runtime/px4-classic'
-        self.binary=self.runtime/'bin/px4'
+        self.binary=Path(os.environ.get('HANDOVER_PX4_BINARY',str(self.runtime/'bin/px4'))).resolve()
         self.instance=self.cfg['instance']
-        self.env=dict(os.environ,GZ_PARTITION='handover-'+uuid.uuid4().hex,HEADLESS='1',
+        self.env=dict(os.environ,GZ_IP='127.0.0.1',GZ_PARTITION='handover-'+uuid.uuid4().hex,HEADLESS='1',
                       PX4_GZ_STANDALONE='1',PX4_SYS_AUTOSTART='4001',PX4_SIM_MODEL='gz_x500',PX4_GZ_WORLD='default',
                       PX4_GZ_MODELS=str(self.source/'Tools/simulation/gz/models'),
                       PX4_GZ_WORLDS=str(self.source/'Tools/simulation/gz/worlds'),
@@ -65,6 +68,12 @@ class Experiment:
                       PX4_PARAM_MC_RAPTOR_ENABLE='1' if self.variant=='raptor' else '0',
                       PX4_PARAM_MC_RAPTOR_OFFB='0')
         self.env['GZ_SIM_RESOURCE_PATH']=self.env['PX4_GZ_MODELS']+':'+self.env['PX4_GZ_WORLDS']+':/opt/ros/jazzy/share'
+        # RAPTOR output-chain measurement: x500 copy whose motor plugin traces each physics step.
+        research_models=self.source/'Tools/simulation/research_models'
+        if self.variant=='raptor' and (research_models/'x500/model.sdf').exists():
+            self.env['GZ_SIM_RESOURCE_PATH']=str(research_models)+':'+self.env['GZ_SIM_RESOURCE_PATH']
+            self.env['PX4_GZ_MODELS']=str(research_models)
+            self.env['HANDOVER_GZ_MOTOR_TRACE']=str(self.out/'gz-motor');(self.out/'gz-motor').mkdir()
         plugins=self.runtime/'src/modules/simulation/gz_plugins' if (self.runtime/'src').exists() else self.runtime/'plugins'
         plugin_paths=str(plugins)+(':'+str(plugins/'optical_flow') if (plugins/'optical_flow').is_dir() else '')
         self.env['GZ_SIM_SYSTEM_PLUGIN_PATH']=plugin_paths
@@ -74,12 +83,20 @@ class Experiment:
             self.env.pop('PX4_PARAM_MC_RAPTOR_OFFB',None)
         # ROS middleware reads the domain at context initialization in this process.
         os.environ['ROS_DOMAIN_ID']=self.env['ROS_DOMAIN_ID']
-        self.metadata={'experiment_type':args.kind,'variant':self.variant,'created_at':dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).isoformat(),
+        # Hash every untracked source addition too: git diff alone omits research headers/messages.
+        source_extra=subprocess.check_output(['git','-C',str(self.source),'ls-files','--others','--exclude-standard','-z']).decode().strip('\0').split('\0')
+        self.source_extra_hashes={name:digest(self.source/name) for name in source_extra if name and (self.source/name).is_file()}
+        self.metadata={'experiment_type':args.kind,'startup_only':self.startup_only,'capture_raw_sensors':args.capture_raw_sensors,'variant':self.variant,'created_at':dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).isoformat(),
                        'seed':self.cfg['seed'],'seed_scope':'recorded; Gazebo/PX4 do not expose a verified universal seed',
                        'initial_pose':'0,0,0,0,0,0','source_commit':subprocess.check_output(['git','-C',str(self.source),'rev-parse','HEAD'],text=True).strip(),
+                       'project_commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),
+                       'experiment_code_sha256':{str(p.relative_to(ROOT)):digest(p) for p in sorted((ROOT/'tools').glob('*.py'))},
+                       'config_sha256':digest(self.out/'config.json'),
+                       'source_untracked_sha256':self.source_extra_hashes,
                        'source_diff_sha256':hashlib.sha256(subprocess.check_output(['git','-C',str(self.source),'diff','--binary'])).hexdigest(),
                        'binary':str(self.binary),'binary_sha256':digest(self.binary),
-                       'environment':{k:v for k,v in self.env.items() if k.startswith(('PX4_','GZ_','ROS_DOMAIN'))},'processes':[]}
+                       'gz_research_plugin_sha256':digest(plugins/'libResearchMulticopterMotorModel.so') if 'HANDOVER_GZ_MOTOR_TRACE' in self.env else None,
+                       'environment':{k:v for k,v in self.env.items() if k.startswith(('PX4_','GZ_','ROS_DOMAIN','HANDOVER_GZ'))},'processes':[]}
         self.event('created',thresholds=self.cfg)
 
     def event(self,event_name,**values):
@@ -103,6 +120,14 @@ class Experiment:
         if required and p.returncode:raise RuntimeError(f'{module} {args}: {p.returncode}: {p.stdout+p.stderr}')
         return p.stdout+p.stderr
 
+    def native_phase_end_bound(self):
+        # Listener returns a native PX4 publication time before the later ROS
+        # request. This is a proven conservative bound, without clock interpolation.
+        output=self.command('listener','vehicle_angular_velocity','-n','1')
+        match=re.search(r'\btimestamp:\s*(\d+)',output)
+        if not match:raise RuntimeError('native phase boundary timestamp missing')
+        return int(match.group(1))
+
     def topic(self,direction,name,typ):
         version=getattr(typ,'MESSAGE_VERSION',0)
         return f'/fmu/{direction}/{name}'+(f'_v{version}' if version else '')
@@ -113,7 +138,7 @@ class Experiment:
         import px4_msgs.msg as msgs
         self.rclpy=rclpy;self.msgs=msgs
         rclpy.init();self.node=rclpy.create_node('handover_lab_'+uuid.uuid4().hex[:8])
-        for name,typename in [('vehicle_status','VehicleStatus'),('vehicle_odometry','VehicleOdometry'),('vehicle_attitude','VehicleAttitude'),('vehicle_local_position','VehicleLocalPosition'),('vehicle_land_detected','VehicleLandDetected'),('vehicle_command_ack','VehicleCommandAck')]:
+        for name,typename in [('vehicle_status','VehicleStatus'),('vehicle_odometry','VehicleOdometry'),('vehicle_attitude','VehicleAttitude'),('vehicle_local_position','VehicleLocalPosition'),('vehicle_land_detected','VehicleLandDetected'),('vehicle_command_ack','VehicleCommandAck'),('sensor_baro','SensorBaro'),('vehicle_air_data','VehicleAirData')]:
             typ=getattr(msgs,typename)
             self.node.create_subscription(typ,self.topic('out',name,typ),lambda msg,n=name:self.receive(n,msg),qos_profile_sensor_data)
         if self.variant=='raptor':
@@ -178,13 +203,57 @@ class Experiment:
         if ack.result!=0:raise RuntimeError(f'command {command} rejected: {ack.result}')
 
     def hover(self,duration,label):
-        self.event('hover_started',label=label,duration_s=duration)
-        start=int(self.latest['vehicle_local_position'].timestamp)
-        # Cover the 0.1 s external event alignment uncertainty without reducing
-        # the requested minimum duration in the ULog acceptance window.
-        self.wait(lambda:int(self.latest['vehicle_local_position'].timestamp)-start>=(duration+0.2)*1e6,
-                  3*duration+15,'simulation hover duration '+label)
-        self.event('hover_ended',label=label)
+        start=self.native_phase_end_bound()
+        self.event('hover_started',label=label,duration_s=duration,px4_start_us=start)
+        deadline=time.monotonic()+3*duration+15
+        while time.monotonic()<deadline:
+            self.pump(0.2)
+            end=self.native_phase_end_bound()
+            if end-start>=duration*1e6:
+                self.event('hover_ended',label=label,px4_end_us=end)
+                return
+        raise TimeoutError('native simulation hover duration '+label)
+
+    def wait_sensor_readiness(self):
+        gate=Readiness();deadline=time.monotonic()+self.cfg['startup_timeout_s'];last_log=0
+        with (self.out/'readiness.jsonl').open('w') as log:
+            while time.monotonic()<deadline:
+                self.pump(.1);now=time.monotonic();result=gate.update(self.latest,self.received,now)
+                if now-last_log>=.5 or result['ready']:
+                    last_log=now;log.write(json.dumps({'monotonic_ns':time.monotonic_ns(),**result})+'\n');log.flush()
+                if result['ready']:
+                    self.event('sensor_readiness',**result);self.checks['sensor_readiness']='PASS';return
+        self.event('sensor_readiness_failed',**result)
+        raise TimeoutError('fresh raw/selected barometer and valid local position for 2s')
+
+    def capture_startup_diagnostics(self,intervene=False):
+        for module,args in [('gz_bridge',['status']),('listener',['sensor_baro','-n','1']),('listener',['vehicle_air_data','-n','1']),('listener',['vehicle_local_position','-n','1']),('listener',['sensor_gyro','-n','1']),('listener',['sensor_accel','-n','1']),('listener',['sensor_mag','-n','1']),('sensors',['status'])]:
+            try:self.command(module,*args,timeout=3,required=False)
+            except Exception as error:self.event('diagnostic_unavailable',module=module,reason=str(error))
+        try:
+            result=subprocess.run(['gz','topic','-l'],env=self.env,capture_output=True,text=True,timeout=4)
+            (self.out/'logs/gazebo-topics.txt').write_text(result.stdout+result.stderr)
+            for sensor in ['imu_sensor/imu','air_pressure_sensor/air_pressure','magnetometer_sensor/magnetometer']:
+                name=sensor.split('/')[0];topic=f'/world/default/model/x500_{self.instance}/link/base_link/sensor/'+sensor
+                info=subprocess.run(['gz','topic','-i','-t',topic],env=self.env,capture_output=True,text=True,timeout=4)
+                (self.out/'logs'/('gazebo-'+name+'-info.txt')).write_text(info.stdout+info.stderr)
+        except Exception as error:self.event('diagnostic_unavailable',module='gazebo-topics',reason=str(error))
+        if intervene:
+            # Failed run stays FAIL: a late raw subscriber is an explicit diagnostic intervention.
+            for sensor in ['imu_sensor/imu','air_pressure_sensor/air_pressure']:
+                name='probe-'+sensor.split('/')[0]
+                topic=f'/world/default/model/x500_{self.instance}/link/base_link/sensor/'+sensor
+                self.event('sensor_probe_started',sensor=sensor,changes_subscription_graph=True)
+                process=self.spawn(name,['gz','topic','-e','-t',topic])
+                try:process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    self.expected_stopped.add(name);os.killpg(process.pid,signal.SIGINT)
+                    try:process.wait(timeout=3)
+                    except subprocess.TimeoutExpired:os.killpg(process.pid,signal.SIGKILL);process.wait()
+                self.expected_stopped.add(name)
+                try:self.command('gz_bridge','status',timeout=3,required=False)
+                except Exception as error:self.event('diagnostic_unavailable',module='post-probe-bridge',reason=str(error))
+                self.event('sensor_probe_finished',sensor=sensor,exit_code=process.returncode)
 
     def state(self,target,operation,*values,expected=0):
         text=self.command('mc_raptor','state',target,operation,*values,required=False)
@@ -243,15 +312,27 @@ class Experiment:
         # Private etc tree permits logger configuration without changing the build or another run.
         shutil.copytree(self.runtime/'etc',self.rootfs/'etc')
         logging=self.rootfs/'etc/logging';logging.mkdir(exist_ok=True)
-        names=['vehicle_local_position','vehicle_global_position','position_setpoint_triplet','takeoff_status','vehicle_attitude','vehicle_angular_velocity','vehicle_status','vehicle_control_mode','trajectory_setpoint','vehicle_attitude_setpoint','vehicle_rates_setpoint','vehicle_torque_setpoint','vehicle_thrust_setpoint','rate_ctrl_status','actuator_motors','vehicle_command','vehicle_command_ack']
-        if self.variant=='raptor':names+=['raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator']
+        names=['sensor_baro','vehicle_air_data','actuator_outputs','sensor_gyro','vehicle_imu','vehicle_imu_status','vehicle_local_position','vehicle_global_position','position_setpoint_triplet','takeoff_status','vehicle_attitude','vehicle_angular_velocity','vehicle_status','vehicle_control_mode','trajectory_setpoint','vehicle_attitude_setpoint','vehicle_rates_setpoint','vehicle_torque_setpoint','vehicle_thrust_setpoint','rate_ctrl_status','actuator_motors','vehicle_command','vehicle_command_ack']
+        if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator']
         (logging/'logger_topics.txt').write_text(''.join(n+' 0 0\n' for n in names)+(''.join(f'route_observability 0 {i}\n' for i in range(1,10)) if self.variant=='raptor' else ''))
         self.spawn('agent',[str(LAB/'scripts/MicroXRCEAgent'),'udp4','-p',str(self.cfg['agent_port']),'-v','4'])
         self.spawn('gazebo',['gz','sim','-r','-s','-v','3',str(self.source/'Tools/simulation/gz/worlds/default.sdf')])
+        if self.args.capture_raw_sensors:
+            self.spawn('gz-imu',['gz','topic','-e','-t',f'/world/default/model/x500_{self.instance}/link/base_link/sensor/imu_sensor/imu'])
+            self.spawn('gz-pressure',['gz','topic','-e','-t',f'/world/default/model/x500_{self.instance}/link/base_link/sensor/air_pressure_sensor/air_pressure'])
         self.spawn('gz-stats',['gz','topic','-e','-t','/world/default/stats'])
         if Path('/usr/bin/tegrastats').exists():self.spawn('tegrastats',['/usr/bin/tegrastats','--interval','1000'])
         self.init_ros()
-        self.spawn('px4',[str(self.binary),'-d','-i',str(self.instance),'-w',str(self.rootfs),str(self.rootfs/'etc')])
+        px4_argv=[str(self.binary),'-d','-i',str(self.instance),'-w',str(self.rootfs),str(self.rootfs/'etc')]
+        trace=os.environ.get('HANDOVER_PX4_TRACE')
+        if trace:
+            self.metadata['diagnostic_preload']={'path':trace,'sha256':digest(Path(trace))}
+            px4_argv=['env','LD_PRELOAD='+trace]+px4_argv
+        if os.environ.get('HANDOVER_PX4_GDB')=='1':px4_argv=['gdb','--batch','-ex','set pagination off','-ex','handle SIGCONT nostop noprint pass','-ex','run','-ex','thread apply all bt','--args']+px4_argv
+        core_soft,core_hard=resource.getrlimit(resource.RLIMIT_CORE)
+        resource.setrlimit(resource.RLIMIT_CORE,(core_hard,core_hard))
+        self.metadata['core_capture']={'soft_limit':core_hard,'pattern':Path('/proc/sys/kernel/core_pattern').read_text().strip()}
+        self.spawn('px4',px4_argv,cwd=self.rootfs)
         self.wait(lambda:all(n in self.latest for n in ['vehicle_status','vehicle_odometry','vehicle_local_position','vehicle_attitude']),self.cfg['startup_timeout_s'],'PX4 DDS telemetry')
         self.command('ver','all');self.command('gz_bridge','status');self.command('uxrce_dds_client','status')
         self.command('param','set','NAV_DLL_ACT','0')
@@ -260,6 +341,15 @@ class Experiment:
         if self.latest['vehicle_status'].system_id!=self.instance+1:
             raise RuntimeError('SITL identity mismatch')
         self.checks['telemetry']='PASS'
+        self.wait_sensor_readiness()
+        if self.startup_only:
+            self.capture_startup_diagnostics()
+            if self.variant=='raptor':
+                text=(self.out/'logs/px4.log').read_text(errors='replace')
+                if 'Checkpoint test passed' not in text:raise RuntimeError('startup policy self-test not confirmed')
+                self.command('mc_raptor','status');self.checks['policy_selftest']='PASS'
+            self.checks['startup_sequence']='PASS'
+            return
         # Only address the localhost UDP socket of the PX4 process just created.
         from pymavlink import mavutil
         mav=mavutil.mavlink_connection(f'udpout:127.0.0.1:{18570+self.instance}',source_system=245,source_component=191)
@@ -327,7 +417,7 @@ class Experiment:
                     self.state('raptor','hold')
                     values=self.state('raptor','read')['values'];values[:16]=[0.02]*16
                     self.state('raptor','inject',*values)
-                self.event('handover_requested',from_controller='C',to_controller='N',iteration=iteration)
+                self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='C',to_controller='N',iteration=iteration)
                 self.mode(mode)
                 self.wait(lambda:self.latest.get('raptor_status') and self.latest['raptor_status'].active and self.latest.get('raptor_input') and self.latest['raptor_input'].active,5,'RAPTOR active diagnostic DDS')
                 self.checks['raptor_diagnostic_dds']='PASS'
@@ -349,7 +439,7 @@ class Experiment:
                     self.state('rate','hold');self.state('velocity','hold')
                     self.state('rate','restore');self.state('velocity','restore')
                 self.capture_states('neural_before_exit')
-                self.event('handover_requested',from_controller='N',to_controller='C',iteration=iteration)
+                self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='N',to_controller='C',iteration=iteration)
                 self.mode(4)
                 if self.args.kind=='state_restore':
                     self.state('rate','release');self.state('velocity','release')
@@ -359,11 +449,12 @@ class Experiment:
                 if self.args.kind=='state_restore':
                     self.command('param','set','MC_RAPTOR_RINI','1')
                     self.state('raptor','hold');self.state('raptor','reset');self.state('raptor','restore')
-                    self.event('handover_requested',from_controller='C',to_controller='N',iteration=1)
+                    self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='C',to_controller='N',iteration=1)
                     self.mode(mode);self.state('raptor','release')
                     self.hover(self.cfg['neural_s'],'neural_restored')
-                    self.event('handover_requested',from_controller='N',to_controller='C',iteration=1)
+                    self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='N',to_controller='C',iteration=1)
                     self.mode(4);self.hover(self.cfg['hover_s'],'classic_after_restore')
+        self.event('landing_requested',end_bound_px4_us=self.native_phase_end_bound())
         self.ros_command(21)
         self.wait(lambda:self.latest.get('vehicle_land_detected') and self.latest['vehicle_land_detected'].landed,self.cfg['landing_timeout_s'],'landing')
         self.safe=False
@@ -403,21 +494,28 @@ class Experiment:
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('kind',choices=TYPES);p.add_argument('--config',type=Path,default=ROOT/'config/experiment.json')
+    p.add_argument('--capture-raw-sensors',action='store_true',help='Diagnostic only: adds sensor subscribers and may change startup behavior')
+    p.add_argument('--startup-only',action='store_true',help='Preparation cold start; readiness only, never arm')
     p.add_argument('--output',type=Path);p.add_argument('--hover-s',type=float)
     args=p.parse_args();e=Experiment(args);status='FAIL';reason=None
     try:
         e.execute();status='PASS'
     except Exception as ex:
         reason=str(ex);e.event('failure',reason=reason);traceback.print_exc()
+        if not e.safe:
+            e.capture_startup_diagnostics(intervene=True)
+        else:
+            e.event('diagnostic_skipped',reason='flight failure proceeds directly to landing and cleanup')
     finally:
         e.cleanup()
         write(e.out/'validation.json',{'status':status,'execution_status':status,'reason':reason,'checks':e.checks})
-    if (e.out/'flight.ulg').exists():
+    if (e.out/'flight.ulg').exists() and not e.startup_only:
         proc=subprocess.run([sys.executable,str(ROOT/'tools/analyze.py'),str(e.out)],capture_output=True,text=True)
         (e.out/'logs/analysis.log').write_text(proc.stdout+proc.stderr)
         if proc.returncode:status='FAIL'
+        else:status=json.loads((e.out/'validation.json').read_text())['status']
     print(e.out,status,flush=True)
-    exit_code=0 if status=='PASS' else 1
+    exit_code=0 if status in ['PASS','PASS_WITH_WARNINGS'] else 1
     write(e.out/'execution.json',{'command':[sys.executable,*sys.argv],'exit_code':exit_code,'status':status})
     return exit_code
 

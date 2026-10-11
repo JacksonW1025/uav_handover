@@ -1,0 +1,27 @@
+created {'thresholds': {'seed': 42, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 3, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500, 'settling_band_m': 0.2, 'settling_dwell_s': 2.0, 'joint_recovery': {'position_reference_ned_m': [0, 0, -3], 'velocity_reference_ned_m_s': [0, 0, 0], 'angular_velocity_reference_frd_rad_s': [0, 0, 0], 'position_threshold_m': 0.2, 'velocity_threshold_m_s': 0.1, 'angular_velocity_threshold_rad_s': 0.1, 'dwell_s': 2.0, 'max_observation_gap_s': 0.02}, 'p0_strict': True}}
+process_started {'name': 'agent', 'pid': 2361522, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 2361524, 'command': ['gz', 'sim', '-r', '-s', '-v', '3', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'gz-stats', 'pid': 2361525, 'command': ['gz', 'topic', '-e', '-t', '/world/default/stats']}
+process_started {'name': 'tegrastats', 'pid': 2361528, 'command': ['/usr/bin/tegrastats', '--interval', '1000']}
+process_started {'name': 'px4', 'pid': 2361767, 'command': ['env', 'LD_PRELOAD=/tmp/p0-crash-trace.so', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/p0-20261010-crash-trace-03/rootfs', '/home/car/uav_handover/data/p0-20261010-crash-trace-03/rootfs/etc']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1791631362623934}
+ready {'condition': 'PX4 DDS telemetry'}
+mavlink_identity {'system_id': 22, 'autopilot': 12, 'udp_port': 18591}
+process_started {'name': 'agent-reconnected', 'pid': 2364804, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+failure {'reason': 'DDS Client reconnection with fresh telemetry'}
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/run_experiment.py", line 434, in main
+    e.execute();status='PASS'
+    ^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/run_experiment.py", line 302, in execute
+    self.wait(lambda:int(self.latest['vehicle_odometry'].timestamp)>old_stamp+2_000_000,25,'DDS Client reconnection with fresh telemetry')
+  File "/home/car/uav_handover/tools/run_experiment.py", line 183, in wait
+    raise TimeoutError(description)
+TimeoutError: DDS Client reconnection with fresh telemetry
+process_stopped {'name': 'agent-reconnected', 'pid': 2364804, 'exit_code': -2}
+process_stopped {'name': 'px4', 'pid': 2361767, 'exit_code': 0}
+process_stopped {'name': 'tegrastats', 'pid': 2361528, 'exit_code': -2}
+process_stopped {'name': 'gz-stats', 'pid': 2361525, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 2361524, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 2361522, 'exit_code': -2}
+/home/car/uav_handover/data/p0-20261010-crash-trace-03 FAIL

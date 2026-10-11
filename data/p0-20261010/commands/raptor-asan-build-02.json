@@ -1,0 +1,15 @@
+{
+  "name": "raptor-asan-build-02",
+  "command": [
+    "bash",
+    "--noprofile",
+    "--norc",
+    "-c",
+    "source tools/lab-env.sh raptor; cmake -S \"$PX4_SOURCE_DIR\" -B \"$PX4_SOURCE_DIR/build/px4_sitl_raptor_asan\" -G Ninja -DCONFIG=px4_sitl_raptor -DCMAKE_BUILD_TYPE=AddressSanitizer -DCMAKE_CXX_FLAGS=-Wno-error=maybe-uninitialized && cmake --build \"$PX4_SOURCE_DIR/build/px4_sitl_raptor_asan\" --target px4 -j8"
+  ],
+  "exit_code": 0,
+  "status": "PASS",
+  "elapsed_s": 79.865016218042,
+  "finished_at": "2026-10-10T19:25:06.957198+08:00",
+  "log": "data/p0-20261010/commands/raptor-asan-build-02.log"
+}

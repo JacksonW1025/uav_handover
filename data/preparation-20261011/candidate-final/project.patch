@@ -1,0 +1,1659 @@
+diff --git a/Environment Check.md b/Environment Check.md
+index a242d5a..3472a83 100644
+--- a/Environment Check.md	
++++ b/Environment Check.md	
+@@ -1,6 +1,8 @@
+ # Environment Check
+ 
+-检查日期：2026-10-09（Asia/Shanghai）。状态：**环境检查完成**。
++检查日期：2026-10-10（Asia/Shanghai）。状态：**环境检查完成；P0 收尾验证尚未完成**。
++
++恢复指标与 executor 修复后的当前结论以 [P0 收尾报告](docs/THOR_P0_FINAL_REPORT.md) 为准。旧25项环境验收没有检查联合恢复与活动时序异常，不能用于声明 P0 完成。
+ 
+ 本轮已实际安装 Lab 内隔离依赖、构建 classic / RAPTOR PX4 与两套 ROS overlay，并运行新的 headless SITL 悬停、双向交接、重复交接及状态干预实验。原始 ULog、失败尝试、命令退出状态和分析结果均保留在 `data/`。
+ 
+diff --git a/Experiment Status.md b/Experiment Status.md
+index 8d0a63c..8fef001 100644
+--- a/Experiment Status.md	
++++ b/Experiment Status.md	
+@@ -1,9 +1,11 @@
+ # Experiment Status
+ 
+-实验状态：**环境检查完成**。
++实验状态：**环境检查完成；P0 收尾验证尚未完成**。
+ 
+-更新时间：2026-10-09（Asia/Shanghai）。
++更新时间：2026-10-10（Asia/Shanghai）。
+ 
+-已完成环境构建、通信验证、经典与神经悬停、C→N→C、三次重复交接及受控状态干预的真实 SITL 验收。正式研究数据采集尚未开始；本轮 `data/` 为环境建设与验收数据，包含保留的失败尝试。
++已实现用户确认参数的联合恢复判定、阶段截断、20 ms数据连续性限制和三类状态统计；已修复 executor 使用处理时间及上游角速度批次合并问题，按整轮/活动/实际神经发布划分计时与告警。P0 SITL 收尾结果和未决进程崩溃见 [P0 报告](docs/THOR_P0_FINAL_REPORT.md)。旧运行、诊断失败和新运行全部保留。4 ms仅为独立时延目标；活动和实际神经阶段的分位数、超标比例及积压段见 [迟滞审计](data/p0-20261010/latency-audit.json)。排队迟滞、ESC逐动作消费与处理时限尚未闭环，仍阻止P0完成。
+ 
+-下一步：固定研究假设、对照组、初始状态和运行次数，使用[Quickstart](docs/THOR_EXPERIMENT_QUICKSTART.md)启动新的独立实验目录。现有阈值和平台条件见[配置](config/experiment.json)与[最终报告](docs/THOR_ENVIRONMENT_FINAL_REPORT.md)，验收结果见[矩阵](docs/THOR_ACCEPTANCE_MATRIX.md)。
++P0 未获完成判定前不开展 P1–P4；未开展实飞。
++
++2026-10-11 准备阶段：候选版本与启动/链路观测改动见 [准备记录](docs/THOR_PREPARATION_20261011.md)。历史 P0 FAIL 保持；批次结果另存，不替换旧验收。
+diff --git a/README.md b/README.md
+index 8f5df4c..04e8c19 100644
+--- a/README.md
++++ b/README.md
+@@ -2,6 +2,8 @@
+ 
+ NVIDIA Jetson AGX Thor 上的 PX4 经典控制、RAPTOR 神经控制、C → N → C 双向交接及控制器状态干预研究。2026-10-09 已完成本机环境建设和真实 headless SITL 验证。
+ 
++> 2026-10-10：P0 收尾仍未完成，当前验证结果及未决问题见 [P0 报告](docs/THOR_P0_FINAL_REPORT.md)。旧环境验收 PASS 不代表 P0 完成。
++
+ - [环境检查](Environment%20Check.md)
+ - [实验状态](Experiment%20Status.md)
+ - [实验 Quickstart](docs/THOR_EXPERIMENT_QUICKSTART.md)
+@@ -20,3 +22,5 @@ NVIDIA Jetson AGX Thor 上的 PX4 经典控制、RAPTOR 神经控制、C → N 
+ 整个 `uav_lab/` 属于本机环境并被 Git 忽略。仓库保存研究源码、补丁、配置、原始实验日志和文档；克隆后需按锁清单准备 Lab。运行资源来自当前 Lab，系统 ROS 2、Gazebo、CUDA 继续使用本机安装。重建步骤见 Quickstart。
+ 
+ 当前验收范围为冻结 x500 配置的短时 SITL，神经控制窗口由经典控制起飞和降落。完整训练动力学元数据、长时间统计验证及完整 EKF/FlightTask 状态快照仍超出当前验证范围，详见最终报告。
++
++2026-10-11 准备阶段：候选版本与启动/链路观测改动见 [准备记录](docs/THOR_PREPARATION_20261011.md)。历史 P0 FAIL 保持；批次结果另存，不替换旧验收。
+diff --git a/config/experiment.json b/config/experiment.json
+index 5a87ed9..93afe81 100644
+--- a/config/experiment.json
++++ b/config/experiment.json
+@@ -18,5 +18,28 @@
+   "safety_angular_rate_rad_s": 8,
+   "inference_p99_us": 2500,
+   "settling_band_m": 0.2,
+-  "settling_dwell_s": 2.0
++  "settling_dwell_s": 2.0,
++  "joint_recovery": {
++    "position_reference_ned_m": [
++      0,
++      0,
++      -3
++    ],
++    "velocity_reference_ned_m_s": [
++      0,
++      0,
++      0
++    ],
++    "angular_velocity_reference_frd_rad_s": [
++      0,
++      0,
++      0
++    ],
++    "position_threshold_m": 0.2,
++    "velocity_threshold_m_s": 0.1,
++    "angular_velocity_threshold_rad_s": 0.1,
++    "dwell_s": 2.0,
++    "max_observation_gap_s": 0.02
++  },
++  "p0_strict": true
+ }
+diff --git a/data/README.md b/data/README.md
+index 1168513..3db4a13 100644
+--- a/data/README.md
++++ b/data/README.md
+@@ -20,3 +20,7 @@ cat data/verified-raptor_hover/validation.json
+ ```
+ 
+ 分析器随本轮工程修复增强；旧目录的历史判断反映当时版本，最终矩阵仅使用明确列出的最终证据。再次分析旧数据可能发现之前未检查的时长或发布竞争问题，原始日志始终保留。
++
++## 2026-10-10 P0 收尾
++
++`p0-20261010/` 保存构建/测试/实验命令证据、旧 lock/补丁副本、版本身份和收尾验收清单；`p0-20261010-*` 保存各次独立原始运行。诊断失败与中间分析版本也保留，不应选择性忽略失败；最终运行选择及未决问题见 [P0 报告](../docs/THOR_P0_FINAL_REPORT.md)。`verified-*` 为原验收，未改写，其 PASS 不包含新版联合恢复与 executor 规则。
+diff --git a/docs/THOR_ACCEPTANCE_MATRIX.md b/docs/THOR_ACCEPTANCE_MATRIX.md
+index b802d07..d79cc06 100644
+--- a/docs/THOR_ACCEPTANCE_MATRIX.md
++++ b/docs/THOR_ACCEPTANCE_MATRIX.md
+@@ -1,5 +1,7 @@
+ # 最终验收矩阵
+ 
++> 2026-10-10 更正：本页为旧环境验收记录，原 PASS 不包含联合恢复或活动 executor 时序告警检查；不能据此判定 P0 完成。原始数据保留。当前结果和告警勘误见 [P0 收尾报告](THOR_P0_FINAL_REPORT.md)。
++
+ 机器可读命令、退出码和逐轮证据见 [acceptance.json](../data/environment-20261009/acceptance.json)。PASS 限于测试声明范围。
+ 
+ | 测试 | 内容 | 结果 | 证据 |
+diff --git a/docs/THOR_ENVIRONMENT_FINAL_REPORT.md b/docs/THOR_ENVIRONMENT_FINAL_REPORT.md
+index 5d110da..013e418 100644
+--- a/docs/THOR_ENVIRONMENT_FINAL_REPORT.md
++++ b/docs/THOR_ENVIRONMENT_FINAL_REPORT.md
+@@ -1,5 +1,7 @@
+ # Thor 软件环境建设与最终验收报告
+ 
++> 2026-10-10 更正：本页为旧环境验收记录，原 PASS 不包含联合恢复或活动 executor 时序告警检查；不能据此判定 P0 完成。原始数据保留。当前结果和告警勘误见 [P0 收尾报告](THOR_P0_FINAL_REPORT.md)。
++
+ 日期：2026-10-09，Asia/Shanghai。项目：`/home/car/uav_handover`。实验状态：**环境检查完成**。
+ 
+ ## 1. 最终结论与适用范围
+@@ -90,7 +92,7 @@ ROS 辅助遥测和外部事件为 JSONL；未生成完整 MCAP，也未把 JSON
+ 
+ [analyze.py](../tools/analyze.py) 读取真实 pyulog，计算位置/速度、姿态及角速度误差、控制输出阶跃、交接延迟、稳定时间、瞬态、推理时间、周期抖动、观测年龄、执行器归属、状态值和保护次数；生成 overview 与三维轨迹。经典参考在 N 期间可能陈旧，相应姿态/rate 参考误差是诊断量，不应误称神经策略训练目标误差。
+ 
+-最终神经轮 CPU 推理（含 observe 构造与 RL Tools control）的墙钟均值约 6.67 μs、P99 16 μs、最大 109 μs；冻结阈值为 P99 ≤2500 μs。有限输出错误与 executor warning 均为 0。active loop 相邻周期平均约 4.15 ms、P99 8 ms。周期统计排除非活动间隔，未把重新接管的停机时间当成抖动。
++最终神经轮 CPU 推理（含 observe 构造与 RL Tools control）的墙钟均值约 6.67 μs、P99 16 μs、最大 109 μs；冻结阈值为 P99 ≤2500 μs。有限输出错误为 0；executor warning 原文误记为0，实际 metrics.json 为45，均处于非活动且经典持权阶段。上述耗时覆盖整轮 control_step，不是神经接管窗口。旧 state_restore 另有210次，其中50次位于活动且神经持权阶段。旧 PASS 规则未纳入 executor 告警或联合恢复，因此这些 PASS 不能作为 P0 完成依据。分阶段统计和修复验证见 [P0 报告](THOR_P0_FINAL_REPORT.md)。
+ 
+ 同轮主机 CPU 平均约 17.1%，最低可用内存约 108.3 GiB；Gazebo RTF 均值约 0.996，tj 最高约 46.6°C，VIN 平均约 31.4 W、峰值约 39.1 W。其他任务的主机负载可能计入；不是 PX4 单进程独占占用。各进程 RSS/CPU 时间、磁盘余量见 resources.jsonl；CPU 频率、GPU 和电源数据以 tegrastats / nvidia-smi 的可读字段为准。未切换功耗模式，也未开发 GPU 推理。依据为 [verified-raptor_hover/metrics.json](../data/verified-raptor_hover/metrics.json)及其原始资源日志。
+ 
+diff --git a/docs/THOR_EXPERIMENT_QUICKSTART.md b/docs/THOR_EXPERIMENT_QUICKSTART.md
+index 7df98fd..5d48810 100644
+--- a/docs/THOR_EXPERIMENT_QUICKSTART.md
++++ b/docs/THOR_EXPERIMENT_QUICKSTART.md
+@@ -1,6 +1,6 @@
+ # Thor 实验 Quickstart
+ 
+-全部飞行操作限本机 headless SITL。项目目录 `/home/car/uav_handover`，本机 Lab 为 `uav_lab/`，每轮新数据存入 `data/`。完整验收见 [最终报告](THOR_ENVIRONMENT_FINAL_REPORT.md)。
++全部飞行操作限本机 headless SITL。项目目录 `/home/car/uav_handover`，本机 Lab 为 `uav_lab/`，每轮新数据存入 `data/`。当前 P0 结论见 [P0 收尾报告](THOR_P0_FINAL_REPORT.md)，旧环境建设记录见 [最终报告](THOR_ENVIRONMENT_FINAL_REPORT.md)。
+ 
+ ## 日常入口
+ 
+@@ -113,3 +113,21 @@ cmake --install uav_lab/.local/agent-build
+ 先看本轮 `validation.json` 的原因，再看 `logs/px4.log`、`logs/gazebo.log`、`logs/agent*.log` 和 `logs/commands.log`。模型存在而无传感器时检查 `GZ_SIM_SERVER_CONFIG_PATH`；消息存在而收不到时检查对应版本后缀、overlay、QoS 和 Domain；状态写入拒绝时检查活动状态和边界。`health` 只负责健康检查，飞行能力须由具体实验入口验证。
+ 
+ 没有修改系统、驱动、CUDA 主版本或策略权重。策略训练的完整动力学参数未随检查点提供；250 Hz Gazebo 下原实现将 native 同步设为 2 步，约 125 Hz，区别于训练 100 Hz。正式对照须固定并报告该条件，当前结果只支持此配置的短时实验。
++
++## P0 恢复与时序判定（2026-10-10）
++
++默认配置与 `config/p0.json` 均启用严格 P0 检查。保留旧日志，使用不存在的输出目录：
++
++```bash
++./tools/experiment state_restore --config config/p0.json --output data/my-new-p0-restore
++```
++
++位置入带指标为 `position_band_entry_time_s`；联合恢复为 `joint_recovery_time_s`，完整结果在 `recovery_stages`。旧位置指标的跨阶段算法仅作为 `legacy_unbounded_position_band_entry_time_s` 对照，不参与验收。固定参考为位置 NED `[0,0,-3]` m、速度 NED 零、机体系 FRD 角速度零；三维误差范数分别 ≤0.20 m、≤0.10 m/s、≤0.10 rad/s，连续保持2 s。采用采集时间、向后对齐；任一观测间隔或对齐陈旧度 >20 ms 即中断，不跨缺口。各阶段截止于下一持权变化、交接请求或降落请求；请求前通过 PX4 listener 取得原生时间上界，保守截断在请求之前；悬停起止也使用原生 PX4 时间，不依赖 DDS UTC 或插值估计时长。
++
++`SETTLED` 为有完整连续达标2 s区间；`NOT_SETTLED` 为存在完整可评估2 s区间但未达标；`INSUFFICIENT_OBSERVATION` 为数据缺口或阶段过短导致无法评估。三者分别计数。若缺口可能遮住首次恢复，标记 `true_first_recovery_uncertain`，仅报告首次可验证区间。
++
++`executor_scopes` 分整轮、控制器活动、该次推理实际发布神经执行器指令。持续计数提供完整告警总数、时长均值/最大值和超过2500 μs次数；分位数和间隔分布来自已记录行，另列漏记数。计时覆盖 observe+control，不能解释为单独的神经网络前向耗时。
++
++硬错误、输入拒绝、漏消费源发布、GRU 提交采样时间不递增、未分类告警、活动或实际神经发布阶段的任一 executor 告警均 FAIL。只有已分类的非活动影子推理 jitter/bias 告警、其余检查均满足时为 `PASS_WITH_WARNINGS`；无告警为 `PASS`。恢复任一阶段未恢复/观察不足、必需指标缺失、状态值/控制窗口/执行器归属/飞行检查失败同样 FAIL。P99 仍限2500 μs，运行时完整计数中超过该值的调用比例必须严格低于1%，无需假设漏记行的耗时。
++
++上述状态以 `metrics.json` / `validation.json` 为准；进程正常退出或旧环境矩阵 PASS 不等于 P0 完成。不要对旧目录运行新版分析器；需要旧数据对照时另建分析目录，保留原始结果。
+diff --git a/environment.lock b/environment.lock
+index 18bf53f..9615924 100644
+--- a/environment.lock
++++ b/environment.lock
+@@ -1,6 +1,6 @@
+ {
+   "schema_version": 1,
+-  "captured_at": "2026-10-09T20:34:11.931901+08:00",
++  "captured_at": "2026-10-11T16:52:46.206702+08:00",
+   "lab_root": "/home/car/uav_handover/uav_lab",
+   "manifest": {
+     "created_at": "2026-10-08T21:26:07.708305+08:00",
+@@ -192,7 +192,7 @@
+           "--short"
+         ],
+         "exit_code": 0,
+-        "stdout": "",
++        "stdout": " M platforms/posix/src/px4/common/px4_daemon/server.cpp\n M src/modules/simulation/gz_bridge/GZBridge.cpp\n M src/modules/simulation/gz_bridge/GZBridge.hpp\n M src/modules/simulation/gz_bridge/GZGimbal.cpp\n M src/modules/simulation/gz_bridge/GZGimbal.hpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp\n M src/modules/uxrce_dds_client/dds_topics.yaml\n",
+         "stderr": ""
+       },
+       "submodules": {
+@@ -208,7 +208,7 @@
+         "stdout": " f47ce7b5fbbb3aa43d33d2be1f6cd3746b13d5bf Tools/simulation/flightgear/flightgear_bridge (heads/master)\n cbdb2fc7dd44331da1dcd04a891ed7f8c27b1ef0 Tools/simulation/flightgear/flightgear_bridge/models/Rascal (remotes/origin/electric-14-gcbdb2fc)\n fdb6dd685f55097230c0eb29aa7e9f5b8d0abf1e Tools/simulation/flightgear/flightgear_bridge/models/TF-G1 (heads/master)\n 99529413531106836f4303c5389928a4fef04b05 Tools/simulation/flightgear/flightgear_bridge/models/TF-G2 (9952941)\n 158e429a0110589b1e2adfe868e166271470e144 Tools/simulation/flightgear/flightgear_bridge/models/TF-R1 (heads/master)\n 6697ab169ceab512dc706acea63df4c882662c60 Tools/simulation/gazebo-classic/sitl_gazebo-classic (6697ab1)\n 28ef45c1fcb532b2bfd54c16b059c6a545143b2f Tools/simulation/gazebo-classic/sitl_gazebo-classic/external/OpticalFlow (28ef45c)\n 9b5b567ae77f93d1ef4d36151529ba2506a46e7a Tools/simulation/gazebo-classic/sitl_gazebo-classic/external/OpticalFlow/external/klt_feature_tracker (heads/master)\n b6127f4ec20de867e215fb5f78ae88b80f371909 Tools/simulation/gz (b6127f4)\n 66b764ada522893c05224950aa6268c809f8e48a Tools/simulation/jmavsim/jMAVSim (66b764a)\n c08380767b21938391bec676a43b36b837af9ba4 Tools/simulation/jmavsim/jMAVSim/jMAVlib (heads/master)\n f37ec259bd7a43565fe0ff4722465b7a303200f6 Tools/simulation/jsbsim/jsbsim_bridge (heads/master)\n 40571cd808a204f4062128daeb6bb6db8c134c48 Tools/simulation/jsbsim/jsbsim_bridge/models/ATI-Resolution (2019.1)\n d0d1db1961549e557885002cf9c3cff40cc27be2 Tools/simulation/jsbsim/jsbsim_bridge/models/Rascal (remotes/origin/preserve-this-branch-for-px4-submodules)\n 85151aaf6ba8b24ce82b387e088452c63f7e2096 boards/modalai/voxl2/libfc-sensor-api (85151aa)\n e37940d8535f603a16b8f6f21c21edaf584218aa platforms/nuttx/NuttX/apps (nuttx-11.0.0-5-ge37940d85)\n fb2fadf6f599c1406f052db013efd00a2518e72c platforms/nuttx/NuttX/nuttx (nuttx-8.2-10680-gfb2fadf6f5)\n c488af4e8807de80739aa48efd2ea51614dd8195 src/drivers/actuators/vertiq_io/iq-module-communication-cpp (c488af4)\n 36a01e428b110ff84c8babe5b65667b5e3037d5e src/drivers/cyphal/legacy_data_types (remotes/origin/legacy)\n 5c69d451ab0787a81dcb615692d707f2a286f5e5 src/drivers/cyphal/libcanard (3.0.1-1-g5c69d45)\n d0bd6516dac8ff61287fe49a9f2c75e7d4dc1b8e src/drivers/cyphal/public_regulated_data_types (d0bd651)\n 0b9695881bd1e8f830ab4538ab3acc0050019eba src/drivers/gps/devices (remotes/origin/backport-release/1.13-74-g0b96958)\n 35596994b60ba89fe02f71ce5127baa5e7ff2bbf src/drivers/ins/microstrain/mip_sdk (remotes/origin/feature/px4_compilation)\n 80b121c7714083cc4868c0fdb8c41623c7ef9c93 src/drivers/ins/sbgecom/sbgECom (heads/main)\n 993be80a62ec957c01fb41115b83663959a49f46 src/drivers/uavcan/libdronecan/dsdl (heads/master)\n 19fdf2e5b383243ccdb1094edae0603cf11469e8 src/drivers/uavcan/libdronecan/libuavcan/dsdl_compiler/pydronecan (1.0.16-2-g19fdf2e)\n 314887ca403c2fb0a0316add22672102936ed36c src/lib/cdrstream/cyclonedds (314887ca)\n bf5682e4747843d1d5133b9a2b54ce6f12f166c7 src/lib/cdrstream/rosidl (remotes/origin/v4.9.3)\n 673f5ce29015a9bba3c96792920a10601b5b0718 src/lib/crypto/libtomcrypt (1.17-2055-g673f5ce2)\n fd73d7630b9d3ed5a79d613ff680a549e9780de7 src/lib/crypto/libtommath (v1.2.0-247-gfd73d76)\n baca5d31259c598540e4d1284bc8d8f793abf83a src/lib/crypto/monocypher (3.1.2)\n 9ef591c447fe0386d698bf6fb9a6d27e43988ee4 src/lib/events/libevents (9ef591c)\n 052e6de72f67f1777198bce98f3de62f7f3c16a0 src/lib/heatshrink/heatshrink (heads/main)\n 3c0b1e3091e4ea423e1bf9da89d41d09517eb0c9 src/lib/tensorflow_lite_micro/tflite_micro (heads/main)\n 33af200d25ec6f0925b49b1ba82bbf1294ea5f72 src/modules/mavlink/mavlink (1.0.12-821-g33af200d)\n fcaa2c7d25e3169dc66155929c338487941555e9 src/modules/mavlink/mavlink/pymavlink (v2.4.47-63-gfcaa2c7d)\n 711aef423edd1820347b866d1e4164832df35d04 src/modules/uxrce_dds_client/Micro-XRCE-DDS-Client (711aef4)\n 6ec4dc1995f185330e4f6faa8c719eb86f180deb src/modules/zenoh/zenoh-pico (0.5.0-beta.9-1620-g6ec4dc19)\n 1e47f9d7437de5c3ee4cb0ac860d5ec875478059 test/fuzztest (2024-10-25-254-g1e47f9d)\n",
+         "stderr": ""
+       },
+-      "binary_sha256": "1ba9f063c60d7d8bf246e5a195e18e4230c6249192b14b95a17a43537458ae02",
++      "binary_sha256": "715021a06f358920a4e42d7ac40b5665d359595a8c52a91d8f4bb38d5064dc05",
+       "boardconfig_sha256": "7c224ac8943a8d9afd9cc82717feff64f6d2d50f7876d73080e42ea2a15b1b90"
+     },
+     "raptor": {
+@@ -246,7 +246,7 @@
+           "--short"
+         ],
+         "exit_code": 0,
+-        "stdout": " M msg/CMakeLists.txt\n M src/lib/rate_control/rate_control.hpp\n M src/modules/commander/Commander.cpp\n M src/modules/commander/Commander.hpp\n M src/modules/commander/HealthAndArmingChecks/HealthAndArmingChecks.hpp\n M src/modules/commander/ModeManagement.cpp\n M src/modules/commander/ModeManagement.hpp\n M src/modules/control_allocator/ControlAllocator.cpp\n M src/modules/control_allocator/ControlAllocator.hpp\n M src/modules/logger/logged_topics.cpp\n M src/modules/mc_att_control/mc_att_control.hpp\n M src/modules/mc_att_control/mc_att_control_main.cpp\n M src/modules/mc_pos_control/MulticopterPositionControl.cpp\n M src/modules/mc_pos_control/MulticopterPositionControl.hpp\n M src/modules/mc_pos_control/PositionControl/PositionControl.hpp\n M src/modules/mc_raptor/mc_raptor.cpp\n M src/modules/mc_raptor/mc_raptor.hpp\n M src/modules/mc_raptor/module.yaml\n M src/modules/mc_rate_control/MulticopterRateControl.cpp\n M src/modules/mc_rate_control/MulticopterRateControl.hpp\n M src/modules/rover_ackermann/AckermannActControl/AckermannActControl.cpp\n M src/modules/rover_ackermann/AckermannActControl/AckermannActControl.hpp\n M src/modules/rover_differential/DifferentialActControl/DifferentialActControl.cpp\n M src/modules/rover_differential/DifferentialActControl/DifferentialActControl.hpp\n M src/modules/rover_mecanum/MecanumActControl/MecanumActControl.cpp\n M src/modules/rover_mecanum/MecanumActControl/MecanumActControl.hpp\n M src/modules/uxrce_dds_client/dds_topics.yaml\n?? msg/ResearchActuator.msg\n?? msg/ResearchStateRequest.msg\n?? msg/ResearchStateResponse.msg\n?? msg/ResearchTiming.msg\n?? msg/RouteObservability.msg\n?? src/lib/handover_research/\n?? src/lib/route_observability/\n",
++        "stdout": " M msg/CMakeLists.txt\n M platforms/posix/src/px4/common/px4_daemon/server.cpp\n M src/lib/mixer_module/mixer_module.hpp\n M src/lib/rate_control/rate_control.hpp\n M src/modules/commander/Commander.cpp\n M src/modules/commander/Commander.hpp\n M src/modules/commander/HealthAndArmingChecks/HealthAndArmingChecks.hpp\n M src/modules/commander/ModeManagement.cpp\n M src/modules/commander/ModeManagement.hpp\n M src/modules/control_allocator/ControlAllocator.cpp\n M src/modules/control_allocator/ControlAllocator.hpp\n M src/modules/logger/logged_topics.cpp\n M src/modules/mc_att_control/mc_att_control.hpp\n M src/modules/mc_att_control/mc_att_control_main.cpp\n M src/modules/mc_pos_control/MulticopterPositionControl.cpp\n M src/modules/mc_pos_control/MulticopterPositionControl.hpp\n M src/modules/mc_pos_control/PositionControl/PositionControl.hpp\n M src/modules/mc_raptor/mc_raptor.cpp\n M src/modules/mc_raptor/mc_raptor.hpp\n M src/modules/mc_raptor/module.yaml\n M src/modules/mc_rate_control/MulticopterRateControl.cpp\n M src/modules/mc_rate_control/MulticopterRateControl.hpp\n M src/modules/rover_ackermann/AckermannActControl/AckermannActControl.cpp\n M src/modules/rover_ackermann/AckermannActControl/AckermannActControl.hpp\n M src/modules/rover_differential/DifferentialActControl/DifferentialActControl.cpp\n M src/modules/rover_differential/DifferentialActControl/DifferentialActControl.hpp\n M src/modules/rover_mecanum/MecanumActControl/MecanumActControl.cpp\n M src/modules/rover_mecanum/MecanumActControl/MecanumActControl.hpp\n M src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp\n M src/modules/simulation/gz_bridge/GZBridge.cpp\n M src/modules/simulation/gz_bridge/GZBridge.hpp\n M src/modules/simulation/gz_bridge/GZGimbal.cpp\n M src/modules/simulation/gz_bridge/GZGimbal.hpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp\n M src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp\n M src/modules/uxrce_dds_client/dds_topics.yaml\n?? msg/ResearchActuator.msg\n?? msg/ResearchAngularVelocity.msg\n?? msg/ResearchOutput.msg\n?? msg/ResearchStateRequest.msg\n?? msg/ResearchStateResponse.msg\n?? msg/ResearchTiming.msg\n?? msg/RouteObservability.msg\n?? src/lib/handover_research/\n?? src/lib/route_observability/\n",
+         "stderr": ""
+       },
+       "submodules": {
+@@ -262,7 +262,7 @@
+         "stdout": " f47ce7b5fbbb3aa43d33d2be1f6cd3746b13d5bf Tools/simulation/flightgear/flightgear_bridge (heads/master)\n cbdb2fc7dd44331da1dcd04a891ed7f8c27b1ef0 Tools/simulation/flightgear/flightgear_bridge/models/Rascal (remotes/origin/electric-14-gcbdb2fc)\n fdb6dd685f55097230c0eb29aa7e9f5b8d0abf1e Tools/simulation/flightgear/flightgear_bridge/models/TF-G1 (heads/master)\n 99529413531106836f4303c5389928a4fef04b05 Tools/simulation/flightgear/flightgear_bridge/models/TF-G2 (9952941)\n 158e429a0110589b1e2adfe868e166271470e144 Tools/simulation/flightgear/flightgear_bridge/models/TF-R1 (heads/master)\n f835e077d06eaf09a57d5152fcfb85244b53b77a Tools/simulation/gazebo-classic/sitl_gazebo-classic (f835e07)\n 28ef45c1fcb532b2bfd54c16b059c6a545143b2f Tools/simulation/gazebo-classic/sitl_gazebo-classic/external/OpticalFlow (28ef45c)\n 9b5b567ae77f93d1ef4d36151529ba2506a46e7a Tools/simulation/gazebo-classic/sitl_gazebo-classic/external/OpticalFlow/external/klt_feature_tracker (heads/master)\n bb0b9cf974acf4f1bcb5f5fcf80b88841562dea9 Tools/simulation/gz (bb0b9cf)\n 665b26d62d36a33b6bf01c5931c589beb812c6a2 Tools/simulation/jmavsim/jMAVSim (heads/main)\n c08380767b21938391bec676a43b36b837af9ba4 Tools/simulation/jmavsim/jMAVSim/jMAVlib (heads/master)\n f37ec259bd7a43565fe0ff4722465b7a303200f6 Tools/simulation/jsbsim/jsbsim_bridge (heads/master)\n 40571cd808a204f4062128daeb6bb6db8c134c48 Tools/simulation/jsbsim/jsbsim_bridge/models/ATI-Resolution (2019.1)\n d0d1db1961549e557885002cf9c3cff40cc27be2 Tools/simulation/jsbsim/jsbsim_bridge/models/Rascal (remotes/origin/preserve-this-branch-for-px4-submodules)\n d5abf9cbbf07711db2a9166c2eec4a4a7682f921 boards/modalai/voxl2/libfc-sensor-api (d5abf9c)\n a18d9eee62465b8eef52251515f7195874afa260 boards/modalai/voxl2/src/lib/mpa/libmodal-json (SDK-1.0.0-22-ga18d9ee)\n be51027375ca4071a2c2ba7410fb2ddd4bbead0c boards/modalai/voxl2/src/lib/mpa/libmodal-pipe (SDK-1.0.0-210-gbe51027)\n e37940d8535f603a16b8f6f21c21edaf584218aa platforms/nuttx/NuttX/apps (nuttx-11.0.0-5-ge37940d85)\n c32297427a66cc05232988ea633417e97723d278 platforms/nuttx/NuttX/nuttx (nuttx-8.2-10699-gc32297427a)\n d05d55a2b706a660d46d725e1d35d59049a519ba src/drivers/actuators/vertiq_io/iq-module-communication-cpp (heads/master)\n 36a01e428b110ff84c8babe5b65667b5e3037d5e src/drivers/cyphal/legacy_data_types (remotes/origin/legacy)\n 5c69d451ab0787a81dcb615692d707f2a286f5e5 src/drivers/cyphal/libcanard (3.0.1-1-g5c69d45)\n a229bb78e76c48a3082be163bc240b2c13ff2d89 src/drivers/cyphal/public_regulated_data_types (heads/master)\n 52bc6ecef4fb80cc5b7fef12095f65dd3cbe957e src/drivers/gps/devices (remotes/origin/backport-release/1.13-103-g52bc6ec)\n 35596994b60ba89fe02f71ce5127baa5e7ff2bbf src/drivers/ins/microstrain/mip_sdk (remotes/origin/feature/px4_compilation)\n 80b121c7714083cc4868c0fdb8c41623c7ef9c93 src/drivers/ins/sbgecom/sbgECom (heads/main)\n 993be80a62ec957c01fb41115b83663959a49f46 src/drivers/uavcan/libdronecan/dsdl (heads/master)\n 19fdf2e5b383243ccdb1094edae0603cf11469e8 src/drivers/uavcan/libdronecan/libuavcan/dsdl_compiler/pydronecan (1.0.16-2-g19fdf2e)\n 314887ca403c2fb0a0316add22672102936ed36c src/lib/cdrstream/cyclonedds (314887ca)\n bf5682e4747843d1d5133b9a2b54ce6f12f166c7 src/lib/cdrstream/rosidl (remotes/origin/v4.9.3)\n 673f5ce29015a9bba3c96792920a10601b5b0718 src/lib/crypto/libtomcrypt (1.17-2055-g673f5ce2)\n fd73d7630b9d3ed5a79d613ff680a549e9780de7 src/lib/crypto/libtommath (v1.2.0-247-gfd73d76)\n baca5d31259c598540e4d1284bc8d8f793abf83a src/lib/crypto/monocypher (3.1.2)\n 9ef591c447fe0386d698bf6fb9a6d27e43988ee4 src/lib/events/libevents (9ef591c)\n 052e6de72f67f1777198bce98f3de62f7f3c16a0 src/lib/heatshrink/heatshrink (heads/main)\n 15940da2a8334d7532c4a5650ee4e09526206414 src/lib/rl_tools/rl_tools (v2.2.0-66-g15940da2)\n 6450e42a8adfba36fe5ade4ab66e9ecf59920dc4 src/lib/tensorflow_lite_micro/tflite_micro (remotes/origin/px4/vendored-deps)\n f9cb1f9e482977446c3dd953a16368d4834c6aa5 src/modules/mavlink/mavlink (1.0.12-922-gf9cb1f9e)\n 5977f44504f01715a44bed44a4601e6c12cef92d src/modules/mavlink/mavlink/pymavlink (v2.4.49-31-g5977f445)\n bc6683a9a2cff29bede2add18c0d7e3ac0cc9c27 src/modules/mc_raptor/blob (bc6683a)\n a4d4cfde0c023be6b1ff8c8e796862413bc99272 src/modules/simulation/gz_plugins/optical_flow/PX4-OpticalFlow (heads/master)\n a2733b54f17b571dd958be498b57479a4104d8cd src/modules/simulation/gz_plugins/optical_flow/PX4-OpticalFlow/external/klt_feature_tracker (remotes/origin/pr-cmake)\n 711aef423edd1820347b866d1e4164832df35d04 src/modules/uxrce_dds_client/Micro-XRCE-DDS-Client (711aef4)\n c88fb537e89a1095c49a6a535a55378d4c14cf2c src/modules/uxrce_dds_client/Micro-XRCE-DDS-Client-v3 (remotes/origin/px4-release/3)\n bc4b17ded265b40bb816e81baf89aa1e9ed96876 src/modules/zenoh/zenoh-pico (0.5.0-beta.9-1622-gbc4b17de)\n 1e47f9d7437de5c3ee4cb0ac860d5ec875478059 test/fuzztest (2024-10-25-254-g1e47f9d)\n",
+         "stderr": ""
+       },
+-      "binary_sha256": "a1e46cf05535594f01194dbcd22fd71d3c63e67c7853eda02fb7f294df06df49",
++      "binary_sha256": "387a259b9f90349d6d2f3e0400f4796d450faa9853733d3bc506ae0494157c80",
+       "boardconfig_sha256": "10fc18a64a4247580453a2ebbdbc0373e79b03fc09bbca250fc631e87849e8f3"
+     }
+   },
+@@ -351,7 +351,7 @@
+   },
+   "source_manifest_sha256": "7ea8c00a055410a842f2ec665a535e004111982f3b4fcea9048abab69237ebb1",
+   "snapshot_inventory_sha256": "3f4fc3a97f732b312efda8879fd3709016f2f758bbdbd93e43d57954a8c03891",
+-  "runtime_config_sha256": "f5a4d0ebd37162e7c7a2db3680dae4477f3b8b38af2c76edc25bcce85302f1df",
++  "runtime_config_sha256": "28fd39148c128c224bf13dc1cf6a3b54f93a6ef05d91f1f12de9d110805f3749",
+   "agent_binary_sha256": "97f9f378a99500e3f5c4d82ef1f944597f29caf7f227f4e65d2cfed9034107e6",
+   "policy_sha256": {
+     "policy.h": "a5bdd4c7bc12a17d6d7a5707538a4cfa99f999d652c9fbfa80303413073753ac",
+@@ -362,8 +362,9 @@
+   "patches": {
+     "patches/raptor-existing-untracked.tar.gz": "ea0f1edbf4d07e94f1d5cc99e03243d41a9ae85057facb05e7f488e7c7253a66",
+     "patches/raptor-existing.patch": "9ffd2c28d032d5630005860284b343a8b99cb3ecc9ec1b5f0045902e7b04fdfe",
+-    "patches/raptor-final-untracked.tar.gz": "d1525bb6de70fc7f1d05afa084c0692be208797316d626b4221d0659c4db4ad4",
+-    "patches/raptor-final.patch": "c1f0cb9b4c4e8307a0e9a0633b43363212e155d61b66d9d516aad174d2b95f80",
++    "patches/raptor-final-untracked.tar.gz": "46c94e17be365e3bb086d42996d46d7c9b67ba3b5b6e535d89181545dba05a12",
++    "patches/raptor-final.patch": "6e16dce46b3a7ffb88dead7f1d18746de01b88da62863c121de0ed78095887b7",
++    "patches/classic-final.patch": "8889afab6f9c2dedb28a0332ff2b163cf3f5225310e2f540b1db821ea41b3db8",
+     "patches/ros2-interface-existing.patch": "82d29cad82141fe7ac59db1849ecf62a1916e0194488bfedacbb5b12c4d28747"
+   }
+ }
+diff --git a/patches/raptor-final-untracked.tar.gz b/patches/raptor-final-untracked.tar.gz
+index 4855d57c51452cc21ad5de22e26a357f7d903ace..201739e024aa24695ed84315285ff8505f60ad52 100644
+GIT binary patch
+literal 6833
+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
+
+literal 5403
+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
+F002Ex(7^xz
+
+diff --git a/patches/raptor-final.patch b/patches/raptor-final.patch
+index 2e3bd1a..bbc3f97 100644
+--- a/patches/raptor-final.patch
++++ b/patches/raptor-final.patch
+@@ -1,19 +1,75 @@
+ diff --git a/msg/CMakeLists.txt b/msg/CMakeLists.txt
+-index 369ec75..078b90d 100644
++index 369ec75..ebe0eb5 100644
+ --- a/msg/CMakeLists.txt
+ +++ b/msg/CMakeLists.txt
+-@@ -194,6 +194,11 @@ set(msg_files
++@@ -194,6 +194,13 @@ set(msg_files
+  	RoverSteeringSetpoint.msg
+  	RoverThrottleSetpoint.msg
+  	Rpm.msg
+ +	ResearchStateRequest.msg
+ +	ResearchStateResponse.msg
+ +	ResearchTiming.msg
+++	ResearchAngularVelocity.msg
+++	ResearchOutput.msg
+ +	ResearchActuator.msg
+ +	RouteObservability.msg
+  	RtlStatus.msg
+  	RtlTimeEstimate.msg
+  	SatelliteInfo.msg
++diff --git a/platforms/posix/src/px4/common/px4_daemon/server.cpp b/platforms/posix/src/px4/common/px4_daemon/server.cpp
++index 95b8116..3d37c5b 100644
++--- a/platforms/posix/src/px4/common/px4_daemon/server.cpp
+++++ b/platforms/posix/src/px4/common/px4_daemon/server.cpp
++@@ -66,6 +66,8 @@ Server::Server(int instance_id)
++ 	: _mutex(PTHREAD_MUTEX_INITIALIZER),
++ 	  _instance_id(instance_id)
++ {
+++    const int ret=pthread_key_create(&_key,_pthread_key_destructor);
+++    if(ret!=0){PX4_ERR("failed to create daemon stdout pthread key");return;}
++ 	_instance = this;
++ }
++ 
++@@ -77,6 +79,7 @@ Server::~Server()
++ int
++ Server::start()
++ {
+++    if(_instance!=this)return -1;
++ 	std::string sock_path = get_socket_path(_instance_id);
++ 
++ 	// Delete socket in case it exists already.
++@@ -129,12 +132,7 @@ void Server::_pthread_key_destructor(void *arg)
++ void
++ Server::_server_main()
++ {
++-	int ret = pthread_key_create(&_key, _pthread_key_destructor);
++-
++-	if (ret != 0) {
++-		PX4_ERR("failed to create pthread key");
++-		return;
++-	}
+++    int ret=0;
++ 
++ 	// The list of file descriptors to watch.
++ 	std::vector<pollfd> poll_fds;
++diff --git a/src/lib/mixer_module/mixer_module.hpp b/src/lib/mixer_module/mixer_module.hpp
++index 8f98df5..5371e15 100644
++--- a/src/lib/mixer_module/mixer_module.hpp
+++++ b/src/lib/mixer_module/mixer_module.hpp
++@@ -163,6 +163,14 @@ public:
++ 
++ 	void setMaxTopicUpdateRate(unsigned max_topic_update_interval_us);
++ 
+++// SITL research: sample actually selected by the configured output provider.
+++#ifdef __PX4_POSIX
+++    hrt_abstime researchSelectedSampleTimestamp() const {
+++        hrt_abstime sample=0;
+++        if (_function_allocated[0]) _function_allocated[0]->getLatestSampleTimestamp(sample);
+++        return sample;
+++    }
+++#endif
++ 	const actuator_armed_s &armed() const { return _armed; }
++ 	bool isActuatorTestRunning() const { return _actuator_test.inTestMode(); }
++ 
+ diff --git a/src/lib/rate_control/rate_control.hpp b/src/lib/rate_control/rate_control.hpp
+ index 0ee8bd1..978be71 100644
+ --- a/src/lib/rate_control/rate_control.hpp
+@@ -480,7 +536,7 @@ index fb467f7..23e3949 100644
+  
+  	/**
+ diff --git a/src/modules/mc_raptor/mc_raptor.cpp b/src/modules/mc_raptor/mc_raptor.cpp
+-index df27d92..6352e2f 100644
++index df27d92..2f91b89 100644
+ --- a/src/modules/mc_raptor/mc_raptor.cpp
+ +++ b/src/modules/mc_raptor/mc_raptor.cpp
+ @@ -1,3 +1,7 @@
+@@ -547,11 +603,40 @@ index df27d92..6352e2f 100644
+  		PX4_INFO("Resetting Inference Executor (Recurrent State)");
+  
+  	} else {
+-@@ -809,9 +844,38 @@ void Raptor::Run()
++@@ -541,6 +576,10 @@ void Raptor::Run()
++ 
++ 	bool angular_velocity_update = false;
++ 	status.subscription_update_angular_velocity = _vehicle_angular_velocity_sub.update(&_vehicle_angular_velocity);
+++#ifdef __PX4_POSIX
+++    // Schedule another work item until the queue is drained, including early returns.
+++    if(_vehicle_angular_velocity_sub.updated())ScheduleNow();
+++#endif
++ 
++ 	if (status.subscription_update_angular_velocity) {
++ 		timestamp_last_angular_velocity = current_time;
++@@ -809,9 +848,89 @@ void Raptor::Run()
+  
+  	rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;
+  	rl_tools::inference::applications::l2f::Action<EXECUTOR_SPEC> action;
+ +#ifdef __PX4_POSIX
+++    const auto generation=_vehicle_angular_velocity_sub.get_last_generation();
+++    if(_sample_generation && generation-_sample_generation>1)_sample_missed+=generation-_sample_generation-1;
+++    _sample_generation=generation;
+++    const unsigned input_result=_sample_clock.accept(_vehicle_angular_velocity.timestamp_sample);
+++    if(input_result) {
+++        research_timing_s skipped{};
+++        skipped.timestamp=current_time;skipped.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
+++        skipped.schema_version=2;skipped.active=next_active;skipped.mode_id=ext_component_mode_id;
+++        skipped.accepted_total=_sample_clock.accepted;skipped.duplicate_total=_sample_clock.duplicate;
+++        skipped.regressed_total=_sample_clock.regressed;skipped.source_missed_total=_sample_missed;
+++        skipped.source_generation=generation;skipped.input_result=input_result;
+++        skipped.native_total=_native_total;skipped.gru_commit_total=_gru_total;skipped.last_gru_sample=_last_gru_sample;
+++        skipped.executor_ok=true;skipped.output_finite=true;
+++        handover_research::TimingRecord skipped_record(skipped);
+++        perf_end(_loop_perf);return;
+++    }
+++#endif
+++#ifdef __PX4_POSIX
+ +    for (TI i=0;i<16;i++) _research_state._bounds[i]=1.f;
+ +    for (TI i=16;i<20;i++) _research_state._bounds[i]=1.f;
+ +    for (TI i=23;i<26;i++) _research_state._bounds[i]=10.f;
+@@ -562,12 +647,46 @@ index df27d92..6352e2f 100644
+ +    clock_gettime(CLOCK_MONOTONIC,&wall_start);
+ +#endif
+  	observe(observation);
+++#ifdef __PX4_POSIX
+++    const uint32_t executor_dt_us=executor.executor.last_control_timestamp_set ?
+++        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp)/1000 : 0;
+++    const uint32_t native_dt_us=executor.executor.last_control_timestamp_original_set ?
+++        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp_original)/1000 : 0;
+++    hrt_abstime nanoseconds = _vehicle_angular_velocity.timestamp_sample * 1000;
+++#else
+  	hrt_abstime nanoseconds = current_time * 1000;
+++#endif
+  	auto executor_status = rl_tools::control(device, executor, nanoseconds, policy, observation, action, rng);
+ +#ifdef __PX4_POSIX
+ +    clock_gettime(CLOCK_MONOTONIC,&wall_end);
+ +    research_timing_s timing{};
+ +    timing.timestamp=current_time;
+++    timing.schema_version=2;
+++    timing.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
+++    timing.local_position_sample=_vehicle_local_position.timestamp_sample;
+++    timing.attitude_sample=_vehicle_attitude.timestamp_sample;
+++    timing.control_start_wall_ns=static_cast<uint64_t>(wall_start.tv_sec)*1000000000ULL+wall_start.tv_nsec;
+++    timing.control_end_wall_ns=static_cast<uint64_t>(wall_end.tv_sec)*1000000000ULL+wall_end.tv_nsec;
+++    timing.accepted_total=_sample_clock.accepted;
+++    timing.duplicate_total=_sample_clock.duplicate;
+++    timing.regressed_total=_sample_clock.regressed;
+++    timing.source_generation=_sample_generation;
+++    timing.source_missed_total=_sample_missed;
+++    timing.input_dt_us=_sample_clock.dt;
+++    timing.executor_dt_us=executor_dt_us;
+++    timing.native_dt_us=native_dt_us;
+++    timing.executor_called=true;
+++    timing.native_step=executor_status.source==decltype(executor_status.source)::CONTROL && executor_status.step_type==decltype(executor_status.step_type)::NATIVE;
+++    timing.gru_committed=timing.native_step && !_research_state.engine.holding;
+++    if(timing.native_step)++_native_total;
+++    if(timing.gru_committed){++_gru_total;_last_gru_sample=timing.timestamp_sample;}
+++    timing.native_total=_native_total;timing.gru_commit_total=_gru_total;timing.last_gru_sample=_last_gru_sample;
+++    timing.timing_jitter_ok=executor_status.timing_jitter.OK;
+++    timing.timing_bias_ok=executor_status.timing_bias.OK;
+++    timing.jitter_ratio=executor_status.timing_jitter.MAGNITUDE;
+++    timing.bias_ratio=executor_status.timing_bias.MAGNITUDE;
+++    timing.timestamp_invalid=executor_status.TIMESTAMP_INVALID;
+++    timing.timestamp_order_invalid=executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP;
+ +    timing.inference_duration_us=(wall_end.tv_sec-wall_start.tv_sec)*1000000+(wall_end.tv_nsec-wall_start.tv_nsec)/1000;
+ +    timing.active=next_active;
+ +    timing.executor_ok=executor_status.OK;
+@@ -575,8 +694,7 @@ index df27d92..6352e2f 100644
+ +    timing.mode_id=ext_component_mode_id;
+ +    timing.output_finite=true;
+ +    if(timing.control_step)for(TI i=0;i<4;i++) {timing.action[i]=action.action[i];timing.output_finite &= PX4_ISFINITE(action.action[i]);}
+-+    static uORB::Publication<research_timing_s> timing_pub{ORB_ID(research_timing)};
+-+    timing_pub.publish(timing);
+++    handover_research::TimingRecord timing_record(timing);
+ +    if(_research_state.engine.holding)research_set(_research_state.engine.held,false);
+ +    if(timing.control_step && (!timing.output_finite || executor_status.TIMESTAMP_INVALID || executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP)) {
+ +        PX4_ERR("Research guard: invalid inference; actuator publication withheld");
+@@ -586,7 +704,7 @@ index df27d92..6352e2f 100644
+  
+  	if (!executor_status.OK) {
+  		if (executor_status.TIMESTAMP_INVALID) {
+-@@ -868,7 +932,13 @@ void Raptor::Run()
++@@ -868,7 +987,13 @@ void Raptor::Run()
+  	for (TI action_i = 0; action_i < actuator_motors_s::NUM_CONTROLS; action_i++) {
+  		if (action_i < EXECUTOR_CONFIG::OUTPUT_DIM) {
+  			T value = action.action[action_i];
+@@ -601,7 +719,7 @@ index df27d92..6352e2f 100644
+  			value = (value + 1) / 2;
+  			constexpr T training_min = 0;
+  			constexpr T training_max = 1.0;
+-@@ -890,7 +960,19 @@ void Raptor::Run()
++@@ -890,7 +1015,25 @@ void Raptor::Run()
+  	}
+  
+  	if (status.active) {
+@@ -611,6 +729,12 @@ index df27d92..6352e2f 100644
+ +#endif
+  		_actuator_motors_pub.publish(actuator_motors);
+ +#ifdef __PX4_POSIX
+++        timing.actuator_published=true;
+++        timing.actuator_publish_sim_us=hrt_absolute_time();
+++        struct timespec publish_wall{};clock_gettime(CLOCK_MONOTONIC,&publish_wall);
+++        timing.actuator_publish_wall_ns=static_cast<uint64_t>(publish_wall.tv_sec)*1000000000ULL+publish_wall.tv_nsec;
+++#endif
+++#ifdef __PX4_POSIX
+ +    research_actuator_s ownership{};
+ +    ownership.timestamp=hrt_absolute_time();ownership.actuator_timestamp=actuator_motors.timestamp;ownership.owner=1;
+ +    for(unsigned i=0;i<4;i++)ownership.control[i]=actuator_motors.control[i];
+@@ -621,7 +745,7 @@ index df27d92..6352e2f 100644
+  	}
+  
+  	perf_end(_loop_perf);
+-@@ -994,6 +1076,9 @@ int Raptor::print_status()
++@@ -994,6 +1137,9 @@ int Raptor::print_status()
+  
+  int Raptor::custom_command(int argc, char *argv[])
+  {
+@@ -632,7 +756,7 @@ index df27d92..6352e2f 100644
+  		if (strcmp(argv[1], "lissajous") == 0) {
+  			// Usage: mc_raptor intref lissajous <A> <B> <C> <fa> <fb> <fc> <duration> <ramp>
+ diff --git a/src/modules/mc_raptor/mc_raptor.hpp b/src/modules/mc_raptor/mc_raptor.hpp
+-index fcd3203..7d928a1 100644
++index fcd3203..a8f3cd0 100644
+ --- a/src/modules/mc_raptor/mc_raptor.hpp
+ +++ b/src/modules/mc_raptor/mc_raptor.hpp
+ @@ -1,4 +1,7 @@
+@@ -643,7 +767,17 @@ index fcd3203..7d928a1 100644
+  
+  #include "trajectories/lissajous.hpp"
+  
+-@@ -91,6 +94,11 @@ public:
++@@ -18,6 +21,9 @@
++ #include <uORB/topics/vehicle_odometry.h>
++ #include <uORB/topics/vehicle_attitude.h>
++ #include <uORB/topics/vehicle_angular_velocity.h>
+++#ifdef __PX4_POSIX
+++#include <uORB/topics/research_angular_velocity.h>
+++#endif
++ #include <uORB/topics/actuator_motors.h>
++ #include <uORB/topics/trajectory_setpoint.h>
++ #include <uORB/topics/register_ext_component_request.h>
++@@ -91,6 +97,14 @@ public:
+  	int print_status() override;
+  
+  private:
+@@ -651,11 +785,14 @@ index fcd3203..7d928a1 100644
+ +	handover_research::StateBridge _research_state{1, 26, 100.f};
+ +	void research_get(float *values);
+ +	void research_set(const float *values, bool reset_state);
+++    handover_research::SampleClock _sample_clock{};
+++    unsigned _sample_generation{0};
+++    uint64_t _sample_missed{0}, _native_total{0}, _gru_total{0}, _last_gru_sample{0};
+ +#endif
+  #ifdef __PX4_POSIX
+  	using DEVICE = rlt::devices::DefaultCPU;
+  #else
+-@@ -117,7 +125,7 @@ private:
++@@ -117,7 +131,7 @@ private:
+  
+  	void Run() override;
+  
+@@ -664,6 +801,30 @@ index fcd3203..7d928a1 100644
+  	decltype(register_ext_component_reply_s::arming_check_id) ext_component_arming_check_id;
+  
+  	enum class FlightModeState : TI {
++@@ -130,7 +144,11 @@ private:
++ 
++ 	// node state
++ 	vehicle_local_position_s _vehicle_local_position{};
+++#ifdef __PX4_POSIX
+++    research_angular_velocity_s _vehicle_angular_velocity{};
+++#else
++ 	vehicle_angular_velocity_s _vehicle_angular_velocity{};
+++#endif
++ 	vehicle_attitude_s _vehicle_attitude{};
++ 	vehicle_status_s _vehicle_status{};
++ 	trajectory_setpoint_s _trajectory_setpoint{};
++@@ -151,7 +169,11 @@ private:
++ 	uORB::Subscription _trajectory_setpoint_sub{ORB_ID(trajectory_setpoint)};
++ 	uORB::Subscription _arming_check_request_sub{ORB_ID(arming_check_request)};
++ 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
+++#ifdef __PX4_POSIX
+++    uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(research_angular_velocity)};
+++#else
++ 	uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};
+++#endif
++ 	uORB::Publication<actuator_motors_s> _actuator_motors_pub{ORB_ID(actuator_motors)};
++ 	uORB::Publication<raptor_status_s> _raptor_status_pub{ORB_ID(raptor_status)};
++ 	uORB::Publication<raptor_input_s> _raptor_input_pub{ORB_ID(raptor_input)};
+ diff --git a/src/modules/mc_raptor/module.yaml b/src/modules/mc_raptor/module.yaml
+ index 2b61df8..ddc1620 100644
+ --- a/src/modules/mc_raptor/module.yaml
+@@ -963,14 +1124,257 @@ index 63aa155..d834e31 100644
+  	float _throttle_x_setpoint{NAN};
+  	float _throttle_y_setpoint{NAN};
+  	float _speed_diff_setpoint{NAN};
++diff --git a/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp b/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp
++index 23111d2..e8c4a3e 100644
++--- a/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp
+++++ b/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp
++@@ -32,6 +32,9 @@
++  ****************************************************************************/
++ 
++ #include "VehicleAngularVelocity.hpp"
+++#ifdef __PX4_POSIX
+++#include <uORB/topics/research_angular_velocity.h>
+++#endif
++ 
++ #include <px4_platform_common/log.h>
++ 
++@@ -903,6 +906,18 @@ void VehicleAngularVelocity::Run()
++ 					angular_acceleration_uncalibrated(axis) = FilterAngularAcceleration(axis, inverse_dt_s, data);
++ 				}
++ 
+++#ifdef __PX4_POSIX
+++                // Preserve each filtered acquisition, including batched source samples.
+++                static uORB::Publication<research_angular_velocity_s> research_pub{ORB_ID(research_angular_velocity)};
+++                static uint64_t last_research_sample=0;
+++                if(sensor_data.timestamp_sample >= last_research_sample + _publish_interval_min_us) {
+++                    research_angular_velocity_s sample{};
+++                    sample.timestamp=hrt_absolute_time();sample.timestamp_sample=sensor_data.timestamp_sample;
+++                    (_calibration.Correct(angular_velocity_uncalibrated)-_bias).copyTo(sample.xyz);
+++                    (_calibration.rotation()*angular_acceleration_uncalibrated).copyTo(sample.xyz_derivative);
+++                    research_pub.publish(sample);last_research_sample=sample.timestamp_sample;
+++                }
+++#endif
++ 				// Publish
++ 				if (!_sensor_sub.updated()) {
++ 					if (CalibrateAndPublish(sensor_data.timestamp_sample,
++diff --git a/src/modules/simulation/gz_bridge/GZBridge.cpp b/src/modules/simulation/gz_bridge/GZBridge.cpp
++index 21279f0..582a0c7 100644
++--- a/src/modules/simulation/gz_bridge/GZBridge.cpp
+++++ b/src/modules/simulation/gz_bridge/GZBridge.cpp
++@@ -392,6 +392,7 @@ void GZBridge::opticalFlowCallback(const px4::msgs::OpticalFlow &msg)
++ 
++ void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg)
++ {
+++    _research_mag_callbacks.fetch_add(1, std::memory_order_relaxed);
++ 	const uint64_t timestamp = hrt_absolute_time();
++ 
++ 	_px4_mag.set_temperature(_temperature); // this will be static if no airspeed sensor is on the model.
++@@ -404,6 +405,7 @@ void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg)
++ 
++ void GZBridge::airPressureCallback(const gz::msgs::FluidPressure &msg)
++ {
+++    _research_baro_callbacks.fetch_add(1, std::memory_order_relaxed);
++ 	_px4_baro.set_temperature(_temperature); // this will be static if no airspeed sensor is on the model.
++ 	_px4_baro.update(hrt_absolute_time(), msg.pressure());
++ }
++@@ -431,7 +433,8 @@ void GZBridge::airspeedCallback(const gz::msgs::AirSpeed &msg)
++ 
++ void GZBridge::imuCallback(const gz::msgs::IMU &msg)
++ {
++-	const uint64_t timestamp = hrt_absolute_time();
+++	const uint64_t timestamp = static_cast<uint64_t>(msg.header().stamp().sec()) * 1000000ULL + msg.header().stamp().nsec() / 1000;
+++    _research_imu_callbacks.fetch_add(1, std::memory_order_relaxed);
++ 
++ 	// FLU -> FRD
++ 	static const auto q_FLU_to_FRD = gz::math::Quaterniond(0, 1, 0, 0);
++@@ -947,6 +950,7 @@ int GZBridge::task_spawn(int argc, char *argv[])
++ 
++ int GZBridge::print_status()
++ {
+++    PX4_INFO("Research callbacks: imu=%llu baro=%llu mag=%llu", (unsigned long long)_research_imu_callbacks.load(), (unsigned long long)_research_baro_callbacks.load(), (unsigned long long)_research_mag_callbacks.load());
++ 	PX4_INFO_RAW("ESC outputs:\n");
++ 	_mixing_interface_esc.mixingOutput().printStatus();
++ 
++diff --git a/src/modules/simulation/gz_bridge/GZBridge.hpp b/src/modules/simulation/gz_bridge/GZBridge.hpp
++index 93183ef..6272870 100644
++--- a/src/modules/simulation/gz_bridge/GZBridge.hpp
+++++ b/src/modules/simulation/gz_bridge/GZBridge.hpp
++@@ -67,6 +67,7 @@
++ #include <uORB/topics/vehicle_local_position.h>
++ #include <uORB/topics/vehicle_odometry.h>
++ 
+++#include <atomic>
++ #include <gz/math.hh>
++ #include <gz/msgs.hh>
++ #include <gz/transport.hh>
++@@ -107,6 +108,7 @@ public:
++ 	int print_status() override;
++ 
++ private:
+++    std::atomic<uint64_t> _research_imu_callbacks{0}, _research_baro_callbacks{0}, _research_mag_callbacks{0};
++ 
++ 	void Run() override;
++ 
++diff --git a/src/modules/simulation/gz_bridge/GZGimbal.cpp b/src/modules/simulation/gz_bridge/GZGimbal.cpp
++index f5bc488..a265bc5 100644
++--- a/src/modules/simulation/gz_bridge/GZGimbal.cpp
+++++ b/src/modules/simulation/gz_bridge/GZGimbal.cpp
++@@ -51,7 +51,6 @@ bool GZGimbal::init(const std::string &world_name, const std::string &model_name
++ 		return false;
++ 	}
++ 
++-	pthread_mutex_init(&_node_mutex, nullptr);
++ 
++ 	updateParameters();
++ 
++diff --git a/src/modules/simulation/gz_bridge/GZGimbal.hpp b/src/modules/simulation/gz_bridge/GZGimbal.hpp
++index a2a7965..0d34bc9 100644
++--- a/src/modules/simulation/gz_bridge/GZGimbal.hpp
+++++ b/src/modules/simulation/gz_bridge/GZGimbal.hpp
++@@ -37,7 +37,7 @@ private:
++ 	friend class GZBridge;
++ 
++ 	gz::transport::Node &_node;
++-	pthread_mutex_t _node_mutex;
+++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
++ 
++ 	uORB::Subscription _gimbal_device_set_attitude_sub{ORB_ID(gimbal_device_set_attitude)};
++ 	uORB::Subscription _gimbal_controls_sub{ORB_ID(gimbal_controls)};
++diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
++index b92fe96..8c14cf2 100644
++--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
++@@ -32,6 +32,8 @@
++  ****************************************************************************/
++ 
++ #include "GZMixingInterfaceESC.hpp"
+++#include <uORB/topics/research_output.h>
+++#include <time.h>
++ 
++ bool GZMixingInterfaceESC::init(const std::string &model_name)
++ {
++@@ -55,7 +57,6 @@ bool GZMixingInterfaceESC::init(const std::string &model_name)
++ 
++ 	_esc_status_pub.advertise();
++ 
++-	pthread_mutex_init(&_node_mutex, nullptr);
++ 
++ 	ScheduleNow();
++ 
++@@ -87,7 +88,36 @@ bool GZMixingInterfaceESC::updateOutputs(float outputs[MAX_ACTUATORS], unsigned
++ 		}
++ 
++ 		if (_actuators_pub.Valid()) {
++-			return _actuators_pub.Publish(rotor_velocity_message);
+++            const bool published=_actuators_pub.Publish(rotor_velocity_message);
+++            // This confirms bridge selection and transport publication, NOT motor physics consumption.
+++            static uint64_t attempts=0, successes=0, repeated=0, regressed=0, negative=0, previous=0;
+++            static uint64_t bins[8]{};
+++            const uint64_t sample=_mixing_output.researchSelectedSampleTimestamp();
+++            const uint64_t now=hrt_absolute_time();
+++            const int64_t age=static_cast<int64_t>(now)-static_cast<int64_t>(sample);
+++            ++attempts;if(published)++successes;
+++            if(sample && previous==sample)++repeated;
+++            if(sample && previous && sample<previous)++regressed;
+++            if(sample) {
+++                previous=sample;
+++                if(age<0)++negative;
+++                else {
+++                    const int64_t limits[7]={0,4000,8000,12000,20000,40000,100000};
+++                    unsigned i=0;while(i<7 && age>limits[i])++i;++bins[i];
+++                }
+++            }
+++            struct timespec wall{};clock_gettime(CLOCK_MONOTONIC,&wall);
+++            research_output_s trace{};
+++            trace.timestamp=now;trace.timestamp_sample=sample;
+++            trace.wall_monotonic_ns=static_cast<uint64_t>(wall.tv_sec)*1000000000ULL+wall.tv_nsec;
+++            trace.attempts_total=attempts;trace.published_total=successes;
+++            trace.repeated_sample_total=repeated;trace.regressed_sample_total=regressed;trace.negative_age_total=negative;
+++            for(unsigned i=0;i<8;i++)trace.age_bins[i]=bins[i];
+++            trace.transport_published=published;trace.armed=_mixing_output.armed().armed;
+++            for(unsigned i=0;i<4 && i<active_output_count;i++)trace.motor_speed[i]=outputs[i];
+++            static uORB::Publication<research_output_s> trace_pub{ORB_ID(research_output)};
+++            trace_pub.publish(trace);
+++            return published;
++ 		}
++ 	}
++ 
++diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
++index c55c743..19f407c 100644
++--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
+++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
++@@ -75,7 +75,7 @@ private:
++ 	void motorSpeedCallback(const gz::msgs::Actuators &actuators);
++ 
++ 	gz::transport::Node &_node;
++-	pthread_mutex_t _node_mutex;
+++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
++ 
++ 	MixingOutput _mixing_output{"SIM_GZ_EC", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
++ 
++diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
++index b90ec97..7c5622d 100644
++--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
+++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
++@@ -123,7 +123,6 @@ bool GZMixingInterfaceServo::init(const std::string &model_name)
++ 		_angular_range_rad.push_back(max_val - min_val);
++ 	}
++ 
++-	pthread_mutex_init(&_node_mutex, nullptr);
++ 
++ 	ScheduleNow();
++ 
++diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
++index 6182de8..bd32d50 100644
++--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
+++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
++@@ -81,7 +81,7 @@ private:
++ 	float get_servo_angle_min(const size_t index);
++ 
++ 	gz::transport::Node &_node;
++-	pthread_mutex_t _node_mutex;
+++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
++ 
++ 	MixingOutput _mixing_output{"SIM_GZ_SV", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
++ 
++diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
++index 3c1af26..990201f 100644
++--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
+++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
++@@ -51,7 +51,6 @@ bool GZMixingInterfaceWheel::init(const std::string &model_name)
++ 		return false;
++ 	}
++ 
++-	pthread_mutex_init(&_node_mutex, nullptr);
++ 
++ 	_wheel_encoders_pub.advertise();
++ 
++diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
++index 7b40889..90d5f56 100644
++--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
+++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
++@@ -76,7 +76,7 @@ private:
++ 	void wheelSpeedCallback(const gz::msgs::Actuators &actuators);
++ 
++ 	gz::transport::Node &_node;
++-	pthread_mutex_t _node_mutex;
+++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
++ 
++ 	MixingOutput _mixing_output{"SIM_GZ_WH", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
++ 
+ diff --git a/src/modules/uxrce_dds_client/dds_topics.yaml b/src/modules/uxrce_dds_client/dds_topics.yaml
+-index 40ab2b7..e968598 100644
++index 40ab2b7..6121d81 100644
+ --- a/src/modules/uxrce_dds_client/dds_topics.yaml
+ +++ b/src/modules/uxrce_dds_client/dds_topics.yaml
+-@@ -4,6 +4,10 @@
++@@ -4,6 +4,15 @@
+  #
+  #####
+  publications:
+++  # Preparation readiness: actual raw and selected barometer data.
+++  - topic: /fmu/out/sensor_baro
+++    type: px4_msgs::msg::SensorBaro
+++  - topic: /fmu/out/vehicle_air_data
+++    type: px4_msgs::msg::VehicleAirData
+ +  - topic: /fmu/out/raptor_status
+ +    type: px4_msgs::msg::RaptorStatus
+ +  - topic: /fmu/out/raptor_input
+diff --git a/research/state/ResearchActuator.msg b/research/state/ResearchActuator.msg
+index f0cca46..7cbefc1 100644
+--- a/research/state/ResearchActuator.msg
++++ b/research/state/ResearchActuator.msg
+@@ -1,4 +1,5 @@
+ uint64 timestamp
++uint8 ORB_QUEUE_LENGTH = 32
+ uint64 actuator_timestamp # exact published actuator_motors.timestamp
+ uint8 owner # 1 RAPTOR, 2 classical control allocator
+ float32[4] control
+diff --git a/research/state/ResearchTiming.msg b/research/state/ResearchTiming.msg
+index 3b5317e..2fb5d8c 100644
+--- a/research/state/ResearchTiming.msg
++++ b/research/state/ResearchTiming.msg
+@@ -1,4 +1,28 @@
+ uint64 timestamp
++uint8 ORB_QUEUE_LENGTH = 32
++uint8 schema_version
++uint64 timestamp_sample
++uint64 accepted_total
++uint64 duplicate_total
++uint64 regressed_total
++uint64 source_missed_total
++uint64 native_total
++uint64 gru_commit_total
++uint64 last_gru_sample
++uint32 source_generation
++uint32 input_dt_us
++uint32 executor_dt_us
++uint32 native_dt_us
++uint8 input_result
++bool executor_called
++bool native_step
++bool gru_committed
++bool timing_jitter_ok
++bool timing_bias_ok
++bool timestamp_invalid
++bool timestamp_order_invalid
++float32 jitter_ratio
++float32 bias_ratio
+ uint32 inference_duration_us # CLOCK_MONOTONIC wall duration, includes observation construction
+ uint8 mode_id
+ bool active
+@@ -6,3 +30,22 @@ bool executor_ok
+ bool control_step
+ bool output_finite
+ float32[4] action
++bool actuator_published
++uint64[3] scope_calls
++uint64[3] scope_warnings
++uint64[3] scope_jitter
++uint64[3] scope_bias
++uint64[3] scope_rejected
++uint64[3] scope_hard
++uint64[3] scope_duration_sum_us
++uint32[3] scope_duration_max_us
++uint64[3] scope_over_2500us
++uint64[3] scope_unclassified_warning
++
++# Preparation trace: source times retain their individual meanings.
++uint64 local_position_sample
++uint64 attitude_sample
++uint64 control_start_wall_ns
++uint64 control_end_wall_ns
++uint64 actuator_publish_wall_ns
++uint64 actuator_publish_sim_us
+diff --git a/research/state/StateBridge.hpp b/research/state/StateBridge.hpp
+index a2ec0bb..3baa5f2 100644
+--- a/research/state/StateBridge.hpp
++++ b/research/state/StateBridge.hpp
+@@ -1,5 +1,7 @@
+ #pragma once
+ #include "StateOps.hpp"
++#include "SampleClock.hpp"
++#include "TimingRecord.hpp"
+ #include <drivers/drv_hrt.h>
+ #include <parameters/param.h>
+ #include <uORB/Publication.hpp>
+diff --git a/tools/analyze.py b/tools/analyze.py
+index 884149e..a284627 100644
+--- a/tools/analyze.py
++++ b/tools/analyze.py
+@@ -7,6 +7,7 @@ from pathlib import Path
+ import sys
+ import numpy as np
+ from pyulog import ULog
++from p0_metrics import add_p0
+ 
+ def clean(value):
+     if isinstance(value,dict):return {k:clean(v) for k,v in value.items()}
+@@ -49,8 +50,9 @@ def analyze(folder):
+         if e['event']=='hover_started':
+             finish=next((x for x in events[i+1:] if x['event']=='hover_ended'),None)
+             if finish:
+-                a,b=px4_time(e['monotonic_ns']),px4_time(finish['monotonic_ns'])
++                a,b=e.get('px4_start_us',px4_time(e['monotonic_ns'])),finish.get('px4_end_us',px4_time(finish['monotonic_ns']))
+                 windows.append((e['label'],a,b))
++    metrics['hover_window_clock']='native_px4' if all('px4_start_us' in e for e in events if e['event']=='hover_started') and all('px4_end_us' in e for e in events if e['event']=='hover_ended') else 'estimated_ros_alignment'
+     for index,(label,a,b) in enumerate(windows):
+         mask=(t>=a)&(t<=b)
+         reference=np.array([0,0,-cfg['altitude_m']])
+@@ -115,9 +117,9 @@ def analyze(folder):
+             expected_transitions=len(metrics['handovers'])
+             metrics['ownership_transition_validation']={'expected':expected_transitions,'actual':len(changes),
+                 'status':'PASS' if len(changes)==expected_transitions else 'FAIL'}
+-            metrics['actuator_owner_transitions']=[{'px4_us':int(owner['actuator_timestamp'][i]),'from':int(owner['owner'][i-1]),'to':int(owner['owner'][i])} for i in changes]
++            metrics['actuator_owner_transitions']=[{'px4_us':int(owner['timestamp'][i]),'actuator_message_us':int(owner['actuator_timestamp'][i]),'from':int(owner['owner'][i-1]),'to':int(owner['owner'][i])} for i in changes]
+             for transition in metrics['actuator_owner_transitions']:
+-                stamp=transition['px4_us'];idx=int(np.searchsorted(mt,stamp))
++                stamp=transition['px4_us'];idx=int(np.searchsorted(mt,transition['actuator_message_us']))
+                 if 0<idx<len(mt):transition['max_motor_step']=float(np.max(np.abs(mv[idx]-mv[idx-1])))
+                 desired=meta['raptor_mode_id'] if transition['to']==1 else 4
+                 candidates=np.flatnonzero(armed['nav_state']==desired)
+@@ -126,13 +128,14 @@ def analyze(folder):
+                     transition['mode_change_us']=int(armed['nav_state_timestamp'][nearest])
+                     transition['mode_to_actuator_owner_us']=int(stamp-transition['mode_change_us'])
+                 if 'settling_band_m' in cfg:
+-                    after=np.flatnonzero(t>=stamp)
++                    legacy_stamp=transition['actuator_message_us']
++                    after=np.flatnonzero(t>=legacy_stamp)
+                     error=np.linalg.norm(pos-np.array([0,0,-cfg['altitude_m']]),axis=1)
+-                    transition['settling_time_s']=None
++                    transition['legacy_unbounded_position_band_entry_time_s']=None
+                     for j in after:
+                         end=int(np.searchsorted(t,t[j]+cfg['settling_dwell_s']*1e6))
+                         if end<len(t) and end>j and np.all(error[j:end]<=cfg['settling_band_m']):
+-                            transition['settling_time_s']=float((t[j]-stamp)/1e6);break
++                            transition['legacy_unbounded_position_band_entry_time_s']=float((t[j]-legacy_stamp)/1e6);break
+             for index,(label,a,b) in enumerate(windows):
+                 mask=(owner['timestamp']>=a)&(owner['timestamp']<=b)
+                 expected=1 if label.startswith('neural') else 2
+@@ -167,6 +170,7 @@ def analyze(folder):
+                 if ok and (op==4 or (e['holding'] and op in [3,5,6])):held[target]=values
+                 if ok and op==7:held.pop(target,None)
+             metrics['state_values_validation']={'errors':state_errors,'status':'PASS' if not state_errors else 'FAIL'}
++    add_p0(metrics,topics,cfg,events,windows,px4_time,meta['variant'],stats)
+     if 'settling_band_m' not in cfg:metrics['unavailable']['settling_time']='this run did not predefine a settling band and dwell time'
+     metrics['safety_failure_events']=sum(e['event']=='failure' for e in events)
+     resources=folder/'resources.jsonl'
+@@ -212,7 +216,10 @@ def analyze(folder):
+     passed=execution=='PASS' and not missing and metrics['armed_motor_values_valid'] and bool(windows) and all(m['status']=='PASS' for m in metrics['windows'].values())
+     if meta['variant']=='raptor':
+         passed=passed and metrics.get('raptor_active_samples',0)>0 and metrics.get('inference_timing_status')=='PASS' and bool(metrics['ownership_windows']) and all(v['status']=='PASS' for v in metrics['ownership_windows'].values()) and metrics.get('ownership_transition_validation',{}).get('status')=='PASS' and metrics.get('state_log_validation',{}).get('status')=='PASS' and metrics.get('state_values_validation',{}).get('status')=='PASS'
+-    metrics['status']='PASS' if passed else 'FAIL'
++    if cfg.get('p0_strict'):
++        passed=passed and metrics.get('recovery_status')=='PASS' and metrics.get('request_boundary_status')=='PASS' and metrics.get('hover_window_clock')=='native_px4'
++        if meta['variant']=='raptor':passed=passed and metrics.get('executor_acceptance') in ['PASS','PASS_WITH_WARNINGS']
++    metrics['status']=('PASS_WITH_WARNINGS' if metrics.get('executor_acceptance')=='PASS_WITH_WARNINGS' else 'PASS') if passed else 'FAIL'
+     write(folder/'metrics.json',metrics)
+     validation['analysis_status']=metrics['status'];validation['status']=metrics['status'];validation['missing_topics']=missing
+     write(folder/'validation.json',validation)
+diff --git a/tools/apply_research.py b/tools/apply_research.py
+index 16a084a..c631454 100644
+--- a/tools/apply_research.py
++++ b/tools/apply_research.py
+@@ -14,10 +14,10 @@ def main():
+  dest=PX/'src/lib/handover_research';dest.mkdir(exist_ok=True)
+  for p in (ROOT/'research/state').glob('*.hpp'):shutil.copy2(p,dest/p.name)
+  for p in (ROOT/'research/state').glob('*.msg'):shutil.copy2(p,PX/'msg'/p.name)
+- edit('msg/CMakeLists.txt','\tRouteObservability.msg','\tResearchStateRequest.msg\n\tResearchStateResponse.msg\n\tResearchTiming.msg\n\tResearchActuator.msg\n\tRouteObservability.msg')
++ edit('msg/CMakeLists.txt','\tRouteObservability.msg','\tResearchStateRequest.msg\n\tResearchStateResponse.msg\n\tResearchTiming.msg\n\tResearchAngularVelocity.msg\n\tResearchOutput.msg\n\tResearchActuator.msg\n\tRouteObservability.msg')
+  if 'MC_RAPTOR_RSH:' not in (PX/'src/modules/mc_raptor/module.yaml').read_text():edit('src/modules/mc_raptor/module.yaml','parameters:\n','parameters:\n    - group: Handover Research\n      definitions:\n        MC_RAPTOR_RSH:\n            description:\n                short: Enable SITL controller state research interface\n            type: boolean\n            default: false\n')
+  # Local state operations are excluded from hardware builds.
+- for name,member in [('mc_rate_control/MulticopterRateControl.hpp','handover_research::StateBridge _research_state{2, 3, 0.3f};'),('mc_pos_control/MulticopterPositionControl.hpp','handover_research::StateBridge _research_state{3, 3, 4.f};'),('mc_raptor/mc_raptor.hpp','handover_research::StateBridge _research_state{1, 26, 100.f};\n\tvoid research_get(float *values);\n\tvoid research_set(const float *values, bool reset_state);')]:
++ for name,member in [('mc_rate_control/MulticopterRateControl.hpp','handover_research::StateBridge _research_state{2, 3, 0.3f};'),('mc_pos_control/MulticopterPositionControl.hpp','handover_research::StateBridge _research_state{3, 3, 4.f};'),('mc_raptor/mc_raptor.hpp','handover_research::StateBridge _research_state{1, 26, 100.f};\n\tvoid research_get(float *values);\n\tvoid research_set(const float *values, bool reset_state);\n    handover_research::SampleClock _sample_clock{};\n    unsigned _sample_generation{0};\n    uint64_t _sample_missed{0}, _native_total{0}, _gru_total{0}, _last_gru_sample{0};')]:
+   file='src/modules/'+name
+   edit(file,'#pragma once','#pragma once\n#ifdef __PX4_POSIX\n#include <lib/handover_research/StateBridge.hpp>\n#endif')
+   edit(file,'private:\n','private:\n#ifdef __PX4_POSIX\n\t'+member+'\n#endif\n')
+@@ -85,6 +85,32 @@ void Raptor::research_set(const float *v, bool reset_state) {
+     clock_gettime(CLOCK_MONOTONIC,&wall_end);
+     research_timing_s timing{};
+     timing.timestamp=current_time;
++    timing.schema_version=2;
++    timing.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    timing.local_position_sample=_vehicle_local_position.timestamp_sample;
++    timing.attitude_sample=_vehicle_attitude.timestamp_sample;
++    timing.control_start_wall_ns=static_cast<uint64_t>(wall_start.tv_sec)*1000000000ULL+wall_start.tv_nsec;
++    timing.control_end_wall_ns=static_cast<uint64_t>(wall_end.tv_sec)*1000000000ULL+wall_end.tv_nsec;
++    timing.accepted_total=_sample_clock.accepted;
++    timing.duplicate_total=_sample_clock.duplicate;
++    timing.regressed_total=_sample_clock.regressed;
++    timing.source_generation=_sample_generation;
++    timing.source_missed_total=_sample_missed;
++    timing.input_dt_us=_sample_clock.dt;
++    timing.executor_dt_us=executor_dt_us;
++    timing.native_dt_us=native_dt_us;
++    timing.executor_called=true;
++    timing.native_step=executor_status.source==decltype(executor_status.source)::CONTROL && executor_status.step_type==decltype(executor_status.step_type)::NATIVE;
++    timing.gru_committed=timing.native_step && !_research_state.engine.holding;
++    if(timing.native_step)++_native_total;
++    if(timing.gru_committed){++_gru_total;_last_gru_sample=timing.timestamp_sample;}
++    timing.native_total=_native_total;timing.gru_commit_total=_gru_total;timing.last_gru_sample=_last_gru_sample;
++    timing.timing_jitter_ok=executor_status.timing_jitter.OK;
++    timing.timing_bias_ok=executor_status.timing_bias.OK;
++    timing.jitter_ratio=executor_status.timing_jitter.MAGNITUDE;
++    timing.bias_ratio=executor_status.timing_bias.MAGNITUDE;
++    timing.timestamp_invalid=executor_status.TIMESTAMP_INVALID;
++    timing.timestamp_order_invalid=executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP;
+     timing.inference_duration_us=(wall_end.tv_sec-wall_start.tv_sec)*1000000+(wall_end.tv_nsec-wall_start.tv_nsec)/1000;
+     timing.active=next_active;
+     timing.executor_ok=executor_status.OK;
+@@ -92,8 +118,7 @@ void Raptor::research_set(const float *v, bool reset_state) {
+     timing.mode_id=ext_component_mode_id;
+     timing.output_finite=true;
+     if(timing.control_step)for(TI i=0;i<4;i++) {timing.action[i]=action.action[i];timing.output_finite &= PX4_ISFINITE(action.action[i]);}
+-    static uORB::Publication<research_timing_s> timing_pub{ORB_ID(research_timing)};
+-    timing_pub.publish(timing);
++    handover_research::TimingRecord timing_record(timing);
+     if(_research_state.engine.holding)research_set(_research_state.engine.held,false);
+     if(timing.control_step && (!timing.output_finite || executor_status.TIMESTAMP_INVALID || executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP)) {
+         PX4_ERR("Research guard: invalid inference; actuator publication withheld");
+@@ -111,7 +136,6 @@ void Raptor::research_set(const float *v, bool reset_state) {
+     if(argc>=1 && strcmp(argv[0],"state")==0)return handover_research::state_command(argc,argv);
+ #endif
+ \tif (argc >= 2 && strcmp(argv[0], "intref") == 0) {''')
+- print('Applied state API and wall-clock inference instrumentation; policy files unchanged.')
+ if __name__=='__main__':main()
+ # Exact actuator ownership evidence supplements the preserved, throttled route events.
+ for module in ['mc_raptor/mc_raptor.cpp','control_allocator/ControlAllocator.cpp']:
+@@ -185,3 +209,121 @@ edit('src/modules/mc_raptor/mc_raptor.cpp','\tif (status.active) {\n\t\t_actuato
+ \t\t_actuator_motors_pub.publish(actuator_motors);''')
+ edit('src/modules/mc_raptor/mc_raptor.cpp','    ownership_pub.publish(ownership);\n#endif',
+      '    ownership_pub.publish(ownership);\n        } // publication_gate.allowed()\n#endif')
++
++# P0: use observation sample time, not asynchronously synchronized simulator now.
++edit('src/modules/mc_raptor/mc_raptor.hpp',
++     '\tvoid research_set(const float *values, bool reset_state);',
++     '''\tvoid research_set(const float *values, bool reset_state);
++    handover_research::SampleClock _sample_clock{};
++    unsigned _sample_generation{0};
++    uint64_t _sample_missed{0}, _native_total{0}, _gru_total{0}, _last_gru_sample{0};''')
++edit('src/modules/mc_raptor/mc_raptor.cpp',
++     '#ifdef __PX4_POSIX\n    for (TI i=0;i<16;i++) _research_state._bounds[i]=1.f;',
++     '''#ifdef __PX4_POSIX
++    const auto generation=_vehicle_angular_velocity_sub.get_last_generation();
++    if(_sample_generation && generation-_sample_generation>1)_sample_missed+=generation-_sample_generation-1;
++    _sample_generation=generation;
++    const unsigned input_result=_sample_clock.accept(_vehicle_angular_velocity.timestamp_sample);
++    if(input_result) {
++        research_timing_s skipped{};
++        skipped.timestamp=current_time;skipped.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        skipped.schema_version=2;skipped.active=next_active;skipped.mode_id=ext_component_mode_id;
++        skipped.accepted_total=_sample_clock.accepted;skipped.duplicate_total=_sample_clock.duplicate;
++        skipped.regressed_total=_sample_clock.regressed;skipped.source_missed_total=_sample_missed;
++        skipped.source_generation=generation;skipped.input_result=input_result;
++        skipped.native_total=_native_total;skipped.gru_commit_total=_gru_total;skipped.last_gru_sample=_last_gru_sample;
++        skipped.executor_ok=true;skipped.output_finite=true;
++        handover_research::TimingRecord skipped_record(skipped);
++        perf_end(_loop_perf);return;
++    }
++#endif
++#ifdef __PX4_POSIX
++    for (TI i=0;i<16;i++) _research_state._bounds[i]=1.f;''')
++edit('src/modules/mc_raptor/mc_raptor.cpp',
++     '\thrt_abstime nanoseconds = current_time * 1000;',
++     '''#ifdef __PX4_POSIX
++    const uint32_t executor_dt_us=executor.executor.last_control_timestamp_set ?
++        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp)/1000 : 0;
++    const uint32_t native_dt_us=executor.executor.last_control_timestamp_original_set ?
++        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp_original)/1000 : 0;
++    hrt_abstime nanoseconds = _vehicle_angular_velocity.timestamp_sample * 1000;
++#else
++\thrt_abstime nanoseconds = current_time * 1000;
++#endif''')
++
++# Gazebo transport callbacks and /clock are asynchronous. Timestamp observations
++# from their message header, preserving acquisition time rather than callback time.
++edit('src/modules/simulation/gz_bridge/GZBridge.cpp',
++     'void GZBridge::imuCallback(const gz::msgs::IMU &msg)\n{\n\tconst uint64_t timestamp = hrt_absolute_time();',
++     'void GZBridge::imuCallback(const gz::msgs::IMU &msg)\n{\n\tconst uint64_t timestamp = static_cast<uint64_t>(msg.header().stamp().sec()) * 1000000ULL + msg.header().stamp().nsec() / 1000;')
++
++
++edit('src/modules/mc_raptor/mc_raptor.cpp',
++     '\t\t_actuator_motors_pub.publish(actuator_motors);',
++     '\t\t_actuator_motors_pub.publish(actuator_motors);\n#ifdef __PX4_POSIX\n        timing.actuator_published=true;\n        timing.actuator_publish_sim_us=hrt_absolute_time();\n        struct timespec publish_wall{};clock_gettime(CLOCK_MONOTONIC,&publish_wall);\n        timing.actuator_publish_wall_ns=static_cast<uint64_t>(publish_wall.tv_sec)*1000000000ULL+publish_wall.tv_nsec;\n#endif')
++
++# SITL recurrent inference must consume each real gyro observation. The ordinary
++# latest-only vehicle_angular_velocity publication and classical controllers keep
++# their original scheduling. FIFO hardware paths are deliberately unchanged.
++edit('msg/CMakeLists.txt','\tResearchTiming.msg','\tResearchTiming.msg\n\tResearchAngularVelocity.msg')
++edit('src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp',
++     '#include "VehicleAngularVelocity.hpp"',
++     '#include "VehicleAngularVelocity.hpp"\n#ifdef __PX4_POSIX\n#include <uORB/topics/research_angular_velocity.h>\n#endif')
++edit('src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp',
++     '\t\t\t\t// Publish\n\t\t\t\tif (!_sensor_sub.updated()) {',
++     '''#ifdef __PX4_POSIX
++                // Preserve each filtered acquisition, including batched source samples.
++                static uORB::Publication<research_angular_velocity_s> research_pub{ORB_ID(research_angular_velocity)};
++                static uint64_t last_research_sample=0;
++                if(sensor_data.timestamp_sample >= last_research_sample + _publish_interval_min_us) {
++                    research_angular_velocity_s sample{};
++                    sample.timestamp=hrt_absolute_time();sample.timestamp_sample=sensor_data.timestamp_sample;
++                    (_calibration.Correct(angular_velocity_uncalibrated)-_bias).copyTo(sample.xyz);
++                    (_calibration.rotation()*angular_acceleration_uncalibrated).copyTo(sample.xyz_derivative);
++                    research_pub.publish(sample);last_research_sample=sample.timestamp_sample;
++                }
++#endif
++\t\t\t\t// Publish
++\t\t\t\tif (!_sensor_sub.updated()) {''')
++edit('src/modules/mc_raptor/mc_raptor.hpp',
++     '#include <uORB/topics/vehicle_angular_velocity.h>',
++     '#include <uORB/topics/vehicle_angular_velocity.h>\n#ifdef __PX4_POSIX\n#include <uORB/topics/research_angular_velocity.h>\n#endif')
++edit('src/modules/mc_raptor/mc_raptor.hpp',
++     '\tuORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};',
++     '''#ifdef __PX4_POSIX
++    uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(research_angular_velocity)};
++#else
++\tuORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};
++#endif''')
++edit('src/modules/mc_raptor/mc_raptor.hpp',
++     '\tvehicle_angular_velocity_s _vehicle_angular_velocity{};',
++     '''#ifdef __PX4_POSIX
++    research_angular_velocity_s _vehicle_angular_velocity{};
++#else
++\tvehicle_angular_velocity_s _vehicle_angular_velocity{};
++#endif''')
++edit('src/modules/mc_raptor/mc_raptor.cpp',
++     'status.subscription_update_angular_velocity = _vehicle_angular_velocity_sub.update(&_vehicle_angular_velocity);',
++     '''status.subscription_update_angular_velocity = _vehicle_angular_velocity_sub.update(&_vehicle_angular_velocity);
++#ifdef __PX4_POSIX
++    // Schedule another work item until the queue is drained, including early returns.
++    if(_vehicle_angular_velocity_sub.updated())ScheduleNow();
++#endif''')
++
++# POSIX daemon must publish its stdout TLS key before any logging thread can
++# observe Server::is_running(). ASAN exposed the old uninitialized-key window.
++def apply_daemon_stdout_key():
++ edit('platforms/posix/src/px4/common/px4_daemon/server.cpp', '\t  _instance_id(instance_id)\n{\n\t_instance = this;\n}', '\t  _instance_id(instance_id)\n{\n    const int ret=pthread_key_create(&_key,_pthread_key_destructor);\n    if(ret!=0){PX4_ERR("failed to create daemon stdout pthread key");return;}\n\t_instance = this;\n}')
++ edit('platforms/posix/src/px4/common/px4_daemon/server.cpp', 'void\nServer::_server_main()\n{\n\tint ret = pthread_key_create(&_key, _pthread_key_destructor);\n\n\tif (ret != 0) {\n\t\tPX4_ERR("failed to create pthread key");\n\t\treturn;\n\t}\n', 'void\nServer::_server_main()\n{\n    int ret=0;\n')
++ edit('platforms/posix/src/px4/common/px4_daemon/server.cpp', 'Server::start()\n{\n\tstd::string sock_path', 'Server::start()\n{\n    if(_instance!=this)return -1;\n\tstd::string sock_path')
++
++apply_daemon_stdout_key()
++_saved_px=PX
++PX=ROOT/'uav_lab/.local/checkouts/px4-classic'
++apply_daemon_stdout_key()
++PX=_saved_px
++
++print('Applied SITL research instrumentation and POSIX daemon TLS initialization; policy files unchanged.')
++
++from apply_preparation import apply as apply_preparation
++apply_preparation()
+diff --git a/tools/evidence.py b/tools/evidence.py
+index 2f7bb18..8ffeffc 100644
+--- a/tools/evidence.py
++++ b/tools/evidence.py
+@@ -15,6 +15,7 @@ def main():
+  p.add_argument('--output',type=Path,default=ROOT/'data/environment-20261009/final-commands');p.add_argument('command',nargs=argparse.REMAINDER)
+  a=p.parse_args();cmd=a.command[1:] if a.command and a.command[0]=='--' else a.command
+  if not cmd:p.error('a command is required')
++ a.output=a.output.resolve()
+  a.output.mkdir(parents=True,exist_ok=True);start=time.monotonic();log=a.output/(a.name+'.log')
+  with log.open('w') as f:
+   try:
+diff --git a/tools/export_patches.py b/tools/export_patches.py
+index 97edc0b..3126fe5 100644
+--- a/tools/export_patches.py
++++ b/tools/export_patches.py
+@@ -19,3 +19,6 @@ with tarfile.open(OUT/'raptor-final-untracked.tar.gz','w:gz') as archive:
+         assert source.is_file() and source.stat().st_size<100000, name
+         archive.add(source,arcname=name)
+ print('Exported final diff and',len(names),'small source files; existing patches retained')
++
++classic=ROOT/'uav_lab/.local/checkouts/px4-classic'
++(OUT/'classic-final.patch').write_bytes(subprocess.check_output(['git','-C',str(classic),'diff','--binary']))
+diff --git a/tools/run_experiment.py b/tools/run_experiment.py
+index 83b5215..2fd12ac 100644
+--- a/tools/run_experiment.py
++++ b/tools/run_experiment.py
+@@ -17,6 +17,8 @@ import sys
+ import time
+ import traceback
+ import uuid
++import resource
++from readiness import Readiness
+ import psutil
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+@@ -33,6 +35,7 @@ def digest(path):
+ class Experiment:
+     def __init__(self,args):
+         self.args=args
++        self.startup_only=args.startup_only
+         self.cfg=json.loads(args.config.read_text())
+         if args.hover_s is not None:self.cfg['hover_s']=args.hover_s
+         self.variant='classic' if args.kind=='classic_hover' else 'raptor'
+@@ -50,9 +53,9 @@ class Experiment:
+         self.source=LAB/'.local/checkouts'/('px4-'+self.variant)
+         built=self.source/('build/px4_sitl_default' if self.variant=='classic' else 'build/px4_sitl_raptor')
+         self.runtime=built if (built/'bin/px4').exists() else LAB/'.local/runtime/px4-classic'
+-        self.binary=self.runtime/'bin/px4'
++        self.binary=Path(os.environ.get('HANDOVER_PX4_BINARY',str(self.runtime/'bin/px4'))).resolve()
+         self.instance=self.cfg['instance']
+-        self.env=dict(os.environ,GZ_PARTITION='handover-'+uuid.uuid4().hex,HEADLESS='1',
++        self.env=dict(os.environ,GZ_IP='127.0.0.1',GZ_PARTITION='handover-'+uuid.uuid4().hex,HEADLESS='1',
+                       PX4_GZ_STANDALONE='1',PX4_SYS_AUTOSTART='4001',PX4_SIM_MODEL='gz_x500',PX4_GZ_WORLD='default',
+                       PX4_GZ_MODELS=str(self.source/'Tools/simulation/gz/models'),
+                       PX4_GZ_WORLDS=str(self.source/'Tools/simulation/gz/worlds'),
+@@ -74,9 +77,16 @@ class Experiment:
+             self.env.pop('PX4_PARAM_MC_RAPTOR_OFFB',None)
+         # ROS middleware reads the domain at context initialization in this process.
+         os.environ['ROS_DOMAIN_ID']=self.env['ROS_DOMAIN_ID']
+-        self.metadata={'experiment_type':args.kind,'variant':self.variant,'created_at':dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).isoformat(),
++        # Hash every untracked source addition too: git diff alone omits research headers/messages.
++        source_extra=subprocess.check_output(['git','-C',str(self.source),'ls-files','--others','--exclude-standard','-z']).decode().strip('\0').split('\0')
++        self.source_extra_hashes={name:digest(self.source/name) for name in source_extra if name and (self.source/name).is_file()}
++        self.metadata={'experiment_type':args.kind,'startup_only':self.startup_only,'capture_raw_sensors':args.capture_raw_sensors,'variant':self.variant,'created_at':dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).isoformat(),
+                        'seed':self.cfg['seed'],'seed_scope':'recorded; Gazebo/PX4 do not expose a verified universal seed',
+                        'initial_pose':'0,0,0,0,0,0','source_commit':subprocess.check_output(['git','-C',str(self.source),'rev-parse','HEAD'],text=True).strip(),
++                       'project_commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),
++                       'experiment_code_sha256':{str(p.relative_to(ROOT)):digest(p) for p in sorted((ROOT/'tools').glob('*.py'))},
++                       'config_sha256':digest(self.out/'config.json'),
++                       'source_untracked_sha256':self.source_extra_hashes,
+                        'source_diff_sha256':hashlib.sha256(subprocess.check_output(['git','-C',str(self.source),'diff','--binary'])).hexdigest(),
+                        'binary':str(self.binary),'binary_sha256':digest(self.binary),
+                        'environment':{k:v for k,v in self.env.items() if k.startswith(('PX4_','GZ_','ROS_DOMAIN'))},'processes':[]}
+@@ -103,6 +113,14 @@ class Experiment:
+         if required and p.returncode:raise RuntimeError(f'{module} {args}: {p.returncode}: {p.stdout+p.stderr}')
+         return p.stdout+p.stderr
+ 
++    def native_phase_end_bound(self):
++        # Listener returns a native PX4 publication time before the later ROS
++        # request. This is a proven conservative bound, without clock interpolation.
++        output=self.command('listener','vehicle_angular_velocity','-n','1')
++        match=re.search(r'\btimestamp:\s*(\d+)',output)
++        if not match:raise RuntimeError('native phase boundary timestamp missing')
++        return int(match.group(1))
++
+     def topic(self,direction,name,typ):
+         version=getattr(typ,'MESSAGE_VERSION',0)
+         return f'/fmu/{direction}/{name}'+(f'_v{version}' if version else '')
+@@ -113,7 +131,7 @@ class Experiment:
+         import px4_msgs.msg as msgs
+         self.rclpy=rclpy;self.msgs=msgs
+         rclpy.init();self.node=rclpy.create_node('handover_lab_'+uuid.uuid4().hex[:8])
+-        for name,typename in [('vehicle_status','VehicleStatus'),('vehicle_odometry','VehicleOdometry'),('vehicle_attitude','VehicleAttitude'),('vehicle_local_position','VehicleLocalPosition'),('vehicle_land_detected','VehicleLandDetected'),('vehicle_command_ack','VehicleCommandAck')]:
++        for name,typename in [('vehicle_status','VehicleStatus'),('vehicle_odometry','VehicleOdometry'),('vehicle_attitude','VehicleAttitude'),('vehicle_local_position','VehicleLocalPosition'),('vehicle_land_detected','VehicleLandDetected'),('vehicle_command_ack','VehicleCommandAck'),('sensor_baro','SensorBaro'),('vehicle_air_data','VehicleAirData')]:
+             typ=getattr(msgs,typename)
+             self.node.create_subscription(typ,self.topic('out',name,typ),lambda msg,n=name:self.receive(n,msg),qos_profile_sensor_data)
+         if self.variant=='raptor':
+@@ -178,13 +196,57 @@ class Experiment:
+         if ack.result!=0:raise RuntimeError(f'command {command} rejected: {ack.result}')
+ 
+     def hover(self,duration,label):
+-        self.event('hover_started',label=label,duration_s=duration)
+-        start=int(self.latest['vehicle_local_position'].timestamp)
+-        # Cover the 0.1 s external event alignment uncertainty without reducing
+-        # the requested minimum duration in the ULog acceptance window.
+-        self.wait(lambda:int(self.latest['vehicle_local_position'].timestamp)-start>=(duration+0.2)*1e6,
+-                  3*duration+15,'simulation hover duration '+label)
+-        self.event('hover_ended',label=label)
++        start=self.native_phase_end_bound()
++        self.event('hover_started',label=label,duration_s=duration,px4_start_us=start)
++        deadline=time.monotonic()+3*duration+15
++        while time.monotonic()<deadline:
++            self.pump(0.2)
++            end=self.native_phase_end_bound()
++            if end-start>=duration*1e6:
++                self.event('hover_ended',label=label,px4_end_us=end)
++                return
++        raise TimeoutError('native simulation hover duration '+label)
++
++    def wait_sensor_readiness(self):
++        gate=Readiness();deadline=time.monotonic()+self.cfg['startup_timeout_s'];last_log=0
++        with (self.out/'readiness.jsonl').open('w') as log:
++            while time.monotonic()<deadline:
++                self.pump(.1);now=time.monotonic();result=gate.update(self.latest,self.received,now)
++                if now-last_log>=.5 or result['ready']:
++                    last_log=now;log.write(json.dumps({'monotonic_ns':time.monotonic_ns(),**result})+'\n');log.flush()
++                if result['ready']:
++                    self.event('sensor_readiness',**result);self.checks['sensor_readiness']='PASS';return
++        self.event('sensor_readiness_failed',**result)
++        raise TimeoutError('fresh raw/selected barometer and valid local position for 2s')
++
++    def capture_startup_diagnostics(self,intervene=False):
++        for module,args in [('gz_bridge',['status']),('listener',['sensor_baro','-n','1']),('listener',['vehicle_air_data','-n','1']),('listener',['vehicle_local_position','-n','1']),('listener',['sensor_gyro','-n','1']),('listener',['sensor_accel','-n','1']),('listener',['sensor_mag','-n','1']),('sensors',['status'])]:
++            try:self.command(module,*args,timeout=3,required=False)
++            except Exception as error:self.event('diagnostic_unavailable',module=module,reason=str(error))
++        try:
++            result=subprocess.run(['gz','topic','-l'],env=self.env,capture_output=True,text=True,timeout=4)
++            (self.out/'logs/gazebo-topics.txt').write_text(result.stdout+result.stderr)
++            for sensor in ['imu_sensor/imu','air_pressure_sensor/air_pressure','magnetometer_sensor/magnetometer']:
++                name=sensor.split('/')[0];topic=f'/world/default/model/x500_{self.instance}/link/base_link/sensor/'+sensor
++                info=subprocess.run(['gz','topic','-i','-t',topic],env=self.env,capture_output=True,text=True,timeout=4)
++                (self.out/'logs'/('gazebo-'+name+'-info.txt')).write_text(info.stdout+info.stderr)
++        except Exception as error:self.event('diagnostic_unavailable',module='gazebo-topics',reason=str(error))
++        if intervene:
++            # Failed run stays FAIL: a late raw subscriber is an explicit diagnostic intervention.
++            for sensor in ['imu_sensor/imu','air_pressure_sensor/air_pressure']:
++                name='probe-'+sensor.split('/')[0]
++                topic=f'/world/default/model/x500_{self.instance}/link/base_link/sensor/'+sensor
++                self.event('sensor_probe_started',sensor=sensor,changes_subscription_graph=True)
++                process=self.spawn(name,['gz','topic','-e','-t',topic])
++                try:process.wait(timeout=2)
++                except subprocess.TimeoutExpired:
++                    self.expected_stopped.add(name);os.killpg(process.pid,signal.SIGINT)
++                    try:process.wait(timeout=3)
++                    except subprocess.TimeoutExpired:os.killpg(process.pid,signal.SIGKILL);process.wait()
++                self.expected_stopped.add(name)
++                try:self.command('gz_bridge','status',timeout=3,required=False)
++                except Exception as error:self.event('diagnostic_unavailable',module='post-probe-bridge',reason=str(error))
++                self.event('sensor_probe_finished',sensor=sensor,exit_code=process.returncode)
+ 
+     def state(self,target,operation,*values,expected=0):
+         text=self.command('mc_raptor','state',target,operation,*values,required=False)
+@@ -243,15 +305,27 @@ class Experiment:
+         # Private etc tree permits logger configuration without changing the build or another run.
+         shutil.copytree(self.runtime/'etc',self.rootfs/'etc')
+         logging=self.rootfs/'etc/logging';logging.mkdir(exist_ok=True)
+-        names=['vehicle_local_position','vehicle_global_position','position_setpoint_triplet','takeoff_status','vehicle_attitude','vehicle_angular_velocity','vehicle_status','vehicle_control_mode','trajectory_setpoint','vehicle_attitude_setpoint','vehicle_rates_setpoint','vehicle_torque_setpoint','vehicle_thrust_setpoint','rate_ctrl_status','actuator_motors','vehicle_command','vehicle_command_ack']
+-        if self.variant=='raptor':names+=['raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator']
++        names=['sensor_baro','vehicle_air_data','actuator_outputs','sensor_gyro','vehicle_imu','vehicle_imu_status','vehicle_local_position','vehicle_global_position','position_setpoint_triplet','takeoff_status','vehicle_attitude','vehicle_angular_velocity','vehicle_status','vehicle_control_mode','trajectory_setpoint','vehicle_attitude_setpoint','vehicle_rates_setpoint','vehicle_torque_setpoint','vehicle_thrust_setpoint','rate_ctrl_status','actuator_motors','vehicle_command','vehicle_command_ack']
++        if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator']
+         (logging/'logger_topics.txt').write_text(''.join(n+' 0 0\n' for n in names)+(''.join(f'route_observability 0 {i}\n' for i in range(1,10)) if self.variant=='raptor' else ''))
+         self.spawn('agent',[str(LAB/'scripts/MicroXRCEAgent'),'udp4','-p',str(self.cfg['agent_port']),'-v','4'])
+         self.spawn('gazebo',['gz','sim','-r','-s','-v','3',str(self.source/'Tools/simulation/gz/worlds/default.sdf')])
++        if self.args.capture_raw_sensors:
++            self.spawn('gz-imu',['gz','topic','-e','-t',f'/world/default/model/x500_{self.instance}/link/base_link/sensor/imu_sensor/imu'])
++            self.spawn('gz-pressure',['gz','topic','-e','-t',f'/world/default/model/x500_{self.instance}/link/base_link/sensor/air_pressure_sensor/air_pressure'])
+         self.spawn('gz-stats',['gz','topic','-e','-t','/world/default/stats'])
+         if Path('/usr/bin/tegrastats').exists():self.spawn('tegrastats',['/usr/bin/tegrastats','--interval','1000'])
+         self.init_ros()
+-        self.spawn('px4',[str(self.binary),'-d','-i',str(self.instance),'-w',str(self.rootfs),str(self.rootfs/'etc')])
++        px4_argv=[str(self.binary),'-d','-i',str(self.instance),'-w',str(self.rootfs),str(self.rootfs/'etc')]
++        trace=os.environ.get('HANDOVER_PX4_TRACE')
++        if trace:
++            self.metadata['diagnostic_preload']={'path':trace,'sha256':digest(Path(trace))}
++            px4_argv=['env','LD_PRELOAD='+trace]+px4_argv
++        if os.environ.get('HANDOVER_PX4_GDB')=='1':px4_argv=['gdb','--batch','-ex','set pagination off','-ex','handle SIGCONT nostop noprint pass','-ex','run','-ex','thread apply all bt','--args']+px4_argv
++        core_soft,core_hard=resource.getrlimit(resource.RLIMIT_CORE)
++        resource.setrlimit(resource.RLIMIT_CORE,(core_hard,core_hard))
++        self.metadata['core_capture']={'soft_limit':core_hard,'pattern':Path('/proc/sys/kernel/core_pattern').read_text().strip()}
++        self.spawn('px4',px4_argv,cwd=self.rootfs)
+         self.wait(lambda:all(n in self.latest for n in ['vehicle_status','vehicle_odometry','vehicle_local_position','vehicle_attitude']),self.cfg['startup_timeout_s'],'PX4 DDS telemetry')
+         self.command('ver','all');self.command('gz_bridge','status');self.command('uxrce_dds_client','status')
+         self.command('param','set','NAV_DLL_ACT','0')
+@@ -260,6 +334,15 @@ class Experiment:
+         if self.latest['vehicle_status'].system_id!=self.instance+1:
+             raise RuntimeError('SITL identity mismatch')
+         self.checks['telemetry']='PASS'
++        self.wait_sensor_readiness()
++        if self.startup_only:
++            self.capture_startup_diagnostics()
++            if self.variant=='raptor':
++                text=(self.out/'logs/px4.log').read_text(errors='replace')
++                if 'Checkpoint test passed' not in text:raise RuntimeError('startup policy self-test not confirmed')
++                self.command('mc_raptor','status');self.checks['policy_selftest']='PASS'
++            self.checks['startup_sequence']='PASS'
++            return
+         # Only address the localhost UDP socket of the PX4 process just created.
+         from pymavlink import mavutil
+         mav=mavutil.mavlink_connection(f'udpout:127.0.0.1:{18570+self.instance}',source_system=245,source_component=191)
+@@ -327,7 +410,7 @@ class Experiment:
+                     self.state('raptor','hold')
+                     values=self.state('raptor','read')['values'];values[:16]=[0.02]*16
+                     self.state('raptor','inject',*values)
+-                self.event('handover_requested',from_controller='C',to_controller='N',iteration=iteration)
++                self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='C',to_controller='N',iteration=iteration)
+                 self.mode(mode)
+                 self.wait(lambda:self.latest.get('raptor_status') and self.latest['raptor_status'].active and self.latest.get('raptor_input') and self.latest['raptor_input'].active,5,'RAPTOR active diagnostic DDS')
+                 self.checks['raptor_diagnostic_dds']='PASS'
+@@ -349,7 +432,7 @@ class Experiment:
+                     self.state('rate','hold');self.state('velocity','hold')
+                     self.state('rate','restore');self.state('velocity','restore')
+                 self.capture_states('neural_before_exit')
+-                self.event('handover_requested',from_controller='N',to_controller='C',iteration=iteration)
++                self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='N',to_controller='C',iteration=iteration)
+                 self.mode(4)
+                 if self.args.kind=='state_restore':
+                     self.state('rate','release');self.state('velocity','release')
+@@ -359,11 +442,12 @@ class Experiment:
+                 if self.args.kind=='state_restore':
+                     self.command('param','set','MC_RAPTOR_RINI','1')
+                     self.state('raptor','hold');self.state('raptor','reset');self.state('raptor','restore')
+-                    self.event('handover_requested',from_controller='C',to_controller='N',iteration=1)
++                    self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='C',to_controller='N',iteration=1)
+                     self.mode(mode);self.state('raptor','release')
+                     self.hover(self.cfg['neural_s'],'neural_restored')
+-                    self.event('handover_requested',from_controller='N',to_controller='C',iteration=1)
++                    self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='N',to_controller='C',iteration=1)
+                     self.mode(4);self.hover(self.cfg['hover_s'],'classic_after_restore')
++        self.event('landing_requested',end_bound_px4_us=self.native_phase_end_bound())
+         self.ros_command(21)
+         self.wait(lambda:self.latest.get('vehicle_land_detected') and self.latest['vehicle_land_detected'].landed,self.cfg['landing_timeout_s'],'landing')
+         self.safe=False
+@@ -403,21 +487,28 @@ class Experiment:
+ def main():
+     p=argparse.ArgumentParser(description=__doc__)
+     p.add_argument('kind',choices=TYPES);p.add_argument('--config',type=Path,default=ROOT/'config/experiment.json')
++    p.add_argument('--capture-raw-sensors',action='store_true',help='Diagnostic only: adds sensor subscribers and may change startup behavior')
++    p.add_argument('--startup-only',action='store_true',help='Preparation cold start; readiness only, never arm')
+     p.add_argument('--output',type=Path);p.add_argument('--hover-s',type=float)
+     args=p.parse_args();e=Experiment(args);status='FAIL';reason=None
+     try:
+         e.execute();status='PASS'
+     except Exception as ex:
+         reason=str(ex);e.event('failure',reason=reason);traceback.print_exc()
++        if not e.safe:
++            e.capture_startup_diagnostics(intervene=True)
++        else:
++            e.event('diagnostic_skipped',reason='flight failure proceeds directly to landing and cleanup')
+     finally:
+         e.cleanup()
+         write(e.out/'validation.json',{'status':status,'execution_status':status,'reason':reason,'checks':e.checks})
+-    if (e.out/'flight.ulg').exists():
++    if (e.out/'flight.ulg').exists() and not e.startup_only:
+         proc=subprocess.run([sys.executable,str(ROOT/'tools/analyze.py'),str(e.out)],capture_output=True,text=True)
+         (e.out/'logs/analysis.log').write_text(proc.stdout+proc.stderr)
+         if proc.returncode:status='FAIL'
++        else:status=json.loads((e.out/'validation.json').read_text())['status']
+     print(e.out,status,flush=True)
+-    exit_code=0 if status=='PASS' else 1
++    exit_code=0 if status in ['PASS','PASS_WITH_WARNINGS'] else 1
+     write(e.out/'execution.json',{'command':[sys.executable,*sys.argv],'exit_code':exit_code,'status':status})
+     return exit_code
+ 

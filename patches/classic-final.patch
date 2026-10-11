@@ -1,0 +1,207 @@
+diff --git a/platforms/posix/src/px4/common/px4_daemon/server.cpp b/platforms/posix/src/px4/common/px4_daemon/server.cpp
+index c26b364457..f0b8dd1374 100644
+--- a/platforms/posix/src/px4/common/px4_daemon/server.cpp
++++ b/platforms/posix/src/px4/common/px4_daemon/server.cpp
+@@ -66,6 +66,8 @@ Server::Server(int instance_id)
+ 	: _mutex(PTHREAD_MUTEX_INITIALIZER),
+ 	  _instance_id(instance_id)
+ {
++    const int ret=pthread_key_create(&_key,_pthread_key_destructor);
++    if(ret!=0){PX4_ERR("failed to create daemon stdout pthread key");return;}
+ 	_instance = this;
+ }
+ 
+@@ -77,6 +79,7 @@ Server::~Server()
+ int
+ Server::start()
+ {
++    if(_instance!=this)return -1;
+ 	std::string sock_path = get_socket_path(_instance_id);
+ 
+ 	// Delete socket in case it exists already.
+@@ -129,12 +132,7 @@ void Server::_pthread_key_destructor(void *arg)
+ void
+ Server::_server_main()
+ {
+-	int ret = pthread_key_create(&_key, _pthread_key_destructor);
+-
+-	if (ret != 0) {
+-		PX4_ERR("failed to create pthread key");
+-		return;
+-	}
++    int ret=0;
+ 
+ 	// The list of file descriptors to watch.
+ 	std::vector<pollfd> poll_fds;
+diff --git a/src/modules/simulation/gz_bridge/GZBridge.cpp b/src/modules/simulation/gz_bridge/GZBridge.cpp
+index 3ef65e186f..250dd90e62 100644
+--- a/src/modules/simulation/gz_bridge/GZBridge.cpp
++++ b/src/modules/simulation/gz_bridge/GZBridge.cpp
+@@ -382,6 +382,7 @@ void GZBridge::opticalFlowCallback(const px4::msgs::OpticalFlow &msg)
+ 
+ void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg)
+ {
++    _research_mag_callbacks.fetch_add(1, std::memory_order_relaxed);
+ 	const uint64_t timestamp = hrt_absolute_time();
+ 
+ 	device::Device::DeviceId id{};
+@@ -408,6 +409,7 @@ void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg)
+ 
+ void GZBridge::airPressureCallback(const gz::msgs::FluidPressure &msg)
+ {
++    _research_baro_callbacks.fetch_add(1, std::memory_order_relaxed);
+ 	const uint64_t timestamp = hrt_absolute_time();
+ 
+ 	device::Device::DeviceId id{};
+@@ -449,6 +451,7 @@ void GZBridge::airspeedCallback(const gz::msgs::AirSpeed &msg)
+ void GZBridge::imuCallback(const gz::msgs::IMU &msg)
+ {
+ 	const uint64_t timestamp = hrt_absolute_time();
++    _research_imu_callbacks.fetch_add(1, std::memory_order_relaxed);
+ 
+ 	// FLU -> FRD
+ 	static const auto q_FLU_to_FRD = gz::math::Quaterniond(0, 1, 0, 0);
+@@ -998,6 +1001,7 @@ int GZBridge::task_spawn(int argc, char *argv[])
+ 
+ int GZBridge::print_status()
+ {
++    PX4_INFO("Research callbacks: imu=%llu baro=%llu mag=%llu", (unsigned long long)_research_imu_callbacks.load(), (unsigned long long)_research_baro_callbacks.load(), (unsigned long long)_research_mag_callbacks.load());
+ 	PX4_INFO_RAW("ESC outputs:\n");
+ 	_mixing_interface_esc.mixingOutput().printStatus();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZBridge.hpp b/src/modules/simulation/gz_bridge/GZBridge.hpp
+index 9f90f4dfea..1853842f37 100644
+--- a/src/modules/simulation/gz_bridge/GZBridge.hpp
++++ b/src/modules/simulation/gz_bridge/GZBridge.hpp
+@@ -67,6 +67,7 @@
+ #include <uORB/topics/vehicle_local_position.h>
+ #include <uORB/topics/vehicle_odometry.h>
+ 
++#include <atomic>
+ #include <gz/math.hh>
+ #include <gz/msgs.hh>
+ #include <gz/transport.hh>
+@@ -105,6 +106,7 @@ public:
+ 	int print_status() override;
+ 
+ private:
++    std::atomic<uint64_t> _research_imu_callbacks{0}, _research_baro_callbacks{0}, _research_mag_callbacks{0};
+ 
+ 	void Run() override;
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZGimbal.cpp b/src/modules/simulation/gz_bridge/GZGimbal.cpp
+index 4fbccc316f..033e485108 100644
+--- a/src/modules/simulation/gz_bridge/GZGimbal.cpp
++++ b/src/modules/simulation/gz_bridge/GZGimbal.cpp
+@@ -49,7 +49,6 @@ bool GZGimbal::init(const std::string &world_name, const std::string &model_name
+ 		return false;
+ 	}
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	updateParameters();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZGimbal.hpp b/src/modules/simulation/gz_bridge/GZGimbal.hpp
+index 897c43150f..7bd26c746c 100644
+--- a/src/modules/simulation/gz_bridge/GZGimbal.hpp
++++ b/src/modules/simulation/gz_bridge/GZGimbal.hpp
+@@ -37,7 +37,7 @@ private:
+ 	friend class GZBridge;
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	uORB::Subscription _gimbal_device_set_attitude_sub{ORB_ID(gimbal_device_set_attitude)};
+ 	uORB::Subscription _gimbal_controls_sub{ORB_ID(gimbal_controls)};
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+index f556817ea9..c82f2ea6ba 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+@@ -55,7 +55,6 @@ bool GZMixingInterfaceESC::init(const std::string &model_name)
+ 
+ 	_esc_status_pub.advertise();
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	ScheduleNow();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
+index 5ffe105b5d..852ffddb39 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
+@@ -76,7 +76,7 @@ private:
+ 	void motorSpeedCallback(const gz::msgs::Actuators &actuators);
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	MixingOutput _mixing_output{"SIM_GZ_EC", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
+index ae53bb637a..d8b47c6ed8 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
+@@ -123,7 +123,6 @@ bool GZMixingInterfaceServo::init(const std::string &model_name)
+ 		_angular_range_rad.push_back(max_val - min_val);
+ 	}
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	ScheduleNow();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
+index 0e6759408b..9c3146baca 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
+@@ -82,7 +82,7 @@ private:
+ 	float get_servo_angle_min(const size_t index);
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	MixingOutput _mixing_output{"SIM_GZ_SV", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
+index 79a57c7ef3..4c50186ae7 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
+@@ -51,7 +51,6 @@ bool GZMixingInterfaceWheel::init(const std::string &model_name)
+ 		return false;
+ 	}
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	_wheel_encoders_pub.advertise();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
+index 7685bd14a7..dc86f5f968 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
+@@ -77,7 +77,7 @@ private:
+ 	void wheelSpeedCallback(const gz::msgs::Actuators &actuators);
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	MixingOutput _mixing_output{"SIM_GZ_WH", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+ 
+diff --git a/src/modules/uxrce_dds_client/dds_topics.yaml b/src/modules/uxrce_dds_client/dds_topics.yaml
+index 7cc39d199c..3761c52f4a 100644
+--- a/src/modules/uxrce_dds_client/dds_topics.yaml
++++ b/src/modules/uxrce_dds_client/dds_topics.yaml
+@@ -4,6 +4,11 @@
+ #
+ #####
+ publications:
++  # Preparation readiness: actual raw and selected barometer data.
++  - topic: /fmu/out/sensor_baro
++    type: px4_msgs::msg::SensorBaro
++  - topic: /fmu/out/vehicle_air_data
++    type: px4_msgs::msg::VehicleAirData
+ 
+   - topic: /fmu/out/register_ext_component_reply
+     type: px4_msgs::msg::RegisterExtComponentReply

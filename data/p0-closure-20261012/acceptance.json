@@ -1,0 +1,45 @@
+{
+  "scope": "P0 closure assessment from frozen post-fix preparation batches; historical p0-20261010 acceptance.json unchanged.",
+  "batches": [
+    "batch-03",
+    "batch-04",
+    "batch-05"
+  ],
+  "item1_crash": {
+    "post_fix_flights": 101,
+    "post_fix_raptor_flights": 86,
+    "startup_only_runs": 60,
+    "crashes": [],
+    "pre_fix_raptor_crash_rate": "4/24 (p0-20261010 normal runs + batch-02)",
+    "p_zero_if_unfixed_at_pre_fix_rate": 1.5502896224630315e-07,
+    "residual_rate_upper95_per_flight": 0.0297029702970297,
+    "root_cause": "LockstepScheduler caller-mutex lifetime race (batch-02 core, tests/lockstep_lifetime_test.cpp reproduces, fixed in research/platform/lockstep_scheduler.cpp)",
+    "not_proven": "The p0 raptor-hover-01 SIGSEGV has no stack; a dangling caller stack mutex is consistent with it but not proven."
+  },
+  "item2_startup": {
+    "consecutive_startups_without_sensor_failure": 161,
+    "residual_rate_upper95": 0.018633540372670808,
+    "change": "GZ_IP=127.0.0.1 and strict readiness gate",
+    "not_proven": "Multi-NIC endpoint selection remains a hypothesis, not a demonstrated root cause."
+  },
+  "item3_output_chain": {
+    "gate": {
+      "p99_us": 4000,
+      "max_us": 12000,
+      "longest_over_target_steps": 2,
+      "overwritten_fraction": 0.001,
+      "basis": "Claude-proposed (user delegated): one physics step is the lockstep floor; 12 ms is below the 12.5 ms rotor rise time constant in the x500 SDF."
+    },
+    "runs": 68,
+    "neural_steps": 145979,
+    "overwritten_total": 10,
+    "overwritten_fraction": 6.850300385671912e-05,
+    "worst_run_max_us": 8000.0,
+    "worst_run_p99_us": 4000.0,
+    "worst_longest_over_target_steps": 1,
+    "gate_met": true,
+    "condition": "Tail latency depends on host load (batch mean CPU 22.5% vs 14.1%); evaluated across both instrumented batches."
+  },
+  "p0_complete": true,
+  "p0_complete_note": "batch-04 stopped on the fixed-reference recovery criterion (since replaced, user-confirmed); its flights still count for crash, startup and output-chain evidence. Final verdict uses batch-05 as the complete frozen batch."
+}

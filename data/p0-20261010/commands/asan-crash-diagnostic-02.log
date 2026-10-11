@@ -1,0 +1,31 @@
+created {'thresholds': {'seed': 42, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 3, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500, 'settling_band_m': 0.2, 'settling_dwell_s': 2.0, 'joint_recovery': {'position_reference_ned_m': [0, 0, -3], 'velocity_reference_ned_m_s': [0, 0, 0], 'angular_velocity_reference_frd_rad_s': [0, 0, 0], 'position_threshold_m': 0.2, 'velocity_threshold_m_s': 0.1, 'angular_velocity_threshold_rad_s': 0.1, 'dwell_s': 2.0, 'max_observation_gap_s': 0.02}, 'p0_strict': True}}
+process_started {'name': 'agent', 'pid': 2399618, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 2399619, 'command': ['gz', 'sim', '-r', '-s', '-v', '3', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'gz-stats', 'pid': 2399620, 'command': ['gz', 'topic', '-e', '-t', '/world/default/stats']}
+process_started {'name': 'tegrastats', 'pid': 2399621, 'command': ['/usr/bin/tegrastats', '--interval', '1000']}
+process_started {'name': 'px4', 'pid': 2399683, 'command': ['/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor_asan/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/p0-20261010-asan-diagnostic-02/rootfs', '/home/car/uav_handover/data/p0-20261010-asan-diagnostic-02/rootfs/etc']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1791631783873443}
+ready {'condition': 'PX4 DDS telemetry'}
+mavlink_identity {'system_id': 22, 'autopilot': 12, 'udp_port': 18591}
+process_started {'name': 'agent-reconnected', 'pid': 2406966, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+ready {'condition': 'DDS Client reconnection with fresh telemetry'}
+command_requested {'command': 176, 'params': {'param1': 1, 'param2': 4, 'param3': 3}}
+failure {'reason': 'command acknowledgement'}
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/run_experiment.py", line 434, in main
+    e.execute();status='PASS'
+    ^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/run_experiment.py", line 305, in execute
+    self.ros_command(176,param1=1,param2=4,param3=3)
+  File "/home/car/uav_handover/tools/run_experiment.py", line 191, in ros_command
+    self.wait(lambda:any(a.command==command for a in self.acks[start:]),5,'command acknowledgement')
+  File "/home/car/uav_handover/tools/run_experiment.py", line 183, in wait
+    raise TimeoutError(description)
+TimeoutError: command acknowledgement
+process_stopped {'name': 'agent-reconnected', 'pid': 2406966, 'exit_code': -2}
+process_stopped {'name': 'px4', 'pid': 2399683, 'exit_code': 0}
+process_stopped {'name': 'tegrastats', 'pid': 2399621, 'exit_code': -2}
+process_stopped {'name': 'gz-stats', 'pid': 2399620, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 2399619, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 2399618, 'exit_code': -2}
+/home/car/uav_handover/data/p0-20261010-asan-diagnostic-02 FAIL

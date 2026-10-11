@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import numpy as np
 from pyulog import ULog
+from p0_metrics import add_p0
 
 def clean(value):
     if isinstance(value,dict):return {k:clean(v) for k,v in value.items()}
@@ -49,8 +50,9 @@ def analyze(folder):
         if e['event']=='hover_started':
             finish=next((x for x in events[i+1:] if x['event']=='hover_ended'),None)
             if finish:
-                a,b=px4_time(e['monotonic_ns']),px4_time(finish['monotonic_ns'])
+                a,b=e.get('px4_start_us',px4_time(e['monotonic_ns'])),finish.get('px4_end_us',px4_time(finish['monotonic_ns']))
                 windows.append((e['label'],a,b))
+    metrics['hover_window_clock']='native_px4' if all('px4_start_us' in e for e in events if e['event']=='hover_started') and all('px4_end_us' in e for e in events if e['event']=='hover_ended') else 'estimated_ros_alignment'
     for index,(label,a,b) in enumerate(windows):
         mask=(t>=a)&(t<=b)
         reference=np.array([0,0,-cfg['altitude_m']])
@@ -115,9 +117,9 @@ def analyze(folder):
             expected_transitions=len(metrics['handovers'])
             metrics['ownership_transition_validation']={'expected':expected_transitions,'actual':len(changes),
                 'status':'PASS' if len(changes)==expected_transitions else 'FAIL'}
-            metrics['actuator_owner_transitions']=[{'px4_us':int(owner['actuator_timestamp'][i]),'from':int(owner['owner'][i-1]),'to':int(owner['owner'][i])} for i in changes]
+            metrics['actuator_owner_transitions']=[{'px4_us':int(owner['timestamp'][i]),'actuator_message_us':int(owner['actuator_timestamp'][i]),'from':int(owner['owner'][i-1]),'to':int(owner['owner'][i])} for i in changes]
             for transition in metrics['actuator_owner_transitions']:
-                stamp=transition['px4_us'];idx=int(np.searchsorted(mt,stamp))
+                stamp=transition['px4_us'];idx=int(np.searchsorted(mt,transition['actuator_message_us']))
                 if 0<idx<len(mt):transition['max_motor_step']=float(np.max(np.abs(mv[idx]-mv[idx-1])))
                 desired=meta['raptor_mode_id'] if transition['to']==1 else 4
                 candidates=np.flatnonzero(armed['nav_state']==desired)
@@ -126,13 +128,14 @@ def analyze(folder):
                     transition['mode_change_us']=int(armed['nav_state_timestamp'][nearest])
                     transition['mode_to_actuator_owner_us']=int(stamp-transition['mode_change_us'])
                 if 'settling_band_m' in cfg:
-                    after=np.flatnonzero(t>=stamp)
+                    legacy_stamp=transition['actuator_message_us']
+                    after=np.flatnonzero(t>=legacy_stamp)
                     error=np.linalg.norm(pos-np.array([0,0,-cfg['altitude_m']]),axis=1)
-                    transition['settling_time_s']=None
+                    transition['legacy_unbounded_position_band_entry_time_s']=None
                     for j in after:
                         end=int(np.searchsorted(t,t[j]+cfg['settling_dwell_s']*1e6))
                         if end<len(t) and end>j and np.all(error[j:end]<=cfg['settling_band_m']):
-                            transition['settling_time_s']=float((t[j]-stamp)/1e6);break
+                            transition['legacy_unbounded_position_band_entry_time_s']=float((t[j]-legacy_stamp)/1e6);break
             for index,(label,a,b) in enumerate(windows):
                 mask=(owner['timestamp']>=a)&(owner['timestamp']<=b)
                 expected=1 if label.startswith('neural') else 2
@@ -167,6 +170,7 @@ def analyze(folder):
                 if ok and (op==4 or (e['holding'] and op in [3,5,6])):held[target]=values
                 if ok and op==7:held.pop(target,None)
             metrics['state_values_validation']={'errors':state_errors,'status':'PASS' if not state_errors else 'FAIL'}
+    add_p0(metrics,topics,cfg,events,windows,px4_time,meta['variant'],stats)
     if 'settling_band_m' not in cfg:metrics['unavailable']['settling_time']='this run did not predefine a settling band and dwell time'
     metrics['safety_failure_events']=sum(e['event']=='failure' for e in events)
     resources=folder/'resources.jsonl'
@@ -212,7 +216,10 @@ def analyze(folder):
     passed=execution=='PASS' and not missing and metrics['armed_motor_values_valid'] and bool(windows) and all(m['status']=='PASS' for m in metrics['windows'].values())
     if meta['variant']=='raptor':
         passed=passed and metrics.get('raptor_active_samples',0)>0 and metrics.get('inference_timing_status')=='PASS' and bool(metrics['ownership_windows']) and all(v['status']=='PASS' for v in metrics['ownership_windows'].values()) and metrics.get('ownership_transition_validation',{}).get('status')=='PASS' and metrics.get('state_log_validation',{}).get('status')=='PASS' and metrics.get('state_values_validation',{}).get('status')=='PASS'
-    metrics['status']='PASS' if passed else 'FAIL'
+    if cfg.get('p0_strict'):
+        passed=passed and metrics.get('recovery_status')=='PASS' and metrics.get('request_boundary_status')=='PASS' and metrics.get('hover_window_clock')=='native_px4'
+        if meta['variant']=='raptor':passed=passed and metrics.get('executor_acceptance') in ['PASS','PASS_WITH_WARNINGS']
+    metrics['status']=('PASS_WITH_WARNINGS' if metrics.get('executor_acceptance')=='PASS_WITH_WARNINGS' else 'PASS') if passed else 'FAIL'
     write(folder/'metrics.json',metrics)
     validation['analysis_status']=metrics['status'];validation['status']=metrics['status'];validation['missing_topics']=missing
     write(folder/'validation.json',validation)

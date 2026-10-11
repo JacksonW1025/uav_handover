@@ -1,0 +1,25 @@
+created {'thresholds': {'seed': 42, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 3, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500, 'settling_band_m': 0.2, 'settling_dwell_s': 2.0, 'joint_recovery': {'position_reference_ned_m': [0, 0, -3], 'velocity_reference_ned_m_s': [0, 0, 0], 'angular_velocity_reference_frd_rad_s': [0, 0, 0], 'position_threshold_m': 0.2, 'velocity_threshold_m_s': 0.1, 'angular_velocity_threshold_rad_s': 0.1, 'dwell_s': 2.0, 'max_observation_gap_s': 0.02}, 'p0_strict': True}}
+process_started {'name': 'agent', 'pid': 3141349, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 3141350, 'command': ['gz', 'sim', '-r', '-s', '-v', '3', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'gz-pressure', 'pid': 3141353, 'command': ['gz', 'topic', '-e', '-t', '/world/default/model/x500_21/link/base_link/sensor/air_pressure_sensor/air_pressure']}
+process_started {'name': 'gz-stats', 'pid': 3141354, 'command': ['gz', 'topic', '-e', '-t', '/world/default/stats']}
+process_started {'name': 'tegrastats', 'pid': 3141355, 'command': ['/usr/bin/tegrastats', '--interval', '1000']}
+process_started {'name': 'px4', 'pid': 3141419, 'command': ['/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/build/px4_sitl_default/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/prep-20261011-b01-startup-05/rootfs', '/home/car/uav_handover/data/prep-20261011-b01-startup-05/rootfs/etc']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1791708230894384}
+failure {'reason': 'PX4 DDS telemetry'}
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/run_experiment.py", line 472, in main
+    e.execute();status='PASS'
+    ^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/run_experiment.py", line 307, in execute
+    self.wait(lambda:all(n in self.latest for n in ['vehicle_status','vehicle_odometry','vehicle_local_position','vehicle_attitude']),self.cfg['startup_timeout_s'],'PX4 DDS telemetry')
+  File "/home/car/uav_handover/tools/run_experiment.py", line 186, in wait
+    raise TimeoutError(description)
+TimeoutError: PX4 DDS telemetry
+process_stopped {'name': 'px4', 'pid': 3141419, 'exit_code': 0}
+process_stopped {'name': 'tegrastats', 'pid': 3141355, 'exit_code': -2}
+process_stopped {'name': 'gz-stats', 'pid': 3141354, 'exit_code': 0}
+process_stopped {'name': 'gz-pressure', 'pid': 3141353, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 3141350, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 3141349, 'exit_code': -2}
+/home/car/uav_handover/data/prep-20261011-b01-startup-05 FAIL

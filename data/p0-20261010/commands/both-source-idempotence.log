@@ -1,0 +1,27 @@
+Applied state API and wall-clock inference instrumentation; policy files unchanged.
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/apply_research.py", line 349, in <module>
+    apply_daemon_stdout_key()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/car/uav_handover/tools/apply_research.py", line 313, in apply_daemon_stdout_key
+    edit('platforms/posix/src/px4/common/px4_daemon/server.cpp',
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+         '''\t  _instance_id(instance_id)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+    \t_instance = this;
+    ^^^^^^^^^^^^^^^^^^^
+    }''')
+    ^^^^^
+  File "/home/car/uav_handover/tools/apply_research.py", line 10, in edit
+    if old not in s:raise RuntimeError('expected source anchor missing: '+name)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: expected source anchor missing: platforms/posix/src/px4/common/px4_daemon/server.cpp
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tests/check_apply_idempotence.py", line 12, in <module>
+    for _ in range(2):subprocess.run(['python3',str(root/'tools/apply_research.py')],check=True)
+                      ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/miniconda/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['python3', '/home/car/uav_handover/tools/apply_research.py']' returned non-zero exit status 1.

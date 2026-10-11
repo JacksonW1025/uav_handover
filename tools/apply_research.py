@@ -14,10 +14,10 @@ def main():
  dest=PX/'src/lib/handover_research';dest.mkdir(exist_ok=True)
  for p in (ROOT/'research/state').glob('*.hpp'):shutil.copy2(p,dest/p.name)
  for p in (ROOT/'research/state').glob('*.msg'):shutil.copy2(p,PX/'msg'/p.name)
- edit('msg/CMakeLists.txt','\tRouteObservability.msg','\tResearchStateRequest.msg\n\tResearchStateResponse.msg\n\tResearchTiming.msg\n\tResearchActuator.msg\n\tRouteObservability.msg')
+ edit('msg/CMakeLists.txt','\tRouteObservability.msg','\tResearchStateRequest.msg\n\tResearchStateResponse.msg\n\tResearchTiming.msg\n\tResearchAngularVelocity.msg\n\tResearchOutput.msg\n\tResearchActuator.msg\n\tRouteObservability.msg')
  if 'MC_RAPTOR_RSH:' not in (PX/'src/modules/mc_raptor/module.yaml').read_text():edit('src/modules/mc_raptor/module.yaml','parameters:\n','parameters:\n    - group: Handover Research\n      definitions:\n        MC_RAPTOR_RSH:\n            description:\n                short: Enable SITL controller state research interface\n            type: boolean\n            default: false\n')
  # Local state operations are excluded from hardware builds.
- for name,member in [('mc_rate_control/MulticopterRateControl.hpp','handover_research::StateBridge _research_state{2, 3, 0.3f};'),('mc_pos_control/MulticopterPositionControl.hpp','handover_research::StateBridge _research_state{3, 3, 4.f};'),('mc_raptor/mc_raptor.hpp','handover_research::StateBridge _research_state{1, 26, 100.f};\n\tvoid research_get(float *values);\n\tvoid research_set(const float *values, bool reset_state);')]:
+ for name,member in [('mc_rate_control/MulticopterRateControl.hpp','handover_research::StateBridge _research_state{2, 3, 0.3f};'),('mc_pos_control/MulticopterPositionControl.hpp','handover_research::StateBridge _research_state{3, 3, 4.f};'),('mc_raptor/mc_raptor.hpp','handover_research::StateBridge _research_state{1, 26, 100.f};\n\tvoid research_get(float *values);\n\tvoid research_set(const float *values, bool reset_state);\n    handover_research::SampleClock _sample_clock{};\n    unsigned _sample_generation{0};\n    uint64_t _sample_missed{0}, _native_total{0}, _gru_total{0}, _last_gru_sample{0};')]:
   file='src/modules/'+name
   edit(file,'#pragma once','#pragma once\n#ifdef __PX4_POSIX\n#include <lib/handover_research/StateBridge.hpp>\n#endif')
   edit(file,'private:\n','private:\n#ifdef __PX4_POSIX\n\t'+member+'\n#endif\n')
@@ -85,6 +85,32 @@ void Raptor::research_set(const float *v, bool reset_state) {
     clock_gettime(CLOCK_MONOTONIC,&wall_end);
     research_timing_s timing{};
     timing.timestamp=current_time;
+    timing.schema_version=2;
+    timing.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
+    timing.local_position_sample=_vehicle_local_position.timestamp_sample;
+    timing.attitude_sample=_vehicle_attitude.timestamp_sample;
+    timing.control_start_wall_ns=static_cast<uint64_t>(wall_start.tv_sec)*1000000000ULL+wall_start.tv_nsec;
+    timing.control_end_wall_ns=static_cast<uint64_t>(wall_end.tv_sec)*1000000000ULL+wall_end.tv_nsec;
+    timing.accepted_total=_sample_clock.accepted;
+    timing.duplicate_total=_sample_clock.duplicate;
+    timing.regressed_total=_sample_clock.regressed;
+    timing.source_generation=_sample_generation;
+    timing.source_missed_total=_sample_missed;
+    timing.input_dt_us=_sample_clock.dt;
+    timing.executor_dt_us=executor_dt_us;
+    timing.native_dt_us=native_dt_us;
+    timing.executor_called=true;
+    timing.native_step=executor_status.source==decltype(executor_status.source)::CONTROL && executor_status.step_type==decltype(executor_status.step_type)::NATIVE;
+    timing.gru_committed=timing.native_step && !_research_state.engine.holding;
+    if(timing.native_step)++_native_total;
+    if(timing.gru_committed){++_gru_total;_last_gru_sample=timing.timestamp_sample;}
+    timing.native_total=_native_total;timing.gru_commit_total=_gru_total;timing.last_gru_sample=_last_gru_sample;
+    timing.timing_jitter_ok=executor_status.timing_jitter.OK;
+    timing.timing_bias_ok=executor_status.timing_bias.OK;
+    timing.jitter_ratio=executor_status.timing_jitter.MAGNITUDE;
+    timing.bias_ratio=executor_status.timing_bias.MAGNITUDE;
+    timing.timestamp_invalid=executor_status.TIMESTAMP_INVALID;
+    timing.timestamp_order_invalid=executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP;
     timing.inference_duration_us=(wall_end.tv_sec-wall_start.tv_sec)*1000000+(wall_end.tv_nsec-wall_start.tv_nsec)/1000;
     timing.active=next_active;
     timing.executor_ok=executor_status.OK;
@@ -92,8 +118,7 @@ void Raptor::research_set(const float *v, bool reset_state) {
     timing.mode_id=ext_component_mode_id;
     timing.output_finite=true;
     if(timing.control_step)for(TI i=0;i<4;i++) {timing.action[i]=action.action[i];timing.output_finite &= PX4_ISFINITE(action.action[i]);}
-    static uORB::Publication<research_timing_s> timing_pub{ORB_ID(research_timing)};
-    timing_pub.publish(timing);
+    handover_research::TimingRecord timing_record(timing);
     if(_research_state.engine.holding)research_set(_research_state.engine.held,false);
     if(timing.control_step && (!timing.output_finite || executor_status.TIMESTAMP_INVALID || executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP)) {
         PX4_ERR("Research guard: invalid inference; actuator publication withheld");
@@ -111,7 +136,6 @@ void Raptor::research_set(const float *v, bool reset_state) {
     if(argc>=1 && strcmp(argv[0],"state")==0)return handover_research::state_command(argc,argv);
 #endif
 \tif (argc >= 2 && strcmp(argv[0], "intref") == 0) {''')
- print('Applied state API and wall-clock inference instrumentation; policy files unchanged.')
 if __name__=='__main__':main()
 # Exact actuator ownership evidence supplements the preserved, throttled route events.
 for module in ['mc_raptor/mc_raptor.cpp','control_allocator/ControlAllocator.cpp']:
@@ -185,3 +209,121 @@ edit('src/modules/mc_raptor/mc_raptor.cpp','\tif (status.active) {\n\t\t_actuato
 \t\t_actuator_motors_pub.publish(actuator_motors);''')
 edit('src/modules/mc_raptor/mc_raptor.cpp','    ownership_pub.publish(ownership);\n#endif',
      '    ownership_pub.publish(ownership);\n        } // publication_gate.allowed()\n#endif')
+
+# P0: use observation sample time, not asynchronously synchronized simulator now.
+edit('src/modules/mc_raptor/mc_raptor.hpp',
+     '\tvoid research_set(const float *values, bool reset_state);',
+     '''\tvoid research_set(const float *values, bool reset_state);
+    handover_research::SampleClock _sample_clock{};
+    unsigned _sample_generation{0};
+    uint64_t _sample_missed{0}, _native_total{0}, _gru_total{0}, _last_gru_sample{0};''')
+edit('src/modules/mc_raptor/mc_raptor.cpp',
+     '#ifdef __PX4_POSIX\n    for (TI i=0;i<16;i++) _research_state._bounds[i]=1.f;',
+     '''#ifdef __PX4_POSIX
+    const auto generation=_vehicle_angular_velocity_sub.get_last_generation();
+    if(_sample_generation && generation-_sample_generation>1)_sample_missed+=generation-_sample_generation-1;
+    _sample_generation=generation;
+    const unsigned input_result=_sample_clock.accept(_vehicle_angular_velocity.timestamp_sample);
+    if(input_result) {
+        research_timing_s skipped{};
+        skipped.timestamp=current_time;skipped.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
+        skipped.schema_version=2;skipped.active=next_active;skipped.mode_id=ext_component_mode_id;
+        skipped.accepted_total=_sample_clock.accepted;skipped.duplicate_total=_sample_clock.duplicate;
+        skipped.regressed_total=_sample_clock.regressed;skipped.source_missed_total=_sample_missed;
+        skipped.source_generation=generation;skipped.input_result=input_result;
+        skipped.native_total=_native_total;skipped.gru_commit_total=_gru_total;skipped.last_gru_sample=_last_gru_sample;
+        skipped.executor_ok=true;skipped.output_finite=true;
+        handover_research::TimingRecord skipped_record(skipped);
+        perf_end(_loop_perf);return;
+    }
+#endif
+#ifdef __PX4_POSIX
+    for (TI i=0;i<16;i++) _research_state._bounds[i]=1.f;''')
+edit('src/modules/mc_raptor/mc_raptor.cpp',
+     '\thrt_abstime nanoseconds = current_time * 1000;',
+     '''#ifdef __PX4_POSIX
+    const uint32_t executor_dt_us=executor.executor.last_control_timestamp_set ?
+        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp)/1000 : 0;
+    const uint32_t native_dt_us=executor.executor.last_control_timestamp_original_set ?
+        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp_original)/1000 : 0;
+    hrt_abstime nanoseconds = _vehicle_angular_velocity.timestamp_sample * 1000;
+#else
+\thrt_abstime nanoseconds = current_time * 1000;
+#endif''')
+
+# Gazebo transport callbacks and /clock are asynchronous. Timestamp observations
+# from their message header, preserving acquisition time rather than callback time.
+edit('src/modules/simulation/gz_bridge/GZBridge.cpp',
+     'void GZBridge::imuCallback(const gz::msgs::IMU &msg)\n{\n\tconst uint64_t timestamp = hrt_absolute_time();',
+     'void GZBridge::imuCallback(const gz::msgs::IMU &msg)\n{\n\tconst uint64_t timestamp = static_cast<uint64_t>(msg.header().stamp().sec()) * 1000000ULL + msg.header().stamp().nsec() / 1000;')
+
+
+edit('src/modules/mc_raptor/mc_raptor.cpp',
+     '\t\t_actuator_motors_pub.publish(actuator_motors);',
+     '\t\t_actuator_motors_pub.publish(actuator_motors);\n#ifdef __PX4_POSIX\n        timing.actuator_published=true;\n        timing.actuator_publish_sim_us=hrt_absolute_time();\n        struct timespec publish_wall{};clock_gettime(CLOCK_MONOTONIC,&publish_wall);\n        timing.actuator_publish_wall_ns=static_cast<uint64_t>(publish_wall.tv_sec)*1000000000ULL+publish_wall.tv_nsec;\n#endif')
+
+# SITL recurrent inference must consume each real gyro observation. The ordinary
+# latest-only vehicle_angular_velocity publication and classical controllers keep
+# their original scheduling. FIFO hardware paths are deliberately unchanged.
+edit('msg/CMakeLists.txt','\tResearchTiming.msg','\tResearchTiming.msg\n\tResearchAngularVelocity.msg')
+edit('src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp',
+     '#include "VehicleAngularVelocity.hpp"',
+     '#include "VehicleAngularVelocity.hpp"\n#ifdef __PX4_POSIX\n#include <uORB/topics/research_angular_velocity.h>\n#endif')
+edit('src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp',
+     '\t\t\t\t// Publish\n\t\t\t\tif (!_sensor_sub.updated()) {',
+     '''#ifdef __PX4_POSIX
+                // Preserve each filtered acquisition, including batched source samples.
+                static uORB::Publication<research_angular_velocity_s> research_pub{ORB_ID(research_angular_velocity)};
+                static uint64_t last_research_sample=0;
+                if(sensor_data.timestamp_sample >= last_research_sample + _publish_interval_min_us) {
+                    research_angular_velocity_s sample{};
+                    sample.timestamp=hrt_absolute_time();sample.timestamp_sample=sensor_data.timestamp_sample;
+                    (_calibration.Correct(angular_velocity_uncalibrated)-_bias).copyTo(sample.xyz);
+                    (_calibration.rotation()*angular_acceleration_uncalibrated).copyTo(sample.xyz_derivative);
+                    research_pub.publish(sample);last_research_sample=sample.timestamp_sample;
+                }
+#endif
+\t\t\t\t// Publish
+\t\t\t\tif (!_sensor_sub.updated()) {''')
+edit('src/modules/mc_raptor/mc_raptor.hpp',
+     '#include <uORB/topics/vehicle_angular_velocity.h>',
+     '#include <uORB/topics/vehicle_angular_velocity.h>\n#ifdef __PX4_POSIX\n#include <uORB/topics/research_angular_velocity.h>\n#endif')
+edit('src/modules/mc_raptor/mc_raptor.hpp',
+     '\tuORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};',
+     '''#ifdef __PX4_POSIX
+    uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(research_angular_velocity)};
+#else
+\tuORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};
+#endif''')
+edit('src/modules/mc_raptor/mc_raptor.hpp',
+     '\tvehicle_angular_velocity_s _vehicle_angular_velocity{};',
+     '''#ifdef __PX4_POSIX
+    research_angular_velocity_s _vehicle_angular_velocity{};
+#else
+\tvehicle_angular_velocity_s _vehicle_angular_velocity{};
+#endif''')
+edit('src/modules/mc_raptor/mc_raptor.cpp',
+     'status.subscription_update_angular_velocity = _vehicle_angular_velocity_sub.update(&_vehicle_angular_velocity);',
+     '''status.subscription_update_angular_velocity = _vehicle_angular_velocity_sub.update(&_vehicle_angular_velocity);
+#ifdef __PX4_POSIX
+    // Schedule another work item until the queue is drained, including early returns.
+    if(_vehicle_angular_velocity_sub.updated())ScheduleNow();
+#endif''')
+
+# POSIX daemon must publish its stdout TLS key before any logging thread can
+# observe Server::is_running(). ASAN exposed the old uninitialized-key window.
+def apply_daemon_stdout_key():
+ edit('platforms/posix/src/px4/common/px4_daemon/server.cpp', '\t  _instance_id(instance_id)\n{\n\t_instance = this;\n}', '\t  _instance_id(instance_id)\n{\n    const int ret=pthread_key_create(&_key,_pthread_key_destructor);\n    if(ret!=0){PX4_ERR("failed to create daemon stdout pthread key");return;}\n\t_instance = this;\n}')
+ edit('platforms/posix/src/px4/common/px4_daemon/server.cpp', 'void\nServer::_server_main()\n{\n\tint ret = pthread_key_create(&_key, _pthread_key_destructor);\n\n\tif (ret != 0) {\n\t\tPX4_ERR("failed to create pthread key");\n\t\treturn;\n\t}\n', 'void\nServer::_server_main()\n{\n    int ret=0;\n')
+ edit('platforms/posix/src/px4/common/px4_daemon/server.cpp', 'Server::start()\n{\n\tstd::string sock_path', 'Server::start()\n{\n    if(_instance!=this)return -1;\n\tstd::string sock_path')
+
+apply_daemon_stdout_key()
+_saved_px=PX
+PX=ROOT/'uav_lab/.local/checkouts/px4-classic'
+apply_daemon_stdout_key()
+PX=_saved_px
+
+print('Applied SITL research instrumentation and POSIX daemon TLS initialization; policy files unchanged.')
+
+from apply_preparation import apply as apply_preparation
+apply_preparation()

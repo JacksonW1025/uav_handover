@@ -1,6 +1,6 @@
 # Thor 实验 Quickstart
 
-全部飞行操作限本机 headless SITL。项目目录 `/home/car/uav_handover`，本机 Lab 为 `uav_lab/`，每轮新数据存入 `data/`。完整验收见 [最终报告](THOR_ENVIRONMENT_FINAL_REPORT.md)。
+全部飞行操作限本机 headless SITL。项目目录 `/home/car/uav_handover`，本机 Lab 为 `uav_lab/`，每轮新数据存入 `data/`。当前 P0 结论见 [P0 收尾报告](THOR_P0_FINAL_REPORT.md)，旧环境建设记录见 [最终报告](THOR_ENVIRONMENT_FINAL_REPORT.md)。
 
 ## 日常入口
 
@@ -113,3 +113,40 @@ cmake --install uav_lab/.local/agent-build
 先看本轮 `validation.json` 的原因，再看 `logs/px4.log`、`logs/gazebo.log`、`logs/agent*.log` 和 `logs/commands.log`。模型存在而无传感器时检查 `GZ_SIM_SERVER_CONFIG_PATH`；消息存在而收不到时检查对应版本后缀、overlay、QoS 和 Domain；状态写入拒绝时检查活动状态和边界。`health` 只负责健康检查，飞行能力须由具体实验入口验证。
 
 没有修改系统、驱动、CUDA 主版本或策略权重。策略训练的完整动力学参数未随检查点提供；250 Hz Gazebo 下原实现将 native 同步设为 2 步，约 125 Hz，区别于训练 100 Hz。正式对照须固定并报告该条件，当前结果只支持此配置的短时实验。
+
+## P0 恢复与时序判定（2026-10-10）
+
+默认配置与 `config/p0.json` 均启用严格 P0 检查。保留旧日志，使用不存在的输出目录：
+
+```bash
+./tools/experiment state_restore --config config/p0.json --output data/my-new-p0-restore
+```
+
+位置入带指标为 `position_band_entry_time_s`；联合恢复为 `joint_recovery_time_s`，完整结果在 `recovery_stages`。旧位置指标的跨阶段算法仅作为 `legacy_unbounded_position_band_entry_time_s` 对照，不参与验收。固定参考为位置 NED `[0,0,-3]` m、速度 NED 零、机体系 FRD 角速度零；三维误差范数分别 ≤0.20 m、≤0.10 m/s、≤0.10 rad/s，连续保持2 s。采用采集时间、向后对齐；任一观测间隔或对齐陈旧度 >20 ms 即中断，不跨缺口。各阶段截止于下一持权变化、交接请求或降落请求；请求前通过 PX4 listener 取得原生时间上界，保守截断在请求之前；悬停起止也使用原生 PX4 时间，不依赖 DDS UTC 或插值估计时长。
+
+`SETTLED` 为有完整连续达标2 s区间；`NOT_SETTLED` 为存在完整可评估2 s区间但未达标；`INSUFFICIENT_OBSERVATION` 为数据缺口或阶段过短导致无法评估。三者分别计数。若缺口可能遮住首次恢复，标记 `true_first_recovery_uncertain`，仅报告首次可验证区间。
+
+`executor_scopes` 分整轮、控制器活动、该次推理实际发布神经执行器指令。持续计数提供完整告警总数、时长均值/最大值和超过2500 μs次数；分位数和间隔分布来自已记录行，另列漏记数。计时覆盖 observe+control，不能解释为单独的神经网络前向耗时。
+
+硬错误、输入拒绝、漏消费源发布、GRU 提交采样时间不递增、未分类告警、活动或实际神经发布阶段的任一 executor 告警均 FAIL。只有已分类的非活动影子推理 jitter/bias 告警、其余检查均满足时为 `PASS_WITH_WARNINGS`；无告警为 `PASS`。恢复任一阶段未恢复/观察不足、必需指标缺失、状态值/控制窗口/执行器归属/飞行检查失败同样 FAIL。P99 仍限2500 μs，运行时完整计数中超过该值的调用比例必须严格低于1%，无需假设漏记行的耗时。
+
+上述状态以 `metrics.json` / `validation.json` 为准；进程正常退出或旧环境矩阵 PASS 不等于 P0 完成。不要对旧目录运行新版分析器；需要旧数据对照时另建分析目录，保留原始结果。
+
+## 准备阶段冷启动与链路诊断（2026-10-11）
+
+新增候选的说明、冻结身份和批次结果见 [准备记录](THOR_PREPARATION_20261011.md)。历史 P0 FAIL 不变。
+
+```bash
+# 只检查启动就绪；不解锁、不飞行。输出目录必须不存在。
+./tools/experiment classic_hover --startup-only --output data/my-startup-classic
+./tools/experiment raptor_hover --startup-only --output data/my-startup-raptor
+
+# 对一次新 RAPTOR 飞行生成独立链路说明；不是电机物理消费确认。
+uav_lab/.local/venv/bin/python tools/preparation_trace.py data/my-new-handover
+
+# 预登记 20 次冷启动与七类场景各三次；失败即停止，保留 NOT_RUN。
+uav_lab/.local/venv/bin/python tools/preparation_batch.py \
+  data/my-preparation-batch --prefix my-preparation
+```
+
+运行器对本机 Gazebo transport 固定 `GZ_IP=127.0.0.1`。就绪检查要求原始/选中气压、有效位置及连续更新，保持 PX4 原健康与解锁检查。`--capture-raw-sensors` 会增加 Gazebo IMU/pressure 订阅，可能影响传感器激活，仅用于显式诊断，不用于正常冻结批次。启动失败的后置订阅探测同样会记录为干预，不能把恢复后的失败轮改为 PASS。

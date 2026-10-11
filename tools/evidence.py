@@ -15,6 +15,7 @@ def main():
  p.add_argument('--output',type=Path,default=ROOT/'data/environment-20261009/final-commands');p.add_argument('command',nargs=argparse.REMAINDER)
  a=p.parse_args();cmd=a.command[1:] if a.command and a.command[0]=='--' else a.command
  if not cmd:p.error('a command is required')
+ a.output=a.output.resolve()
  a.output.mkdir(parents=True,exist_ok=True);start=time.monotonic();log=a.output/(a.name+'.log')
  with log.open('w') as f:
   try:

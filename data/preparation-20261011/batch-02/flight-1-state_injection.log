@@ -1,0 +1,54 @@
+created {'thresholds': {'seed': 42, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 3, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500, 'settling_band_m': 0.2, 'settling_dwell_s': 2.0, 'joint_recovery': {'position_reference_ned_m': [0, 0, -3], 'velocity_reference_ned_m_s': [0, 0, 0], 'angular_velocity_reference_frd_rad_s': [0, 0, 0], 'position_threshold_m': 0.2, 'velocity_threshold_m_s': 0.1, 'angular_velocity_threshold_rad_s': 0.1, 'dwell_s': 2.0, 'max_observation_gap_s': 0.02}, 'p0_strict': True}}
+process_started {'name': 'agent', 'pid': 3294061, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 3294062, 'command': ['gz', 'sim', '-r', '-s', '-v', '3', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'gz-stats', 'pid': 3294063, 'command': ['gz', 'topic', '-e', '-t', '/world/default/stats']}
+process_started {'name': 'tegrastats', 'pid': 3294064, 'command': ['/usr/bin/tegrastats', '--interval', '1000']}
+process_started {'name': 'px4', 'pid': 3294144, 'command': ['/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/prep-20261011-b02-flight-1-state_injection/rootfs', '/home/car/uav_handover/data/prep-20261011-b02-flight-1-state_injection/rootfs/etc']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1791709795525429}
+ready {'condition': 'PX4 DDS telemetry'}
+sensor_readiness {'ready': True, 'reasons': [], 'continuous_host_s': 2.106259880005382, 'native_publication_stamps': {'sensor_baro': 1791709802777825, 'vehicle_air_data': 1791709802717825, 'vehicle_local_position': 1791709802785825}, 'raw_pressure_pa': 101322.5234375, 'raw_device_id': 6619404, 'selected_pressure_pa': 101318.578125, 'selected_device_id': 6619404}
+mavlink_identity {'system_id': 22, 'autopilot': 12, 'udp_port': 18591}
+process_started {'name': 'agent-reconnected', 'pid': 3295759, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1791709795660984}
+ready {'condition': 'DDS Client reconnection with fresh telemetry'}
+command_requested {'command': 176, 'params': {'param1': 1, 'param2': 4, 'param3': 3}}
+command_ack {'command': 176, 'result': 0, 'timestamp': 1791709813737080}
+ready {'condition': 'command acknowledgement'}
+command_requested {'command': 100001, 'params': {'param1': 14}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1791709814821231}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=14'}
+mode_confirmed {'mode': 14, 'px4_timestamp': 1791709814833231}
+command_requested {'command': 100001, 'params': {'param1': 4}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1791709815301231}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=4'}
+mode_confirmed {'mode': 4, 'px4_timestamp': 1791709815313231}
+state_operation {'target': 'raptor', 'operation': 'read', 'response': {'request_id': 25364000, 'applied_us': 25368000, 'target': 1, 'operation': 1, 'result': 1, 'dimension': 26, 'active': False, 'holding': False, 'values': [-0.216938347, -0.233482942, -0.369334042, -0.664233387, -0.391287923, -0.397453308, -0.367722839, -0.175926521, -0.827916443, 0.971748054, -0.00241310406, -0.521431565, 0.613666534, 0.873658419, -0.54704541, 0.654949725, -0.776822567, -0.741769195, -0.614328623, -0.615782559, 0.014853267, 0.0035181283, 0.0176297631, -0.000899211678, 0.000479660812, 0.698848009]}}
+ready {'condition': 'valid local position'}
+failure {'reason': 'px4 exited: -6'}
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/run_experiment.py", line 495, in main
+    e.execute();status='PASS'
+    ^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/run_experiment.py", line 394, in execute
+    self.pump(4)
+  File "/home/car/uav_handover/tools/run_experiment.py", line 155, in pump
+    if p.poll() is not None and name not in self.expected_stopped:raise RuntimeError(f'{name} exited: {p.returncode}')
+                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: px4 exited: -6
+sensor_probe_started {'sensor': 'imu_sensor/imu', 'changes_subscription_graph': True}
+process_started {'name': 'probe-imu_sensor', 'pid': 3297595, 'command': ['gz', 'topic', '-e', '-t', '/world/default/model/x500_21/link/base_link/sensor/imu_sensor/imu']}
+sensor_probe_finished {'sensor': 'imu_sensor/imu', 'exit_code': 0}
+sensor_probe_started {'sensor': 'air_pressure_sensor/air_pressure', 'changes_subscription_graph': True}
+process_started {'name': 'probe-air_pressure_sensor', 'pid': 3297752, 'command': ['gz', 'topic', '-e', '-t', '/world/default/model/x500_21/link/base_link/sensor/air_pressure_sensor/air_pressure']}
+sensor_probe_finished {'sensor': 'air_pressure_sensor/air_pressure', 'exit_code': 0}
+process_stopped {'name': 'probe-air_pressure_sensor', 'pid': 3297752, 'exit_code': 0}
+process_stopped {'name': 'probe-imu_sensor', 'pid': 3297595, 'exit_code': 0}
+process_stopped {'name': 'agent-reconnected', 'pid': 3295759, 'exit_code': -2}
+process_stopped {'name': 'px4', 'pid': 3294144, 'exit_code': -6}
+process_stopped {'name': 'tegrastats', 'pid': 3294064, 'exit_code': -2}
+process_stopped {'name': 'gz-stats', 'pid': 3294063, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 3294062, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 3294061, 'exit_code': -2}
+/home/car/uav_handover/data/prep-20261011-b02-flight-1-state_injection FAIL

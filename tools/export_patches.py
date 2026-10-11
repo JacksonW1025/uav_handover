@@ -19,3 +19,6 @@ with tarfile.open(OUT/'raptor-final-untracked.tar.gz','w:gz') as archive:
         assert source.is_file() and source.stat().st_size<100000, name
         archive.add(source,arcname=name)
 print('Exported final diff and',len(names),'small source files; existing patches retained')
+
+classic=ROOT/'uav_lab/.local/checkouts/px4-classic'
+(OUT/'classic-final.patch').write_bytes(subprocess.check_output(['git','-C',str(classic),'diff','--binary']))

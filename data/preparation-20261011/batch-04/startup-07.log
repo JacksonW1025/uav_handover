@@ -1,0 +1,15 @@
+created {'thresholds': {'seed': 42, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 3, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500, 'settling_band_m': 0.2, 'settling_dwell_s': 2.0, 'joint_recovery': {'position_reference_ned_m': [0, 0, -3], 'velocity_reference_ned_m_s': [0, 0, 0], 'angular_velocity_reference_frd_rad_s': [0, 0, 0], 'position_threshold_m': 0.2, 'velocity_threshold_m_s': 0.1, 'angular_velocity_threshold_rad_s': 0.1, 'dwell_s': 2.0, 'max_observation_gap_s': 0.02}, 'p0_strict': True}}
+process_started {'name': 'agent', 'pid': 2013703, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 2013704, 'command': ['gz', 'sim', '-r', '-s', '-v', '3', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'gz-stats', 'pid': 2013705, 'command': ['gz', 'topic', '-e', '-t', '/world/default/stats']}
+process_started {'name': 'tegrastats', 'pid': 2013706, 'command': ['/usr/bin/tegrastats', '--interval', '1000']}
+process_started {'name': 'px4', 'pid': 2013767, 'command': ['/home/car/uav_handover/uav_lab/.local/checkouts/px4-classic/build/px4_sitl_default/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/prep-20261012-b04-startup-07/rootfs', '/home/car/uav_handover/data/prep-20261012-b04-startup-07/rootfs/etc']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1791746795966719}
+ready {'condition': 'PX4 DDS telemetry'}
+sensor_readiness {'ready': True, 'reasons': [], 'continuous_host_s': 2.1084726378321648, 'native_publication_stamps': {'sensor_baro': 1791746803126726, 'vehicle_air_data': 1791746803126726, 'vehicle_local_position': 1791746803134726}, 'raw_pressure_pa': 101323.390625, 'raw_device_id': 6619404, 'selected_pressure_pa': 101323.234375, 'selected_device_id': 6619404}
+process_stopped {'name': 'px4', 'pid': 2013767, 'exit_code': 0}
+process_stopped {'name': 'tegrastats', 'pid': 2013706, 'exit_code': -2}
+process_stopped {'name': 'gz-stats', 'pid': 2013705, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 2013704, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 2013703, 'exit_code': -2}
+/home/car/uav_handover/data/prep-20261012-b04-startup-07 PASS

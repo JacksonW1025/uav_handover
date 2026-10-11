@@ -1,0 +1,25 @@
+{
+  "python_tests": {
+    "command": "uav_lab/.local/venv/bin/python -m pytest -q tests/test_readiness.py tests/test_recovery.py tests/test_executor_acceptance.py",
+    "passed": 11
+  },
+  "cpp_sanitizers": {
+    "tests": [
+      "SampleClock",
+      "StateOps"
+    ],
+    "sanitizers": [
+      "address",
+      "undefined"
+    ],
+    "exit_code": 0
+  },
+  "idempotence": {
+    "applications": 2,
+    "source_bytes_unchanged": true
+  },
+  "builds": [
+    "classic px4_sitl_default",
+    "raptor px4_sitl_raptor"
+  ]
+}

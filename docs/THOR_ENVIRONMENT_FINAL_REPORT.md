@@ -1,5 +1,7 @@
 # Thor 软件环境建设与最终验收报告
 
+> 2026-10-10 更正：本页为旧环境验收记录，原 PASS 不包含联合恢复或活动 executor 时序告警检查；不能据此判定 P0 完成。原始数据保留。当前结果和告警勘误见 [P0 收尾报告](THOR_P0_FINAL_REPORT.md)。
+
 日期：2026-10-09，Asia/Shanghai。项目：`/home/car/uav_handover`。实验状态：**环境检查完成**。
 
 ## 1. 最终结论与适用范围
@@ -90,7 +92,7 @@ ROS 辅助遥测和外部事件为 JSONL；未生成完整 MCAP，也未把 JSON
 
 [analyze.py](../tools/analyze.py) 读取真实 pyulog，计算位置/速度、姿态及角速度误差、控制输出阶跃、交接延迟、稳定时间、瞬态、推理时间、周期抖动、观测年龄、执行器归属、状态值和保护次数；生成 overview 与三维轨迹。经典参考在 N 期间可能陈旧，相应姿态/rate 参考误差是诊断量，不应误称神经策略训练目标误差。
 
-最终神经轮 CPU 推理（含 observe 构造与 RL Tools control）的墙钟均值约 6.67 μs、P99 16 μs、最大 109 μs；冻结阈值为 P99 ≤2500 μs。有限输出错误与 executor warning 均为 0。active loop 相邻周期平均约 4.15 ms、P99 8 ms。周期统计排除非活动间隔，未把重新接管的停机时间当成抖动。
+最终神经轮 CPU 推理（含 observe 构造与 RL Tools control）的墙钟均值约 6.67 μs、P99 16 μs、最大 109 μs；冻结阈值为 P99 ≤2500 μs。有限输出错误为 0；executor warning 原文误记为0，实际 metrics.json 为45，均处于非活动且经典持权阶段。上述耗时覆盖整轮 control_step，不是神经接管窗口。旧 state_restore 另有210次，其中50次位于活动且神经持权阶段。旧 PASS 规则未纳入 executor 告警或联合恢复，因此这些 PASS 不能作为 P0 完成依据。分阶段统计和修复验证见 [P0 报告](THOR_P0_FINAL_REPORT.md)。
 
 同轮主机 CPU 平均约 17.1%，最低可用内存约 108.3 GiB；Gazebo RTF 均值约 0.996，tj 最高约 46.6°C，VIN 平均约 31.4 W、峰值约 39.1 W。其他任务的主机负载可能计入；不是 PX4 单进程独占占用。各进程 RSS/CPU 时间、磁盘余量见 resources.jsonl；CPU 频率、GPU 和电源数据以 tegrastats / nvidia-smi 的可读字段为准。未切换功耗模式，也未开发 GPU 推理。依据为 [verified-raptor_hover/metrics.json](../data/verified-raptor_hover/metrics.json)及其原始资源日志。
 

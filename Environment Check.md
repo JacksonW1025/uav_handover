@@ -1,6 +1,8 @@
 # Environment Check
 
-检查日期：2026-10-09（Asia/Shanghai）。状态：**环境检查完成**。
+检查日期：2026-10-10（Asia/Shanghai）。状态：**环境检查完成；P0 收尾验证尚未完成**。
+
+恢复指标与 executor 修复后的当前结论以 [P0 收尾报告](docs/THOR_P0_FINAL_REPORT.md) 为准。旧25项环境验收没有检查联合恢复与活动时序异常，不能用于声明 P0 完成。
 
 本轮已实际安装 Lab 内隔离依赖、构建 classic / RAPTOR PX4 与两套 ROS overlay，并运行新的 headless SITL 悬停、双向交接、重复交接及状态干预实验。原始 ULog、失败尝试、命令退出状态和分析结果均保留在 `data/`。
 

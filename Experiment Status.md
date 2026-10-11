@@ -1,9 +1,17 @@
 # Experiment Status
 
-实验状态：**环境检查完成**。
+实验状态：**P0 完成（2026-10-12 收尾判定）**；2026-10-10 历史总审计 FAIL 原样保留。
 
-更新时间：2026-10-09（Asia/Shanghai）。
+更新时间：2026-10-12（Asia/Shanghai）。
 
-已完成环境构建、通信验证、经典与神经悬停、C→N→C、三次重复交接及受控状态干预的真实 SITL 验收。正式研究数据采集尚未开始；本轮 `data/` 为环境建设与验收数据，包含保留的失败尝试。
+已实现用户确认参数的联合恢复判定、阶段截断、20 ms数据连续性限制和三类状态统计；已修复 executor 使用处理时间及上游角速度批次合并问题，按整轮/活动/实际神经发布划分计时与告警。P0 SITL 收尾结果和未决进程崩溃见 [P0 报告](docs/THOR_P0_FINAL_REPORT.md)。旧运行、诊断失败和新运行全部保留。4 ms仅为独立时延目标；活动和实际神经阶段的分位数、超标比例及积压段见 [迟滞审计](data/p0-20261010/latency-audit.json)。排队迟滞、ESC逐动作消费与处理时限尚未闭环，仍阻止P0完成。
 
-下一步：固定研究假设、对照组、初始状态和运行次数，使用[Quickstart](docs/THOR_EXPERIMENT_QUICKSTART.md)启动新的独立实验目录。现有阈值和平台条件见[配置](config/experiment.json)与[最终报告](docs/THOR_ENVIRONMENT_FINAL_REPORT.md)，验收结果见[矩阵](docs/THOR_ACCEPTANCE_MATRIX.md)。
+P0 未获完成判定前不开展 P1–P4；未开展实飞。
+
+2026-10-11 准备阶段：候选版本与启动/链路观测改动见 [准备记录](docs/THOR_PREPARATION_20261011.md)。历史 P0 FAIL 保持；批次结果另存，不替换旧验收。
+
+第二批 20 次冷启动全部通过；首轮前六类飞行通过，Inject 场景在解锁和注入前发生 mutex 断言，按规则停止。已保存匹配 ELF 的 core，定位到 lockstep 时钟唤醒路径，并以并发测试复现、修复 caller mutex 生命周期竞态。修复后另建 [第三批](data/preparation-20261011/batch-03/plan.json)，状态以该批结果为准；不能把第二批通过项拼接为第三批验收。
+
+第三批（lockstep 修复后候选）41 项全部接受，独立复核见 [batch-audit.json](data/preparation-20261011/batch-03/batch-audit.json)：冷启动无解锁、仅回环与单一 IMU 订阅者；21 轮飞行无崩溃，executor 告警 0，联合恢复 75/75 SETTLED。这是修复后未复现的证据，不关闭历史崩溃根因、气压缺失根因或输出链路时限。源码核对确认动作→ESC→Gazebo 各层均为最新值覆盖，后续应证明每个物理步实际生效命令的年龄与覆盖计数，而非“每个动作都被执行”，见[准备记录](docs/THOR_PREPARATION_20261011.md#输出链路的实际语义与下一步要证明什么)。
+
+2026-10-12：完成输出链路逐物理步测量；batch-04 因固定参考恢复标准与重复交接不匹配而停止（保留）；改用控制器当前位置目标（用户确认，阈值不变）后，batch-05 的 90 项全部接受。三项阻塞全部关闭，P0 判定完成，见 [P0 报告收尾节](docs/THOR_P0_FINAL_REPORT.md#2026-10-12-p0-收尾判定完成) 和 [收尾记录](data/p0-closure-20261012/acceptance.json)。可以进入 P1；未开展实飞。

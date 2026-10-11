@@ -1,5 +1,7 @@
 # 最终验收矩阵
 
+> 2026-10-10 更正：本页为旧环境验收记录，原 PASS 不包含联合恢复或活动 executor 时序告警检查；不能据此判定 P0 完成。原始数据保留。当前结果和告警勘误见 [P0 收尾报告](THOR_P0_FINAL_REPORT.md)。
+
 机器可读命令、退出码和逐轮证据见 [acceptance.json](../data/environment-20261009/acceptance.json)。PASS 限于测试声明范围。
 
 | 测试 | 内容 | 结果 | 证据 |

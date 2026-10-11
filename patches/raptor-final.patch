@@ -1,19 +1,210 @@
 diff --git a/msg/CMakeLists.txt b/msg/CMakeLists.txt
-index 369ec75..078b90d 100644
+index 369ec75..ebe0eb5 100644
 --- a/msg/CMakeLists.txt
 +++ b/msg/CMakeLists.txt
-@@ -194,6 +194,11 @@ set(msg_files
+@@ -194,6 +194,13 @@ set(msg_files
  	RoverSteeringSetpoint.msg
  	RoverThrottleSetpoint.msg
  	Rpm.msg
 +	ResearchStateRequest.msg
 +	ResearchStateResponse.msg
 +	ResearchTiming.msg
++	ResearchAngularVelocity.msg
++	ResearchOutput.msg
 +	ResearchActuator.msg
 +	RouteObservability.msg
  	RtlStatus.msg
  	RtlTimeEstimate.msg
  	SatelliteInfo.msg
+diff --git a/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp b/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp
+index 486ddcf..77d6595 100644
+--- a/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp
++++ b/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp
+@@ -49,6 +49,9 @@ LockstepScheduler::~LockstepScheduler()
+ 
+ void LockstepScheduler::set_absolute_time(uint64_t time_us)
+ {
++    // Serialize selection AND broadcast. Returning waiters drain this lock
++    // before their caller-owned mutex/condition may leave scope.
++    std::lock_guard<std::mutex> lock_broadcast(_broadcast_mutex);
+ 	if (_time_us == 0 && time_us > 0) {
+ 		PX4_INFO("setting initial absolute time to %" PRIu64 " us", time_us);
+ 	}
+@@ -63,13 +66,12 @@ void LockstepScheduler::set_absolute_time(uint64_t time_us)
+ 		pthread_mutex_t *lock;
+ 	};
+ 
+-	static constexpr int MAX_WAKEUPS = 32;
+-	WakeUp wakeups[MAX_WAKEUPS];
+-	int num_wakeups = 0;
++	std::vector<WakeUp> wakeups;
++	wakeups.reserve(32);
+ 
+ 	{
+ 		std::unique_lock<std::mutex> lock_timed_waits(_timed_waits_mutex);
+-		_setting_time = true;
++
+ 
+ 		TimedWait *timed_wait = _timed_waits;
+ 		TimedWait *timed_wait_prev = nullptr;
+@@ -96,9 +98,7 @@ void LockstepScheduler::set_absolute_time(uint64_t time_us)
+ 				// Mark as timed out and collect for broadcast
+ 				timed_wait->timeout = true;
+ 
+-				if (num_wakeups < MAX_WAKEUPS) {
+-					wakeups[num_wakeups++] = {timed_wait->passed_cond, timed_wait->passed_lock};
+-				}
++				wakeups.push_back({timed_wait->passed_cond, timed_wait->passed_lock});
+ 			}
+ 
+ 			timed_wait_prev = timed_wait;
+@@ -106,18 +106,11 @@ void LockstepScheduler::set_absolute_time(uint64_t time_us)
+ 		}
+ 	}
+ 
+-	// Broadcast under _broadcast_mutex (not _timed_waits_mutex) so that
+-	// locking passed_lock here doesn't create an ordering cycle.
+-	{
+-		std::lock_guard<std::mutex> lock_broadcast(_broadcast_mutex);
+-
+-		for (int i = 0; i < num_wakeups; ++i) {
+-			pthread_mutex_lock(wakeups[i].lock);
+-			pthread_cond_broadcast(wakeups[i].cond);
+-			pthread_mutex_unlock(wakeups[i].lock);
+-		}
+-
+-		_setting_time = false;
++	// The list lock is released before acquiring caller locks.
++	for (const auto &wakeup : wakeups) {
++		pthread_mutex_lock(wakeup.lock);
++		pthread_cond_broadcast(wakeup.cond);
++		pthread_mutex_unlock(wakeup.lock);
+ 	}
+ }
+ 
+@@ -158,25 +151,14 @@ int LockstepScheduler::cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *loc
+ 
+ 	timed_wait.done = true;
+ 
+-	if (!timeout && _setting_time) {
+-		// This is where it gets tricky: the timeout has not been triggered yet,
+-		// and another thread is in set_absolute_time().
+-		// If it already passed the 'done' check, it will access the mutex and
+-		// the condition variable next. However they might be invalid as soon as we
+-		// return here, so we wait until set_absolute_time() is done.
+-		// In addition we have to unlock 'lock', otherwise we risk a
+-		// deadlock due to a different locking order in set_absolute_time().
+-		// Note that this case does not happen too frequently, and thus can be
+-		// a bit more expensive.
+-		// We wait for both the iteration phase (_timed_waits_mutex) and the
+-		// broadcast phase (_broadcast_mutex) to complete.
+-		pthread_mutex_unlock(lock);
+-		_timed_waits_mutex.lock();
+-		_timed_waits_mutex.unlock();
+-		_broadcast_mutex.lock();
+-		_broadcast_mutex.unlock();
+-		pthread_mutex_lock(lock);
+-	}
++    // A timed-out wait can wake externally before the clock thread reaches
++    // its selected mutex. Always drain the entire pending broadcast phase.
++    // Unlock the caller mutex first to avoid a cycle with the clock thread.
++    pthread_mutex_unlock(lock);
++    {
++        std::lock_guard<std::mutex> drain(_broadcast_mutex);
++    }
++    pthread_mutex_lock(lock);
+ 
+ 	return result;
+ }
+diff --git a/platforms/posix/src/px4/common/px4_daemon/server.cpp b/platforms/posix/src/px4/common/px4_daemon/server.cpp
+index 95b8116..3d37c5b 100644
+--- a/platforms/posix/src/px4/common/px4_daemon/server.cpp
++++ b/platforms/posix/src/px4/common/px4_daemon/server.cpp
+@@ -66,6 +66,8 @@ Server::Server(int instance_id)
+ 	: _mutex(PTHREAD_MUTEX_INITIALIZER),
+ 	  _instance_id(instance_id)
+ {
++    const int ret=pthread_key_create(&_key,_pthread_key_destructor);
++    if(ret!=0){PX4_ERR("failed to create daemon stdout pthread key");return;}
+ 	_instance = this;
+ }
+ 
+@@ -77,6 +79,7 @@ Server::~Server()
+ int
+ Server::start()
+ {
++    if(_instance!=this)return -1;
+ 	std::string sock_path = get_socket_path(_instance_id);
+ 
+ 	// Delete socket in case it exists already.
+@@ -129,12 +132,7 @@ void Server::_pthread_key_destructor(void *arg)
+ void
+ Server::_server_main()
+ {
+-	int ret = pthread_key_create(&_key, _pthread_key_destructor);
+-
+-	if (ret != 0) {
+-		PX4_ERR("failed to create pthread key");
+-		return;
+-	}
++    int ret=0;
+ 
+ 	// The list of file descriptors to watch.
+ 	std::vector<pollfd> poll_fds;
+diff --git a/src/lib/mixer_module/functions/FunctionMotors.hpp b/src/lib/mixer_module/functions/FunctionMotors.hpp
+index 76e2b27..41bce50 100644
+--- a/src/lib/mixer_module/functions/FunctionMotors.hpp
++++ b/src/lib/mixer_module/functions/FunctionMotors.hpp
+@@ -77,6 +77,10 @@ public:
+ 	uORB::SubscriptionCallbackWorkItem *subscriptionCallback() override { return &_topic; }
+ 
+ 	bool getLatestSampleTimestamp(hrt_abstime &t) const override { t = _data.timestamp_sample; return t != 0; }
++#ifdef __PX4_POSIX
++    // uORB generation of the last copied actuator_motors; gaps are overwritten publications.
++    bool researchGeneration(unsigned &g) const override { g = _topic.get_last_generation(); return true; }
++#endif
+ 
+ 	static inline void updateValues(uint32_t reversible, float thrust_factor, float *values, int num_values)
+ 	{
+diff --git a/src/lib/mixer_module/functions/FunctionProviderBase.hpp b/src/lib/mixer_module/functions/FunctionProviderBase.hpp
+index f3a648b..85d68e8 100644
+--- a/src/lib/mixer_module/functions/FunctionProviderBase.hpp
++++ b/src/lib/mixer_module/functions/FunctionProviderBase.hpp
+@@ -67,6 +67,9 @@ public:
+ 	virtual uORB::SubscriptionCallbackWorkItem *subscriptionCallback() { return nullptr; }
+ 
+ 	virtual bool getLatestSampleTimestamp(hrt_abstime &t) const { return false; }
++#ifdef __PX4_POSIX
++    virtual bool researchGeneration(unsigned &g) const { return false; }
++#endif
+ 
+ 	/**
+ 	 * Check whether the output (motor) is configured to be reversible
+diff --git a/src/lib/mixer_module/mixer_module.hpp b/src/lib/mixer_module/mixer_module.hpp
+index 8f98df5..fc9b3ca 100644
+--- a/src/lib/mixer_module/mixer_module.hpp
++++ b/src/lib/mixer_module/mixer_module.hpp
+@@ -163,7 +163,20 @@ public:
+ 
+ 	void setMaxTopicUpdateRate(unsigned max_topic_update_interval_us);
+ 
++// SITL research: sample actually selected by the configured output provider.
++#ifdef __PX4_POSIX
++    hrt_abstime researchSelectedSampleTimestamp() const {
++        hrt_abstime sample=0;
++        if (_function_allocated[0]) _function_allocated[0]->getLatestSampleTimestamp(sample);
++        return sample;
++    }
++#endif
+ 	const actuator_armed_s &armed() const { return _armed; }
++#ifdef __PX4_POSIX
++    bool researchSelectedGeneration(unsigned &g) const {
++        return _function_allocated[0] && _function_allocated[0]->researchGeneration(g);
++    }
++#endif
+ 	bool isActuatorTestRunning() const { return _actuator_test.inTestMode(); }
+ 
+ 	void setAllFailsafeValues(uint16_t value);
 diff --git a/src/lib/rate_control/rate_control.hpp b/src/lib/rate_control/rate_control.hpp
 index 0ee8bd1..978be71 100644
 --- a/src/lib/rate_control/rate_control.hpp
@@ -480,7 +671,7 @@ index fb467f7..23e3949 100644
  
  	/**
 diff --git a/src/modules/mc_raptor/mc_raptor.cpp b/src/modules/mc_raptor/mc_raptor.cpp
-index df27d92..6352e2f 100644
+index df27d92..2f91b89 100644
 --- a/src/modules/mc_raptor/mc_raptor.cpp
 +++ b/src/modules/mc_raptor/mc_raptor.cpp
 @@ -1,3 +1,7 @@
@@ -547,10 +738,39 @@ index df27d92..6352e2f 100644
  		PX4_INFO("Resetting Inference Executor (Recurrent State)");
  
  	} else {
-@@ -809,9 +844,38 @@ void Raptor::Run()
+@@ -541,6 +576,10 @@ void Raptor::Run()
+ 
+ 	bool angular_velocity_update = false;
+ 	status.subscription_update_angular_velocity = _vehicle_angular_velocity_sub.update(&_vehicle_angular_velocity);
++#ifdef __PX4_POSIX
++    // Schedule another work item until the queue is drained, including early returns.
++    if(_vehicle_angular_velocity_sub.updated())ScheduleNow();
++#endif
+ 
+ 	if (status.subscription_update_angular_velocity) {
+ 		timestamp_last_angular_velocity = current_time;
+@@ -809,9 +848,89 @@ void Raptor::Run()
  
  	rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;
  	rl_tools::inference::applications::l2f::Action<EXECUTOR_SPEC> action;
++#ifdef __PX4_POSIX
++    const auto generation=_vehicle_angular_velocity_sub.get_last_generation();
++    if(_sample_generation && generation-_sample_generation>1)_sample_missed+=generation-_sample_generation-1;
++    _sample_generation=generation;
++    const unsigned input_result=_sample_clock.accept(_vehicle_angular_velocity.timestamp_sample);
++    if(input_result) {
++        research_timing_s skipped{};
++        skipped.timestamp=current_time;skipped.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        skipped.schema_version=2;skipped.active=next_active;skipped.mode_id=ext_component_mode_id;
++        skipped.accepted_total=_sample_clock.accepted;skipped.duplicate_total=_sample_clock.duplicate;
++        skipped.regressed_total=_sample_clock.regressed;skipped.source_missed_total=_sample_missed;
++        skipped.source_generation=generation;skipped.input_result=input_result;
++        skipped.native_total=_native_total;skipped.gru_commit_total=_gru_total;skipped.last_gru_sample=_last_gru_sample;
++        skipped.executor_ok=true;skipped.output_finite=true;
++        handover_research::TimingRecord skipped_record(skipped);
++        perf_end(_loop_perf);return;
++    }
++#endif
 +#ifdef __PX4_POSIX
 +    for (TI i=0;i<16;i++) _research_state._bounds[i]=1.f;
 +    for (TI i=16;i<20;i++) _research_state._bounds[i]=1.f;
@@ -562,12 +782,46 @@ index df27d92..6352e2f 100644
 +    clock_gettime(CLOCK_MONOTONIC,&wall_start);
 +#endif
  	observe(observation);
++#ifdef __PX4_POSIX
++    const uint32_t executor_dt_us=executor.executor.last_control_timestamp_set ?
++        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp)/1000 : 0;
++    const uint32_t native_dt_us=executor.executor.last_control_timestamp_original_set ?
++        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp_original)/1000 : 0;
++    hrt_abstime nanoseconds = _vehicle_angular_velocity.timestamp_sample * 1000;
++#else
  	hrt_abstime nanoseconds = current_time * 1000;
++#endif
  	auto executor_status = rl_tools::control(device, executor, nanoseconds, policy, observation, action, rng);
 +#ifdef __PX4_POSIX
 +    clock_gettime(CLOCK_MONOTONIC,&wall_end);
 +    research_timing_s timing{};
 +    timing.timestamp=current_time;
++    timing.schema_version=2;
++    timing.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    timing.local_position_sample=_vehicle_local_position.timestamp_sample;
++    timing.attitude_sample=_vehicle_attitude.timestamp_sample;
++    timing.control_start_wall_ns=static_cast<uint64_t>(wall_start.tv_sec)*1000000000ULL+wall_start.tv_nsec;
++    timing.control_end_wall_ns=static_cast<uint64_t>(wall_end.tv_sec)*1000000000ULL+wall_end.tv_nsec;
++    timing.accepted_total=_sample_clock.accepted;
++    timing.duplicate_total=_sample_clock.duplicate;
++    timing.regressed_total=_sample_clock.regressed;
++    timing.source_generation=_sample_generation;
++    timing.source_missed_total=_sample_missed;
++    timing.input_dt_us=_sample_clock.dt;
++    timing.executor_dt_us=executor_dt_us;
++    timing.native_dt_us=native_dt_us;
++    timing.executor_called=true;
++    timing.native_step=executor_status.source==decltype(executor_status.source)::CONTROL && executor_status.step_type==decltype(executor_status.step_type)::NATIVE;
++    timing.gru_committed=timing.native_step && !_research_state.engine.holding;
++    if(timing.native_step)++_native_total;
++    if(timing.gru_committed){++_gru_total;_last_gru_sample=timing.timestamp_sample;}
++    timing.native_total=_native_total;timing.gru_commit_total=_gru_total;timing.last_gru_sample=_last_gru_sample;
++    timing.timing_jitter_ok=executor_status.timing_jitter.OK;
++    timing.timing_bias_ok=executor_status.timing_bias.OK;
++    timing.jitter_ratio=executor_status.timing_jitter.MAGNITUDE;
++    timing.bias_ratio=executor_status.timing_bias.MAGNITUDE;
++    timing.timestamp_invalid=executor_status.TIMESTAMP_INVALID;
++    timing.timestamp_order_invalid=executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP;
 +    timing.inference_duration_us=(wall_end.tv_sec-wall_start.tv_sec)*1000000+(wall_end.tv_nsec-wall_start.tv_nsec)/1000;
 +    timing.active=next_active;
 +    timing.executor_ok=executor_status.OK;
@@ -575,8 +829,7 @@ index df27d92..6352e2f 100644
 +    timing.mode_id=ext_component_mode_id;
 +    timing.output_finite=true;
 +    if(timing.control_step)for(TI i=0;i<4;i++) {timing.action[i]=action.action[i];timing.output_finite &= PX4_ISFINITE(action.action[i]);}
-+    static uORB::Publication<research_timing_s> timing_pub{ORB_ID(research_timing)};
-+    timing_pub.publish(timing);
++    handover_research::TimingRecord timing_record(timing);
 +    if(_research_state.engine.holding)research_set(_research_state.engine.held,false);
 +    if(timing.control_step && (!timing.output_finite || executor_status.TIMESTAMP_INVALID || executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP)) {
 +        PX4_ERR("Research guard: invalid inference; actuator publication withheld");
@@ -586,7 +839,7 @@ index df27d92..6352e2f 100644
  
  	if (!executor_status.OK) {
  		if (executor_status.TIMESTAMP_INVALID) {
-@@ -868,7 +932,13 @@ void Raptor::Run()
+@@ -868,7 +987,13 @@ void Raptor::Run()
  	for (TI action_i = 0; action_i < actuator_motors_s::NUM_CONTROLS; action_i++) {
  		if (action_i < EXECUTOR_CONFIG::OUTPUT_DIM) {
  			T value = action.action[action_i];
@@ -601,7 +854,7 @@ index df27d92..6352e2f 100644
  			value = (value + 1) / 2;
  			constexpr T training_min = 0;
  			constexpr T training_max = 1.0;
-@@ -890,7 +960,19 @@ void Raptor::Run()
+@@ -890,7 +1015,25 @@ void Raptor::Run()
  	}
  
  	if (status.active) {
@@ -610,6 +863,12 @@ index df27d92..6352e2f 100644
 +        if (publication_gate.allowed()) {
 +#endif
  		_actuator_motors_pub.publish(actuator_motors);
++#ifdef __PX4_POSIX
++        timing.actuator_published=true;
++        timing.actuator_publish_sim_us=hrt_absolute_time();
++        struct timespec publish_wall{};clock_gettime(CLOCK_MONOTONIC,&publish_wall);
++        timing.actuator_publish_wall_ns=static_cast<uint64_t>(publish_wall.tv_sec)*1000000000ULL+publish_wall.tv_nsec;
++#endif
 +#ifdef __PX4_POSIX
 +    research_actuator_s ownership{};
 +    ownership.timestamp=hrt_absolute_time();ownership.actuator_timestamp=actuator_motors.timestamp;ownership.owner=1;
@@ -621,7 +880,7 @@ index df27d92..6352e2f 100644
  	}
  
  	perf_end(_loop_perf);
-@@ -994,6 +1076,9 @@ int Raptor::print_status()
+@@ -994,6 +1137,9 @@ int Raptor::print_status()
  
  int Raptor::custom_command(int argc, char *argv[])
  {
@@ -632,7 +891,7 @@ index df27d92..6352e2f 100644
  		if (strcmp(argv[1], "lissajous") == 0) {
  			// Usage: mc_raptor intref lissajous <A> <B> <C> <fa> <fb> <fc> <duration> <ramp>
 diff --git a/src/modules/mc_raptor/mc_raptor.hpp b/src/modules/mc_raptor/mc_raptor.hpp
-index fcd3203..7d928a1 100644
+index fcd3203..a8f3cd0 100644
 --- a/src/modules/mc_raptor/mc_raptor.hpp
 +++ b/src/modules/mc_raptor/mc_raptor.hpp
 @@ -1,4 +1,7 @@
@@ -643,7 +902,17 @@ index fcd3203..7d928a1 100644
  
  #include "trajectories/lissajous.hpp"
  
-@@ -91,6 +94,11 @@ public:
+@@ -18,6 +21,9 @@
+ #include <uORB/topics/vehicle_odometry.h>
+ #include <uORB/topics/vehicle_attitude.h>
+ #include <uORB/topics/vehicle_angular_velocity.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_angular_velocity.h>
++#endif
+ #include <uORB/topics/actuator_motors.h>
+ #include <uORB/topics/trajectory_setpoint.h>
+ #include <uORB/topics/register_ext_component_request.h>
+@@ -91,6 +97,14 @@ public:
  	int print_status() override;
  
  private:
@@ -651,11 +920,14 @@ index fcd3203..7d928a1 100644
 +	handover_research::StateBridge _research_state{1, 26, 100.f};
 +	void research_get(float *values);
 +	void research_set(const float *values, bool reset_state);
++    handover_research::SampleClock _sample_clock{};
++    unsigned _sample_generation{0};
++    uint64_t _sample_missed{0}, _native_total{0}, _gru_total{0}, _last_gru_sample{0};
 +#endif
  #ifdef __PX4_POSIX
  	using DEVICE = rlt::devices::DefaultCPU;
  #else
-@@ -117,7 +125,7 @@ private:
+@@ -117,7 +131,7 @@ private:
  
  	void Run() override;
  
@@ -664,6 +936,30 @@ index fcd3203..7d928a1 100644
  	decltype(register_ext_component_reply_s::arming_check_id) ext_component_arming_check_id;
  
  	enum class FlightModeState : TI {
+@@ -130,7 +144,11 @@ private:
+ 
+ 	// node state
+ 	vehicle_local_position_s _vehicle_local_position{};
++#ifdef __PX4_POSIX
++    research_angular_velocity_s _vehicle_angular_velocity{};
++#else
+ 	vehicle_angular_velocity_s _vehicle_angular_velocity{};
++#endif
+ 	vehicle_attitude_s _vehicle_attitude{};
+ 	vehicle_status_s _vehicle_status{};
+ 	trajectory_setpoint_s _trajectory_setpoint{};
+@@ -151,7 +169,11 @@ private:
+ 	uORB::Subscription _trajectory_setpoint_sub{ORB_ID(trajectory_setpoint)};
+ 	uORB::Subscription _arming_check_request_sub{ORB_ID(arming_check_request)};
+ 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
++#ifdef __PX4_POSIX
++    uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(research_angular_velocity)};
++#else
+ 	uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};
++#endif
+ 	uORB::Publication<actuator_motors_s> _actuator_motors_pub{ORB_ID(actuator_motors)};
+ 	uORB::Publication<raptor_status_s> _raptor_status_pub{ORB_ID(raptor_status)};
+ 	uORB::Publication<raptor_input_s> _raptor_input_pub{ORB_ID(raptor_input)};
 diff --git a/src/modules/mc_raptor/module.yaml b/src/modules/mc_raptor/module.yaml
 index 2b61df8..ddc1620 100644
 --- a/src/modules/mc_raptor/module.yaml
@@ -963,14 +1259,287 @@ index 63aa155..d834e31 100644
  	float _throttle_x_setpoint{NAN};
  	float _throttle_y_setpoint{NAN};
  	float _speed_diff_setpoint{NAN};
+diff --git a/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp b/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp
+index 23111d2..e8c4a3e 100644
+--- a/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp
++++ b/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp
+@@ -32,6 +32,9 @@
+  ****************************************************************************/
+ 
+ #include "VehicleAngularVelocity.hpp"
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_angular_velocity.h>
++#endif
+ 
+ #include <px4_platform_common/log.h>
+ 
+@@ -903,6 +906,18 @@ void VehicleAngularVelocity::Run()
+ 					angular_acceleration_uncalibrated(axis) = FilterAngularAcceleration(axis, inverse_dt_s, data);
+ 				}
+ 
++#ifdef __PX4_POSIX
++                // Preserve each filtered acquisition, including batched source samples.
++                static uORB::Publication<research_angular_velocity_s> research_pub{ORB_ID(research_angular_velocity)};
++                static uint64_t last_research_sample=0;
++                if(sensor_data.timestamp_sample >= last_research_sample + _publish_interval_min_us) {
++                    research_angular_velocity_s sample{};
++                    sample.timestamp=hrt_absolute_time();sample.timestamp_sample=sensor_data.timestamp_sample;
++                    (_calibration.Correct(angular_velocity_uncalibrated)-_bias).copyTo(sample.xyz);
++                    (_calibration.rotation()*angular_acceleration_uncalibrated).copyTo(sample.xyz_derivative);
++                    research_pub.publish(sample);last_research_sample=sample.timestamp_sample;
++                }
++#endif
+ 				// Publish
+ 				if (!_sensor_sub.updated()) {
+ 					if (CalibrateAndPublish(sensor_data.timestamp_sample,
+diff --git a/src/modules/simulation/gz_bridge/GZBridge.cpp b/src/modules/simulation/gz_bridge/GZBridge.cpp
+index 21279f0..582a0c7 100644
+--- a/src/modules/simulation/gz_bridge/GZBridge.cpp
++++ b/src/modules/simulation/gz_bridge/GZBridge.cpp
+@@ -392,6 +392,7 @@ void GZBridge::opticalFlowCallback(const px4::msgs::OpticalFlow &msg)
+ 
+ void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg)
+ {
++    _research_mag_callbacks.fetch_add(1, std::memory_order_relaxed);
+ 	const uint64_t timestamp = hrt_absolute_time();
+ 
+ 	_px4_mag.set_temperature(_temperature); // this will be static if no airspeed sensor is on the model.
+@@ -404,6 +405,7 @@ void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg)
+ 
+ void GZBridge::airPressureCallback(const gz::msgs::FluidPressure &msg)
+ {
++    _research_baro_callbacks.fetch_add(1, std::memory_order_relaxed);
+ 	_px4_baro.set_temperature(_temperature); // this will be static if no airspeed sensor is on the model.
+ 	_px4_baro.update(hrt_absolute_time(), msg.pressure());
+ }
+@@ -431,7 +433,8 @@ void GZBridge::airspeedCallback(const gz::msgs::AirSpeed &msg)
+ 
+ void GZBridge::imuCallback(const gz::msgs::IMU &msg)
+ {
+-	const uint64_t timestamp = hrt_absolute_time();
++	const uint64_t timestamp = static_cast<uint64_t>(msg.header().stamp().sec()) * 1000000ULL + msg.header().stamp().nsec() / 1000;
++    _research_imu_callbacks.fetch_add(1, std::memory_order_relaxed);
+ 
+ 	// FLU -> FRD
+ 	static const auto q_FLU_to_FRD = gz::math::Quaterniond(0, 1, 0, 0);
+@@ -947,6 +950,7 @@ int GZBridge::task_spawn(int argc, char *argv[])
+ 
+ int GZBridge::print_status()
+ {
++    PX4_INFO("Research callbacks: imu=%llu baro=%llu mag=%llu", (unsigned long long)_research_imu_callbacks.load(), (unsigned long long)_research_baro_callbacks.load(), (unsigned long long)_research_mag_callbacks.load());
+ 	PX4_INFO_RAW("ESC outputs:\n");
+ 	_mixing_interface_esc.mixingOutput().printStatus();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZBridge.hpp b/src/modules/simulation/gz_bridge/GZBridge.hpp
+index 93183ef..6272870 100644
+--- a/src/modules/simulation/gz_bridge/GZBridge.hpp
++++ b/src/modules/simulation/gz_bridge/GZBridge.hpp
+@@ -67,6 +67,7 @@
+ #include <uORB/topics/vehicle_local_position.h>
+ #include <uORB/topics/vehicle_odometry.h>
+ 
++#include <atomic>
+ #include <gz/math.hh>
+ #include <gz/msgs.hh>
+ #include <gz/transport.hh>
+@@ -107,6 +108,7 @@ public:
+ 	int print_status() override;
+ 
+ private:
++    std::atomic<uint64_t> _research_imu_callbacks{0}, _research_baro_callbacks{0}, _research_mag_callbacks{0};
+ 
+ 	void Run() override;
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZGimbal.cpp b/src/modules/simulation/gz_bridge/GZGimbal.cpp
+index f5bc488..a265bc5 100644
+--- a/src/modules/simulation/gz_bridge/GZGimbal.cpp
++++ b/src/modules/simulation/gz_bridge/GZGimbal.cpp
+@@ -51,7 +51,6 @@ bool GZGimbal::init(const std::string &world_name, const std::string &model_name
+ 		return false;
+ 	}
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	updateParameters();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZGimbal.hpp b/src/modules/simulation/gz_bridge/GZGimbal.hpp
+index a2a7965..0d34bc9 100644
+--- a/src/modules/simulation/gz_bridge/GZGimbal.hpp
++++ b/src/modules/simulation/gz_bridge/GZGimbal.hpp
+@@ -37,7 +37,7 @@ private:
+ 	friend class GZBridge;
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	uORB::Subscription _gimbal_device_set_attitude_sub{ORB_ID(gimbal_device_set_attitude)};
+ 	uORB::Subscription _gimbal_controls_sub{ORB_ID(gimbal_controls)};
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+index b92fe96..ab0bbdc 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+@@ -32,6 +32,8 @@
+  ****************************************************************************/
+ 
+ #include "GZMixingInterfaceESC.hpp"
++#include <uORB/topics/research_output.h>
++#include <time.h>
+ 
+ bool GZMixingInterfaceESC::init(const std::string &model_name)
+ {
+@@ -55,7 +57,6 @@ bool GZMixingInterfaceESC::init(const std::string &model_name)
+ 
+ 	_esc_status_pub.advertise();
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	ScheduleNow();
+ 
+@@ -87,7 +88,47 @@ bool GZMixingInterfaceESC::updateOutputs(float outputs[MAX_ACTUATORS], unsigned
+ 		}
+ 
+ 		if (_actuators_pub.Valid()) {
+-			return _actuators_pub.Publish(rotor_velocity_message);
++            // Sample ID travels to Gazebo in the header; the motor model ignores headers.
++            const uint64_t research_sample=_mixing_output.researchSelectedSampleTimestamp();
++            rotor_velocity_message.mutable_header()->mutable_stamp()->set_sec(research_sample/1000000ULL);
++            rotor_velocity_message.mutable_header()->mutable_stamp()->set_nsec((research_sample%1000000ULL)*1000ULL);
++            const bool published=_actuators_pub.Publish(rotor_velocity_message);
++            // This confirms bridge selection and transport publication, NOT motor physics consumption.
++            static uint64_t attempts=0, successes=0, repeated=0, regressed=0, negative=0, previous=0;
++            static uint64_t bins[8]{};
++            const uint64_t sample=_mixing_output.researchSelectedSampleTimestamp();
++            const uint64_t now=hrt_absolute_time();
++            const int64_t age=static_cast<int64_t>(now)-static_cast<int64_t>(sample);
++            ++attempts;if(published)++successes;
++            if(sample && previous==sample)++repeated;
++            if(sample && previous && sample<previous)++regressed;
++            if(sample) {
++                previous=sample;
++                if(age<0)++negative;
++                else {
++                    const int64_t limits[7]={0,4000,8000,12000,20000,40000,100000};
++                    unsigned i=0;while(i<7 && age>limits[i])++i;++bins[i];
++                }
++            }
++            struct timespec wall{};clock_gettime(CLOCK_MONOTONIC,&wall);
++            research_output_s trace{};
++            trace.timestamp=now;trace.timestamp_sample=sample;
++            trace.wall_monotonic_ns=static_cast<uint64_t>(wall.tv_sec)*1000000000ULL+wall.tv_nsec;
++            trace.attempts_total=attempts;trace.published_total=successes;
++            trace.repeated_sample_total=repeated;trace.regressed_sample_total=regressed;trace.negative_age_total=negative;
++            for(unsigned i=0;i<8;i++)trace.age_bins[i]=bins[i];
++            trace.transport_published=published;trace.armed=_mixing_output.armed().armed;
++            static uint64_t skipped=0;static unsigned previous_generation=0;static bool generation_seen=false;
++            unsigned generation=0;
++            if(_mixing_output.researchSelectedGeneration(generation)) {
++                if(generation_seen && generation!=previous_generation)skipped+=generation-previous_generation-1;
++                previous_generation=generation;generation_seen=true;
++            }
++            trace.skipped_publication_total=skipped;
++            for(unsigned i=0;i<4 && i<active_output_count;i++)trace.motor_speed[i]=outputs[i];
++            static uORB::Publication<research_output_s> trace_pub{ORB_ID(research_output)};
++            trace_pub.publish(trace);
++            return published;
+ 		}
+ 	}
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
+index c55c743..19f407c 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
+@@ -75,7 +75,7 @@ private:
+ 	void motorSpeedCallback(const gz::msgs::Actuators &actuators);
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	MixingOutput _mixing_output{"SIM_GZ_EC", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
+index b90ec97..7c5622d 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
+@@ -123,7 +123,6 @@ bool GZMixingInterfaceServo::init(const std::string &model_name)
+ 		_angular_range_rad.push_back(max_val - min_val);
+ 	}
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	ScheduleNow();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
+index 6182de8..bd32d50 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
+@@ -81,7 +81,7 @@ private:
+ 	float get_servo_angle_min(const size_t index);
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	MixingOutput _mixing_output{"SIM_GZ_SV", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
+index 3c1af26..990201f 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
+@@ -51,7 +51,6 @@ bool GZMixingInterfaceWheel::init(const std::string &model_name)
+ 		return false;
+ 	}
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	_wheel_encoders_pub.advertise();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
+index 7b40889..90d5f56 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
+@@ -76,7 +76,7 @@ private:
+ 	void wheelSpeedCallback(const gz::msgs::Actuators &actuators);
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	MixingOutput _mixing_output{"SIM_GZ_WH", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+ 
+diff --git a/src/modules/simulation/gz_plugins/CMakeLists.txt b/src/modules/simulation/gz_plugins/CMakeLists.txt
+index 8699e8d..f9ca1fe 100644
+--- a/src/modules/simulation/gz_plugins/CMakeLists.txt
++++ b/src/modules/simulation/gz_plugins/CMakeLists.txt
+@@ -79,11 +79,12 @@ if (gz-transport_FOUND)
+     add_subdirectory(spacecraft_thruster)
+     add_subdirectory(motor_failure)
+     add_subdirectory(airspeed)
++    add_subdirectory(research_motor_model)
+ 
+     # Add an alias target for each plugin
+     if (TARGET GstCameraSystem)
+-        add_custom_target(px4_gz_plugins ALL DEPENDS OpticalFlowSystem MovingPlatformController TemplatePlugin GenericMotorModelPlugin BuoyancySystemPlugin GstCameraSystem SpacecraftThrusterModelPlugin MotorFailurePlugin AirSpeedPlugin)
++        add_custom_target(px4_gz_plugins ALL DEPENDS OpticalFlowSystem MovingPlatformController TemplatePlugin GenericMotorModelPlugin BuoyancySystemPlugin GstCameraSystem SpacecraftThrusterModelPlugin MotorFailurePlugin AirSpeedPlugin ResearchMulticopterMotorModel)
+     else()
+-        add_custom_target(px4_gz_plugins ALL DEPENDS OpticalFlowSystem MovingPlatformController TemplatePlugin GenericMotorModelPlugin BuoyancySystemPlugin SpacecraftThrusterModelPlugin MotorFailurePlugin AirSpeedPlugin)
++        add_custom_target(px4_gz_plugins ALL DEPENDS OpticalFlowSystem MovingPlatformController TemplatePlugin GenericMotorModelPlugin BuoyancySystemPlugin SpacecraftThrusterModelPlugin MotorFailurePlugin AirSpeedPlugin ResearchMulticopterMotorModel)
+     endif()
+ endif()
 diff --git a/src/modules/uxrce_dds_client/dds_topics.yaml b/src/modules/uxrce_dds_client/dds_topics.yaml
-index 40ab2b7..e968598 100644
+index 40ab2b7..6121d81 100644
 --- a/src/modules/uxrce_dds_client/dds_topics.yaml
 +++ b/src/modules/uxrce_dds_client/dds_topics.yaml
-@@ -4,6 +4,10 @@
+@@ -4,6 +4,15 @@
  #
  #####
  publications:
++  # Preparation readiness: actual raw and selected barometer data.
++  - topic: /fmu/out/sensor_baro
++    type: px4_msgs::msg::SensorBaro
++  - topic: /fmu/out/vehicle_air_data
++    type: px4_msgs::msg::VehicleAirData
 +  - topic: /fmu/out/raptor_status
 +    type: px4_msgs::msg::RaptorStatus
 +  - topic: /fmu/out/raptor_input

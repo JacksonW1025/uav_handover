@@ -1,0 +1,19 @@
+{
+  "name": "asan-crash-diagnostic",
+  "command": [
+    "env",
+    "HANDOVER_PX4_BINARY=/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor_asan/bin/px4",
+    "ASAN_OPTIONS=detect_leaks=0:abort_on_error=1:fast_unwind_on_malloc=0:detect_stack_use_after_return=1",
+    "tools/experiment",
+    "raptor_hover",
+    "--config",
+    "config/p0.json",
+    "--output",
+    "data/p0-20261010-asan-diagnostic"
+  ],
+  "exit_code": 1,
+  "status": "FAIL",
+  "elapsed_s": 3.483732384047471,
+  "finished_at": "2026-10-10T19:25:57.517411+08:00",
+  "log": "data/p0-20261010/commands/asan-crash-diagnostic.log"
+}

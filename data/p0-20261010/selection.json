@@ -1,0 +1,48 @@
+{
+  "source_identity": "data/p0-20261010/source-identity.json",
+  "raw_runs": {
+    "classic_hover": "data/p0-20261010-classic-hover-04",
+    "raptor_hover": "data/p0-20261010-raptor-hover-03",
+    "repeated_handover": "data/p0-20261010-repeated-handover-03",
+    "state_reset": "data/p0-20261010-state-reset-03",
+    "state_hold": "data/p0-20261010-state-hold-03",
+    "state_restore": "data/p0-20261010-state-restore-04",
+    "state_injection": "data/p0-20261010-state-injection-02"
+  },
+  "runs": {
+    "classic_hover": "data/p0-20261010-analysis-final/classic_hover",
+    "raptor_hover": "data/p0-20261010-analysis-final/raptor_hover",
+    "repeated_handover": "data/p0-20261010-analysis-final/repeated_handover",
+    "state_reset": "data/p0-20261010-analysis-final/state_reset",
+    "state_hold": "data/p0-20261010-analysis-final/state_hold",
+    "state_restore": "data/p0-20261010-analysis-final/state_restore",
+    "state_injection": "data/p0-20261010-analysis-final/state_injection"
+  },
+  "unresolved_issues": [
+    {
+      "id": "NORMAL_FATAL_EXITS",
+      "status": "OPEN",
+      "message": "Old normal-version mutex/segfault exits have no captured fault stack; repaired TLS startup race is not proven to be the same cause. Later passes do not establish causality.",
+      "cases": [
+        "data/p0-20261010-state-restore-02",
+        "data/p0-20261010-raptor-hover-01",
+        "data/p0-20261010-repeated-handover-02",
+        "data/p0-20261010-state-reset-02"
+      ]
+    },
+    {
+      "id": "CLASSIC_BOOTSTRAP_BAROMETER",
+      "status": "OPEN",
+      "message": "classic-hover-03 could not obtain valid local position; log reports missing barometer. Same-config retry04 passed, but startup failure cause is not established. Recurred in corrected old-binary diagnostic before arming; not confined to classic controller.",
+      "cases": [
+        "data/p0-20261010-classic-hover-03",
+        "data/p0-20261010-before-key-cold-diagnostic-03"
+      ]
+    },
+    {
+      "id": "DISPATCH_LATENCY_BUDGET",
+      "status": "OPEN",
+      "message": "4ms is an independent target, not an approved hard FAIL gate. Queue latency, downstream consumption and justified processing deadline remain unresolved; see latency-audit.json."
+    }
+  ]
+}

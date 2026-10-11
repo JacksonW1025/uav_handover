@@ -1,0 +1,16 @@
+INFO  [px4] instance: 21
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==2387983==ERROR: AddressSanitizer: SEGV on unknown address 0xffff91e8be28 (pc 0xffff910600e8 bp 0xffffcebf1d00 sp 0xffffcebf1d00 T0)
+==2387983==The signal is caused by a WRITE memory access.
+    #0 0xffff910600e8 in __GI__IO_fputs libio/iofputs.c:37
+    #1 0xaaaadb60e088 in px4_log_modulename /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/common/px4_log.cpp:152
+    #2 0xaaaadadb1310 in run_startup_script /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/main.cpp:622
+    #3 0xaaaadadb1310 in main /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/main.cpp:395
+    #4 0xffff910184c0 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #5 0xffff91018594 in __libc_start_main_impl ../csu/libc-start.c:360
+    #6 0xaaaadada9b2c in _start (/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor_asan/bin/px4+0x159b2c) (BuildId: 34af63b0bf045db5c5a9df17d9d4ece8aa306183)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV libio/iofputs.c:37 in __GI__IO_fputs
+==2387983==ABORTING

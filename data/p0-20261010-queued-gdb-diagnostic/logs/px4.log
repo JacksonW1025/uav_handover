@@ -1,0 +1,152 @@
+Registered pretty printers for UE4 classes
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <https://debuginfod.ubuntu.com>
+Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]
+Debuginfod has been disabled.
+To make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/aarch64-linux-gnu/libthread_db.so.1".
+INFO  [px4] instance: 21
+[New Thread 0xfffff6d8ee40 (LWP 2231107)]
+[Thread 0xfffff6d8ee40 (LWP 2231107) exited]
+[New Thread 0xfffff6d38e40 (LWP 2231108)]
+[New Thread 0xfffff6d8ee40 (LWP 2231109)]
+[Thread 0xfffff6d8ee40 (LWP 2231109) exited]
+[New Thread 0xfffff6528e40 (LWP 2231110)]
+[New Thread 0xfffff6d8ee40 (LWP 2231111)]
+[Thread 0xfffff6d8ee40 (LWP 2231111) exited]
+[New Thread 0xfffff5d18e40 (LWP 2231112)]
+[New Thread 0xfffff6d8ee40 (LWP 2231113)]
+[Thread 0xfffff6d8ee40 (LWP 2231113) exited]
+[New Thread 0xfffff5508e40 (LWP 2231114)]
+[New Thread 0xfffff6d8ee40 (LWP 2231115)]
+[New Thread 0xfffff4cf8e40 (LWP 2231116)]
+
+______  __   __    ___ 
+| ___ \ \ \ / /   /   |
+| |_/ /  \ V /   / /| |
+|  __/   /   \  / /_| |
+| |     / /^\ \ \___  |
+\_|     \/   \/     |_/
+
+px4 starting.
+
+INFO  [px4] startup script: /bin/sh etc/init.d-posix/rcS 21
+[Detaching after vfork from child process 2231117]
+env SYS_AUTOSTART: 4001
+[New Thread 0xffffefffee40 (LWP 2231121)]
+[Thread 0xffffefffee40 (LWP 2231121) exited]
+INFO  [param] selected parameter default file parameters.bson
+[New Thread 0xffffefffee40 (LWP 2231124)]
+[Thread 0xffffefffee40 (LWP 2231124) exited]
+INFO  [param] selected parameter backup file parameters_backup.bson
+[New Thread 0xffffefffee40 (LWP 2231130)]
+[Thread 0xffffefffee40 (LWP 2231130) exited]
+[New Thread 0xffffefffee40 (LWP 2231133)]
+  SYS_AUTOCONFIG: curr: 0 -> new: 1
+[Thread 0xffffefffee40 (LWP 2231133) exited]
+
+Thread 7 "wkr_hrt" received signal SIGCONT, Continued.
+[Switching to Thread 0xfffff5d18e40 (LWP 2231112)]
+0x0000fffff746bed0 in __GI___clock_nanosleep (clock_id=<optimized out>, clock_id@entry=0, flags=flags@entry=0, req=req@entry=0xfffff5d184f8, rem=rem@entry=0x0) at ../sysdeps/unix/sysv/linux/clock_nanosleep.c:78
+warning: 78	../sysdeps/unix/sysv/linux/clock_nanosleep.c: No such file or directory
+
+Thread 11 (Thread 0xfffff4cf8e40 (LWP 2231116) "px4"):
+#0  0x0000fffff7490bdc in __GI___poll (fds=fds@entry=0xffffe8000f40, nfds=nfds@entry=1, timeout=timeout@entry=-1) at ../sysdeps/unix/sysv/linux/poll.c:41
+#1  0x0000aaaaaad9ae70 in poll (__timeout=-1, __nfds=1, __fds=<optimized out>) at /usr/include/aarch64-linux-gnu/bits/poll2.h:39
+#2  px4_daemon::Server::_server_main (this=<optimized out>) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/px4_daemon/server.cpp:150
+#3  0x0000aaaaaad9b548 in px4_daemon::Server::_server_main_trampoline (self=<optimized out>) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/px4_daemon/server.cpp:120
+#4  0x0000fffff743595c in start_thread (arg=0xfffff7fec540) at ./nptl/pthread_create.c:447
+#5  0x0000fffff749bb0c in thread_start () at ../sysdeps/unix/sysv/linux/aarch64/clone3.S:76
+
+Thread 10 (Thread 0xfffff6d8ee40 (LWP 2231115) "wq:lp_default"):
+#0  0x0000fffff7431e9c in __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0xfffff6d8e458) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=0, abstime=0x0, clockid=0, expected=0, futex_word=0xfffff6d8e458) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0xfffff6d8e458, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x0000fffff7434b20 in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0xfffff6d8e400, cond=0xfffff6d8e430) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0xfffff6d8e430, mutex=0xfffff6d8e400) at ./nptl/pthread_cond_wait.c:627
+#5  0x0000aaaaaad93264 in px4_sem_wait (s=0xfffff6d8e400) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/px4_sem.cpp:89
+#6  0x0000aaaaaad95ac0 in px4::WorkQueue::Run (this=this@entry=0xfffff6d8e380) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/common/px4_work_queue/WorkQueue.cpp:195
+#7  0x0000aaaaaad961fc in px4::WorkQueueRunner (context=<optimized out>) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/common/px4_work_queue/WorkQueueManager.cpp:252
+#8  0x0000fffff743595c in start_thread (arg=0xfffff5509580) at ./nptl/pthread_create.c:447
+#9  0x0000fffff749bb0c in thread_start () at ../sysdeps/unix/sysv/linux/aarch64/clone3.S:76
+
+Thread 9 (Thread 0xfffff5508e40 (LWP 2231114) "wq:manager"):
+#0  0x0000fffff7431e9c in __futex_abstimed_wait_common64 (private=0, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0xfffff0000ca4) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=0, abstime=0x0, clockid=0, expected=0, futex_word=0xfffff0000ca4) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0xfffff0000ca4, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=private@entry=0) at ./nptl/futex-internal.c:139
+#3  0x0000fffff7434b20 in __pthread_cond_wait_common (abstime=0x0, clockid=0, mutex=0xfffff0000c48, cond=0xfffff0000c78) at ./nptl/pthread_cond_wait.c:503
+#4  ___pthread_cond_wait (cond=0xfffff0000c78, mutex=0xfffff0000c48) at ./nptl/pthread_cond_wait.c:627
+#5  0x0000aaaaaad93264 in px4_sem_wait (s=0xfffff0000c48) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/px4_sem.cpp:89
+#6  0x0000aaaaaad95e40 in BlockingQueue<px4::wq_config_t const*, 1ul>::pop (this=0xfffff0000be0) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/src/include/containers/BlockingQueue.hpp:71
+#7  px4::WorkQueueManagerRun () at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/common/px4_work_queue/WorkQueueManager.cpp:280
+#8  0x0000aaaaaad92998 in entry_adapter (ptr=0xaaaaab1bc770) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/tasks.cpp:97
+#9  0x0000fffff743595c in start_thread (arg=0xfffff7fec540) at ./nptl/pthread_create.c:447
+#10 0x0000fffff749bb0c in thread_start () at ../sysdeps/unix/sysv/linux/aarch64/clone3.S:76
+
+Thread 7 (Thread 0xfffff5d18e40 (LWP 2231112) "wkr_hrt"):
+#0  0x0000fffff746bed0 in __GI___clock_nanosleep (clock_id=<optimized out>, clock_id@entry=0, flags=flags@entry=0, req=req@entry=0xfffff5d184f8, rem=rem@entry=0x0) at ../sysdeps/unix/sysv/linux/clock_nanosleep.c:78
+#1  0x0000fffff74761fc in __GI___nanosleep (req=req@entry=0xfffff5d184f8, rem=rem@entry=0x0) at ../sysdeps/unix/sysv/linux/nanosleep.c:25
+#2  0x0000fffff749b568 in usleep (useconds=<optimized out>) at ../sysdeps/posix/usleep.c:31
+#3  0x0000aaaaaad9c210 in hrt_work_process () at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/common/work_queue/hrt_thread.c:232
+#4  work_hrtthread (argc=<optimized out>, argv=<optimized out>) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/common/work_queue/hrt_thread.c:276
+#5  0x0000aaaaaad92998 in entry_adapter (ptr=0xaaaaaaf95c20) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/tasks.cpp:97
+#6  0x0000fffff743595c in start_thread (arg=0xfffff7fec540) at ./nptl/pthread_create.c:447
+#7  0x0000fffff749bb0c in thread_start () at ../sysdeps/unix/sysv/linux/aarch64/clone3.S:76
+
+Thread 5 (Thread 0xfffff6528e40 (LWP 2231110) "lpwork"):
+#0  0x0000fffff746bed0 in __GI___clock_nanosleep (clock_id=<optimized out>, clock_id@entry=0, flags=flags@entry=0, req=req@entry=0xfffff6528538, rem=rem@entry=0x0) at ../sysdeps/unix/sysv/linux/clock_nanosleep.c:78
+#1  0x0000fffff74761fc in __GI___nanosleep (req=req@entry=0xfffff6528538, rem=rem@entry=0x0) at ../sysdeps/unix/sysv/linux/nanosleep.c:25
+#2  0x0000fffff749b568 in usleep (useconds=<optimized out>) at ../sysdeps/posix/usleep.c:31
+#3  0x0000aaaaaad9c73c in work_lpthread (argc=<optimized out>, argv=<optimized out>) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/common/work_queue/work_thread.c:305
+#4  0x0000aaaaaad92998 in entry_adapter (ptr=0xaaaaaaf962b0) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/tasks.cpp:97
+#5  0x0000fffff743595c in start_thread (arg=0xfffff7fec540) at ./nptl/pthread_create.c:447
+#6  0x0000fffff749bb0c in thread_start () at ../sysdeps/unix/sysv/linux/aarch64/clone3.S:76
+
+Thread 3 (Thread 0xfffff6d38e40 (LWP 2231108) "hpwork"):
+#0  0x0000fffff746bed0 in __GI___clock_nanosleep (clock_id=<optimized out>, clock_id@entry=0, flags=flags@entry=0, req=req@entry=0xfffff6d38538, rem=rem@entry=0x0) at ../sysdeps/unix/sysv/linux/clock_nanosleep.c:78
+#1  0x0000fffff74761fc in __GI___nanosleep (req=req@entry=0xfffff6d38538, rem=rem@entry=0x0) at ../sysdeps/unix/sysv/linux/nanosleep.c:25
+#2  0x0000fffff749b568 in usleep (useconds=<optimized out>) at ../sysdeps/posix/usleep.c:31
+#3  0x0000aaaaaad9c71c in work_hpthread (argc=<optimized out>, argv=<optimized out>) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/common/work_queue/work_thread.c:279
+#4  0x0000aaaaaad92998 in entry_adapter (ptr=0xaaaaaaf8f7d0) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/tasks.cpp:97
+#5  0x0000fffff743595c in start_thread (arg=0xfffff7fec540) at ./nptl/pthread_create.c:447
+#6  0x0000fffff749bb0c in thread_start () at ../sysdeps/unix/sysv/linux/aarch64/clone3.S:76
+
+Thread 1 (Thread 0xfffff7febe00 (LWP 2231092) "px4"):
+#0  0x0000fffff7487b74 in __GI___wait4 (pid=2231117, stat_loc=stat_loc@entry=0xffffffffce48, options=options@entry=0, usage=usage@entry=0x0) at ../sysdeps/unix/sysv/linux/wait4.c:30
+#1  0x0000fffff7487ce4 in __GI___waitpid (pid=<optimized out>, stat_loc=stat_loc@entry=0xffffffffce48, options=options@entry=0) at ./posix/waitpid.c:38
+#2  0x0000fffff73fcd0c in do_system (line=<optimized out>) at ../sysdeps/posix/system.c:172
+#3  0x0000aaaaaab08e2c in run_startup_script (instance=21, absolute_binary_path="/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin", commands_file="etc/init.d-posix/rcS") at /usr/include/c++/13/bits/basic_string.h:222
+#4  main (argc=<optimized out>, argv=<optimized out>) at /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/platforms/posix/src/px4/common/main.cpp:395
+Terminated
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+ERROR [px4] PX4 server not running
+Error: no autostart file found (/home/car/uav_handover/data/p0-20261010-queued-gdb-diagnostic/rootfs/etc/init.d-posix/airframes/ERROR [px4] PX4 server not running_*)

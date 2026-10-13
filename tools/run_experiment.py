@@ -24,7 +24,8 @@ import psutil
 ROOT = Path(__file__).resolve().parents[1]
 LAB = ROOT/'uav_lab'
 TYPES = ['classic_hover','raptor_hover','handover_c_to_n','handover_n_to_c',
-         'handover_c_n_c','repeated_handover','state_reset','state_hold','state_restore','state_injection']
+         'handover_c_n_c','repeated_handover','state_reset','state_hold','state_restore','state_injection',
+         'p1_c_to_n','p1_n_to_c','p1_baseline_classic','p1_baseline_raptor']
 
 def write(path, value):
     path.write_text(json.dumps(value,indent=2,ensure_ascii=False,allow_nan=False)+'\n')
@@ -38,6 +39,11 @@ class Experiment:
         self.startup_only=args.startup_only
         self.cfg=json.loads(args.config.read_text())
         if args.hover_s is not None:self.cfg['hover_s']=args.hover_s
+        if args.kind.startswith('p1_'):
+            # P1 condition is part of the recorded run configuration.
+            if 'p1' not in self.cfg or args.condition not in self.cfg['p1']['conditions']:raise RuntimeError('P1 kinds need --condition from config p1.conditions')
+            self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(self.cfg['p1']['conditions'][args.condition]['speed_m_s'])
+        elif args.condition:raise RuntimeError('--condition applies only to P1 kinds')
         self.variant='classic' if args.kind=='classic_hover' else 'raptor'
         if os.environ.get('HANDOVER_VARIANT')!=self.variant:raise RuntimeError('use tools/experiment to select the correct overlay')
         self.out=(args.output or ROOT/'data'/(dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).strftime('%Y%m%dT%H%M%S')+'-'+args.kind+'-'+uuid.uuid4().hex[:6])).resolve()
@@ -47,6 +53,7 @@ class Experiment:
         self.events=(self.out/'events.jsonl').open('w')
         self.procs=[];self.files=[];self.latest={};self.received={};self.acks=[];self.expected_stopped=set()
         self.node=None;self.rclpy=None;self.safe=False;self.checks={};self.last_sample=0
+        self.stream=None;self.stream_t0=None;self.stream_state=None
         self.samples=(self.out/'telemetry.jsonl').open('w')
         self.resources=(self.out/'resources.jsonl').open('w');self.last_resource=0
         self.rootfs=self.out/'rootfs'
@@ -157,7 +164,8 @@ class Experiment:
     def pump(self,seconds=0.1):
         end=time.monotonic()+seconds
         while time.monotonic()<end:
-            self.rclpy.spin_once(self.node,timeout_sec=min(0.05,max(0,end-time.monotonic())))
+            self.rclpy.spin_once(self.node,timeout_sec=min(0.01 if self.stream else 0.05,max(0,end-time.monotonic())))
+            if self.stream:self.stream()
             for name,p in self.procs:
                 if p.poll() is not None and name not in self.expected_stopped:raise RuntimeError(f'{name} exited: {p.returncode}')
             now=time.monotonic()
@@ -202,17 +210,128 @@ class Experiment:
         ack=next(a for a in self.acks[start:] if a.command==command)
         if ack.result!=0:raise RuntimeError(f'command {command} rejected: {ack.result}')
 
-    def hover(self,duration,label):
+    def hover(self,duration,label,prefix='hover'):
+        # P1 phases away from the P0 hover point use prefix 'p1_phase' so analyze.py does not judge them as hover windows.
         start=self.native_phase_end_bound()
-        self.event('hover_started',label=label,duration_s=duration,px4_start_us=start)
+        self.event(prefix+'_started',label=label,duration_s=duration,px4_start_us=start)
         deadline=time.monotonic()+3*duration+15
         while time.monotonic()<deadline:
             self.pump(0.2)
             end=self.native_phase_end_bound()
             if end-start>=duration*1e6:
-                self.event('hover_ended',label=label,px4_end_us=end)
+                self.event(prefix+'_ended',label=label,px4_end_us=end)
                 return
         raise TimeoutError('native simulation hover duration '+label)
+
+    def native_bound_streaming(self):
+        # Same native bound as native_phase_end_bound, but the reference stream keeps publishing while listener runs.
+        link=self.out/'cli'/'px4-listener'
+        if not link.exists():link.symlink_to(self.binary)
+        argv=[str(link),'--instance',str(self.instance),'vehicle_angular_velocity','-n','1']
+        p=subprocess.Popen(argv,env=self.env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,cwd=self.rootfs)
+        deadline=time.monotonic()+12
+        while p.poll() is None:
+            if time.monotonic()>deadline:p.kill();p.wait();raise RuntimeError('native boundary listener timeout')
+            self.pump(0.005)
+        output=p.stdout.read();p.stdout.close()
+        with (self.out/'logs/commands.log').open('a') as f:f.write(json.dumps({'command':argv,'exit_code':p.returncode,'output':output})+'\n')
+        match=re.search(r'\btimestamp:\s*(\d+)',output)
+        if p.returncode or not match:raise RuntimeError('native phase boundary timestamp missing')
+        return int(match.group(1))
+
+    def wait_raptor_active(self):
+        self.wait(lambda:self.latest.get('raptor_status') and self.latest['raptor_status'].active and self.latest.get('raptor_input') and self.latest['raptor_input'].active,5,'RAPTOR active diagnostic DDS')
+        self.checks['raptor_diagnostic_dds']='PASS'
+        self.command('listener','raptor_status','-n','1')
+        self.command('listener','vehicle_control_mode','-n','1')
+
+    def classic_target(self):
+        # Start the P1 reference at the classic controller's current target (no step at OFFBOARD entry).
+        text=self.command('listener','trajectory_setpoint','-n','1')
+        position=re.search(r'position: \[([^\]]+)\]',text);yaw=re.search(r'\byaw: (\S+)',text)
+        values=[float(x) for x in position.group(1).split(',')] if position else []
+        if len(values)!=3 or not all(math.isfinite(x) for x in values) or not yaw or not math.isfinite(float(yaw.group(1))):
+            raise RuntimeError('classic trajectory_setpoint target unavailable: '+text)
+        return values,float(yaw.group(1)),'classic trajectory_setpoint (listener)'
+
+    def raptor_target(self):
+        # RAPTOR research state values 20..22 are its internal position target (activation capture here).
+        values=self.state('raptor','read')['values']
+        return [float(v) for v in values[20:23]],float(self.latest['vehicle_local_position'].heading),'raptor state values[20:23]; yaw from vehicle_local_position.heading'
+
+    def p1_profile(self,t):
+        # Hold, linear velocity ramp, cruise. Returns path length, speed, acceleration along the motion axis.
+        p=self.cfg['p1'];v=self.cfg['p1_speed_m_s'];hold,acc=p['reference_hold_s'],p['accel_s']
+        if t<hold:return 0.,0.,0.
+        if t<hold+acc:
+            tau=t-hold;return .5*v*tau*tau/acc,v*tau/acc,v/acc
+        return .5*v*acc+v*(t-hold-acc),v,0.
+
+    def start_stream(self,origin,yaw,offboard):
+        axis=[float(x) for x in self.cfg['p1']['motion_axis_ned']];period=self.cfg['p1']['setpoint_period_s']
+        state={'last':0.,'count':0,'origin':origin,'yaw':yaw,'offboard':offboard}
+        self.stream_t0=None;self.stream_state=state
+        def publish():
+            now=time.monotonic()
+            if now-state['last']<period:return
+            t=0. if self.stream_t0 is None else now-self.stream_t0
+            s,v,a=self.p1_profile(t);stamp=int(time.time()*1e6)
+            if offboard:
+                off=self.msgs.OffboardControlMode();off.timestamp=stamp;off.position=True;self.offpub.publish(off)
+            traj=self.msgs.TrajectorySetpoint();traj.timestamp=stamp
+            traj.position=[origin[i]+axis[i]*s for i in range(3)];traj.velocity=[axis[i]*v for i in range(3)]
+            traj.acceleration=[axis[i]*a for i in range(3)];traj.yaw=yaw;traj.yawspeed=0.
+            self.trajpub.publish(traj)
+            state['last']=now;state['count']+=1;state['last_position']=list(map(float,traj.position));state['last_velocity']=list(map(float,traj.velocity))
+        self.stream=publish
+        self.event('p1_reference_started',origin_ned_m=origin,yaw_rad=yaw,offboard=offboard,axis_ned=axis,speed_m_s=self.cfg['p1_speed_m_s'],period_s=period)
+
+    def stop_stream(self):
+        state=self.stream_state;self.stream=None
+        self.event('p1_reference_stopped',published=state['count'],last_position_ned_m=state.get('last_position'),
+            last_velocity_ned_m_s=state.get('last_velocity'),since_last_publish_s=time.monotonic()-state['last'])
+
+    def p1_flight(self,mode):
+        kind=self.args.kind;p=self.cfg['p1']
+        classic_out=kind in ['p1_c_to_n','p1_baseline_classic']
+        if classic_out:origin,yaw,source=self.classic_target()
+        else:
+            # Setup C->N at hover (S1-like, not the measured event); RAPTOR then holds its activation capture.
+            self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='C',to_controller='N',iteration=0,subject=False)
+            self.mode(mode);self.wait_raptor_active();self.capture_states('neural_after_entry')
+            self.hover(self.cfg['neural_s'],'neural')
+            origin,yaw,source=self.raptor_target()
+        self.event('p1_reference_origin',source=source,origin_ned_m=origin,yaw_rad=yaw)
+        self.start_stream(origin,yaw,classic_out)
+        if classic_out:
+            self.pump(p['offboard_prestream_s'])
+            self.mode(self.msgs.VehicleStatus.NAVIGATION_STATE_OFFBOARD)
+        total=p['reference_hold_s']+p['accel_s']+p['cruise_s']
+        self.stream_t0=time.monotonic()
+        self.event('p1_profile_started',px4_bound_us=self.native_bound_streaming(),duration_s=total)
+        while time.monotonic()-self.stream_t0<total:self.pump(0.01)
+        # Measured event: native bound while streaming, stop the stream, then request at once.
+        bound=self.native_bound_streaming();self.stop_stream()
+        subject={'p1_c_to_n':'C_to_N','p1_n_to_c':'N_to_C','p1_baseline_classic':'classic_brake','p1_baseline_raptor':'raptor_hold'}[kind]
+        self.event('p1_trigger',subject=subject,condition=self.cfg['p1_condition'],speed_m_s=self.cfg['p1_speed_m_s'],end_bound_px4_us=bound)
+        if kind=='p1_c_to_n':
+            self.event('handover_requested',end_bound_px4_us=bound,from_controller='C',to_controller='N',iteration=0,subject=True)
+            self.mode(mode);self.wait_raptor_active();self.capture_states('neural_after_entry')
+        elif kind=='p1_n_to_c':
+            self.event('handover_requested',end_bound_px4_us=bound,from_controller='N',to_controller='C',iteration=0,subject=True)
+            self.mode(4);self.capture_states('classic_after_entry')
+        elif kind=='p1_baseline_classic':self.mode(4)
+        self.hover(p['post_handover_s'],'post_event',prefix='p1_phase')
+        if kind=='p1_baseline_classic':
+            # RAPTOR segment at rest after the measured window keeps the RAPTOR-build analysis requirements.
+            self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='C',to_controller='N',iteration=1,subject=False)
+            self.mode(mode);self.wait_raptor_active();self.capture_states('neural_after_entry')
+            self.hover(self.cfg['neural_s'],'tail_neural',prefix='p1_phase')
+        if kind!='p1_n_to_c':
+            self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='N',to_controller='C',iteration=1,subject=False)
+            self.mode(4);self.capture_states('classic_after_entry')
+            self.hover(p['return_hold_s'],'return_classic',prefix='p1_phase')
+        self.checks['p1_sequence']='PASS'
 
     def wait_sensor_readiness(self):
         gate=Readiness();deadline=time.monotonic()+self.cfg['startup_timeout_s'];last_log=0
@@ -406,7 +525,8 @@ class Experiment:
         self.wait(lambda:-self.latest['vehicle_local_position'].z>self.cfg['altitude_m']-0.5,self.cfg['takeoff_timeout_s'],'takeoff altitude')
         self.mode(4) # AUTO_LOITER
         self.hover(self.cfg['hover_s'],'classic_before')
-        if self.variant=='raptor':
+        if self.args.kind.startswith('p1_'):self.p1_flight(mode)
+        elif self.variant=='raptor':
             count=self.cfg['repetitions'] if self.args.kind=='repeated_handover' else 1
             for iteration in range(count):
                 self.capture_states('classic_before_handover')
@@ -497,6 +617,7 @@ def main():
     p.add_argument('--capture-raw-sensors',action='store_true',help='Diagnostic only: adds sensor subscribers and may change startup behavior')
     p.add_argument('--startup-only',action='store_true',help='Preparation cold start; readiness only, never arm')
     p.add_argument('--output',type=Path);p.add_argument('--hover-s',type=float)
+    p.add_argument('--condition',choices=['S1','S2','S3'],help='P1 pre-handover motion condition (config p1.conditions)')
     args=p.parse_args();e=Experiment(args);status='FAIL';reason=None
     try:
         e.execute();status='PASS'

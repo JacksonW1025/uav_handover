@@ -170,7 +170,7 @@ def analyze(folder):
                 if ok and (op==4 or (e['holding'] and op in [3,5,6])):held[target]=values
                 if ok and op==7:held.pop(target,None)
             metrics['state_values_validation']={'errors':state_errors,'status':'PASS' if not state_errors else 'FAIL'}
-    add_p0(metrics,topics,cfg,events,windows,px4_time,meta['variant'],stats)
+    add_p0(metrics,topics,cfg,events,windows,px4_time,meta['variant'],stats,[(int(m.timestamp),m.message) for m in ulog.logged_messages])
     if 'settling_band_m' not in cfg:metrics['unavailable']['settling_time']='this run did not predefine a settling band and dwell time'
     metrics['safety_failure_events']=sum(e['event']=='failure' for e in events)
     resources=folder/'resources.jsonl'

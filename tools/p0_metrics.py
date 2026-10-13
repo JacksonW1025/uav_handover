@@ -1,7 +1,39 @@
 """P0 analysis. Never infer neural ownership from controller activity alone."""
+import re
 import numpy as np
 from collections import Counter
-from recovery import recovery
+from recovery import recovery,_recovery
+
+NUM=r'([-+]?(?:\d+\.?\d*(?:[eE][-+]?\d+)?|nan|inf))'
+CAPTURE=re.compile(r'trajectory_setpoint (?:turned stale|reset due to activation) at: '+NUM+' '+NUM+' '+NUM)
+
+def raptor_captures(messages,intervals):
+    """RAPTOR prints every internal-target capture (mode-entry reset or 200 ms setpoint timeout) with the exact
+    position it stores. Only captures inside neural ownership intervals define the controller target; a capture
+    logged in the same Run just before the owner change is placed at the owner change."""
+    out=[]
+    for stamp,text in messages:
+        m=CAPTURE.search(text)
+        if not m:continue
+        for start,end in intervals:
+            if start-20000<=stamp<end:out.append((max(int(stamp),int(start)),[float(m.group(i)) for i in (1,2,3)]));break
+    return out
+
+def controller_target(setpoint,captures):
+    """trajectory_setpoint samples merged with RAPTOR captures, ordered in time (capture after a same-time sample)."""
+    rows=[(int(t),0,[setpoint[f'position[{k}]'][i] for k in range(3)]) for i,t in enumerate(setpoint['timestamp'])]
+    rows+=[(t,1,p) for t,p in captures]
+    rows.sort(key=lambda r:(r[0],r[1]))
+    return {'timestamp':np.array([r[0] for r in rows],dtype=np.int64),
+            **{f'position[{k}]':np.array([r[2][k] for r in rows],dtype=np.float64) for k in range(3)}}
+
+def neural_intervals(transitions,end_us):
+    out=[];start=None
+    for tr in transitions:
+        if tr['to']==1 and start is None:start=tr['px4_us']
+        elif tr['from']==1 and start is not None:out.append((start,tr['px4_us']));start=None
+    if start is not None:out.append((start,end_us))
+    return out
 
 def sampling(topic):
     t=np.asarray(topic.get('timestamp_sample',topic['timestamp']),dtype=np.int64)
@@ -37,7 +69,7 @@ def executor_acceptance(scopes,source_missed,nonincreasing_commits):
     status='FAIL' if reasons else ('PASS_WITH_WARNINGS' if scopes['whole_run']['executor_warnings_total'] else 'PASS')
     return status,reasons
 
-def add_p0(metrics,topics,cfg,events,windows,px4_time,variant,stats):
+def add_p0(metrics,topics,cfg,events,windows,px4_time,variant,stats,messages=None):
     metrics['observation_sampling']={n:sampling(topics[topic]) for n,topic in
         [('position','vehicle_local_position'),('velocity','vehicle_local_position'),('angular_velocity','vehicle_angular_velocity')]}
     if 'joint_recovery' not in cfg:return
@@ -53,6 +85,15 @@ def add_p0(metrics,topics,cfg,events,windows,px4_time,variant,stats):
     requests=[(e.get('end_bound_px4_us',px4_time(e['monotonic_ns'])-100000),
                e['event']+(' (native pre-request bound)' if 'end_bound_px4_us' in e else ' (estimated 100ms margin; not strict P0 evidence)')) for e in boundary_events]
     transitions=metrics.get('actuator_owner_transitions',[])
+    setpoint=topics.get('trajectory_setpoint')
+    controller=cfg['joint_recovery'].get('position_reference')=='active_controller_target'
+    if controller:
+        intervals=neural_intervals(transitions,metrics['ulog_end_us'])
+        captures=raptor_captures(messages or [],intervals)
+        metrics['controller_target']={'neural_intervals_us':[list(map(int,i)) for i in intervals],
+            'raptor_captures':[{'px4_us':t,'position_ned_m':p} for t,p in captures],
+            'source':'classic: trajectory_setpoint; RAPTOR ownership: logged internal-target captures'}
+        setpoint=controller_target(setpoint,captures)
     stages=[]
     if windows:
         stages.append({'start_us':windows[0][1],'owner':2,'origin':'initial_classic_hover'})
@@ -66,7 +107,11 @@ def add_p0(metrics,topics,cfg,events,windows,px4_time,variant,stats):
         for request,event in requests[i:]:
             if request<end:end=request;reason=event
             break
-        result=recovery(local,angular,cfg['joint_recovery'],int(start),int(end),topics.get('trajectory_setpoint'))
+        result=recovery(local,angular,cfg['joint_recovery'],int(start),int(end),setpoint)
+        if controller:
+            rule=_recovery(local,angular,cfg['joint_recovery'],int(start),int(end),topics.get('trajectory_setpoint'))
+            result['trajectory_setpoint_only_comparison']={'joint_recovery':rule['joint_recovery'],'position_band_entry':rule['position_band_entry'],
+                'note':'Comparison only; trajectory_setpoint is not RAPTOR\'s target while RAPTOR owns the actuators.'}
         result.update(stage);result['end_reason']=reason
         result['observation_sampling']={}
         for name,topic in [('position',local),('velocity',local),('angular_velocity',angular)]:

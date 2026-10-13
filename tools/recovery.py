@@ -33,10 +33,11 @@ def setpoint_reference(setpoint, t):
 def recovery(local, angular, cfg, start, end, setpoint=None):
     """Joint recovery. With position_reference='active_trajectory_setpoint' the verdict uses the
     controller's own position target; the fixed NED reference is always reported for comparison."""
-    use_setpoint=cfg.get('position_reference')=='active_trajectory_setpoint'
+    # 'active_controller_target' (P1) passes a setpoint series that already merges RAPTOR's captured target.
+    use_setpoint=cfg.get('position_reference') in ['active_trajectory_setpoint','active_controller_target']
     if use_setpoint and setpoint is None:raise ValueError('setpoint reference requires trajectory_setpoint')
     result=_recovery(local,angular,cfg,start,end,setpoint if use_setpoint else None)
-    result['position_reference']='active_trajectory_setpoint' if use_setpoint else 'fixed_ned'
+    result['position_reference']=cfg['position_reference'] if use_setpoint else 'fixed_ned'
     if use_setpoint:
         fixed=_recovery(local,angular,cfg,start,end,None)
         result['fixed_reference_comparison']={'joint_recovery':fixed['joint_recovery'],'position_band_entry':fixed['position_band_entry'],

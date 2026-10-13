@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A research harness on an NVIDIA Jetson AGX Thor (aarch64, Ubuntu 24.04, ROS 2 Jazzy, Gazebo Harmonic). It studies handover between PX4's classic multicopter controller and the RAPTOR neural controller (C → N → C), and interventions on controller internal state (reset / hold / snapshot+restore / inject). All flight is **headless SITL only**. Project docs and most comments are in Chinese.
 
-Current project status: **P0 complete** as of 2026-10-12 (closure record `data/p0-closure-20261012/acceptance.json`, rationale in the closing section of `docs/THOR_P0_FINAL_REPORT.md`); the 2026-10-10 P0 FAIL audit is kept unchanged as history. Next phase is P1. No real flight. Joint recovery's position reference is the controller's active `trajectory_setpoint` (user-confirmed 2026-10-12); the fixed NED reference is reported only as `fixed_reference_comparison`.
+Current project status: **P1 complete** as of 2026-10-13 (`docs/THOR_P1_REPORT.md`, frozen batch `data/p1-20261013-batch-02/`; batch-01 is a retained FAIL record). P0 complete as of 2026-10-12 (closure record `data/p0-closure-20261012/acceptance.json`, rationale in the closing section of `docs/THOR_P0_FINAL_REPORT.md`); the 2026-10-10 P0 FAIL audit is kept unchanged as history. Next phase is P2 (state interventions), not started. No real flight. Joint recovery's position reference is the controller's active `trajectory_setpoint` (user-confirmed 2026-10-12); `config/p1.json` uses `active_controller_target`, which additionally uses RAPTOR's logged internal-target captures while RAPTOR owns the actuators (RAPTOR's target is not published on `trajectory_setpoint`); re-verified on all P0 batch-05 runs with unchanged verdicts. The fixed NED reference is reported only as `fixed_reference_comparison`.
 
 ## Repository vs. Lab
 
@@ -38,6 +38,16 @@ Experiments (each launches PX4 + Gazebo + XRCE Agent, checks DDS both ways and A
 ./tools/experiment analyze data/<run-dir>
 ```
 
+P1 (`config/p1.json`, kinds `p1_c_to_n`, `p1_n_to_c`, `p1_baseline_classic`, `p1_baseline_raptor`, `--condition S1|S2|S3`): before the subject event the outgoing controller tracks one runner-published `trajectory_setpoint` ramp (classic via OFFBOARD, RAPTOR via its external setpoint input); at the event the stream stops and the incoming controller uses its original mechanism (RAPTOR mode-entry reset hold, classic AUTO_LOITER). Off-origin phases emit `p1_phase_*` events, not `hover_*`, so `analyze.py` does not judge them as hover windows.
+
+```bash
+./tools/experiment p1_c_to_n --condition S3 --config config/p1.json --output data/my-p1-run
+uav_lab/.local/venv/bin/python tools/p1_metrics.py data/my-p1-run          # -> p1-metrics.json
+uav_lab/.local/venv/bin/python tools/p1_batch.py data/<batch> --prefix <prefix> [--pause-after S1]   # --resume continues
+uav_lab/.local/venv/bin/python tools/p1_audit.py data/<batch>              # -> batch-audit.json
+uav_lab/.local/venv/bin/python tools/p1_report.py data/<batch>             # figures -> docs/figures/p1
+```
+
 `tools/experiment` picks the `classic` env for `health`/`classic_hover`, `raptor` for everything else, then dispatches to `tools/health.py`, `tools/analyze.py`, or `tools/run_experiment.py`.
 
 Rebuild (what `tools/prepare_lab.sh` does after venv/colcon setup):
@@ -51,8 +61,8 @@ uav_lab/.local/venv/bin/python tools/apply_research.py
 Tests:
 
 ```bash
-# Python (14 tests); single test: append ::test_name
-uav_lab/.local/venv/bin/python -m pytest -q tests/test_readiness.py tests/test_recovery.py tests/test_executor_acceptance.py tests/test_output_chain.py
+# Python (25 tests); single test: append ::test_name
+uav_lab/.local/venv/bin/python -m pytest -q tests/test_readiness.py tests/test_recovery.py tests/test_executor_acceptance.py tests/test_output_chain.py tests/test_p0_closure.py tests/test_p1.py
 uav_lab/.local/venv/bin/python -m pytest -q tests/test_recovery.py::test_missing_data_does_not_count_as_continuous
 
 # Header-only C++ units, with sanitizers (as recorded in data/p0-20261010/commands/)

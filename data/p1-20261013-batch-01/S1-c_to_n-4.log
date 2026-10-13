@@ -1,0 +1,128 @@
+created {'thresholds': {'seed': 42, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 3, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500, 'settling_band_m': 0.2, 'settling_dwell_s': 2.0, 'joint_recovery': {'position_reference': 'active_controller_target', 'position_reference_note': "Same rule as P0 (the controller's own position target), extended to RAPTOR: its internal target is not published on trajectory_setpoint, so while RAPTOR owns the actuators the target is its logged capture (activation reset or setpoint-stale hold); classic stages use trajectory_setpoint as in P0. trajectory_setpoint-only and fixed NED results are kept as comparisons.", 'position_reference_ned_m': [0, 0, -3], 'velocity_reference_ned_m_s': [0, 0, 0], 'angular_velocity_reference_frd_rad_s': [0, 0, 0], 'position_threshold_m': 0.2, 'velocity_threshold_m_s': 0.1, 'angular_velocity_threshold_rad_s': 0.1, 'dwell_s': 2.0, 'max_observation_gap_s': 0.02}, 'p0_strict': True, 'p1': {'conditions': {'S1': {'speed_m_s': 0.0, 'description': 'stable hover'}, 'S2': {'speed_m_s': 0.5, 'description': 'low-speed horizontal motion'}, 'S3': {'speed_m_s': 1.0, 'description': 'moderate horizontal motion'}}, 'speed_rationale': 'Requested starting values kept. Travel along +N is accel_s*v/2 + cruise_s*v (S3: 5.0 m, S2: 2.5 m) plus braking; the worst case stays below 7 m, leaving at least 3 m to the frozen 10 m safety radius, and 0.5 m/s^2 ramp acceleration is gentle for both controllers.', 'motion_axis_ned': [1, 0, 0], 'reference_hold_s': 3.0, 'accel_s': 2.0, 'cruise_s': 4.0, 'offboard_prestream_s': 1.0, 'setpoint_period_s': 0.02, 'post_handover_s': 10.0, 'return_hold_s': 8.0, 'reference': 'Before the subject event the outgoing controller tracks one runner-published trajectory_setpoint (position ramp, velocity and acceleration feed-forward, constant yaw) starting from its own current target: classic through OFFBOARD, RAPTOR through its external trajectory_setpoint input. At the event the stream stops and the incoming controller uses its original mechanism: RAPTOR mode-entry reset holds the activation position/yaw with zero velocity; classic AUTO_LOITER brakes to the navigator loiter point.', 'baselines': "p1_baseline_classic: classic OFFBOARD motion then AUTO_LOITER (same takeover mechanism, no controller switch). p1_baseline_raptor: RAPTOR external-setpoint motion then the stream stops; after RAPTOR's 200 ms setpoint timeout it holds its position (same capture rule as mode entry, no reset or switch).", 'handover_repetitions': 5, 'baseline_repetitions': 3, 'motor_saturation': {'upper': 0.999, 'lower': 0.001, 'note': 'actuator_motors control in [0,1]; upper/lower limit within 1e-3'}, 'motor_step_window_s': [-0.1, 0.5]}, 'p1_condition': 'S1', 'p1_speed_m_s': 0.0}}
+process_started {'name': 'agent', 'pid': 1577676, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 1577677, 'command': ['gz', 'sim', '-r', '-s', '-v', '3', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'gz-stats', 'pid': 1577678, 'command': ['gz', 'topic', '-e', '-t', '/world/default/stats']}
+process_started {'name': 'tegrastats', 'pid': 1577679, 'command': ['/usr/bin/tegrastats', '--interval', '1000']}
+process_started {'name': 'px4', 'pid': 1577729, 'command': ['/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/p1-20261013-b01-S1-c_to_n-4/rootfs', '/home/car/uav_handover/data/p1-20261013-b01-S1-c_to_n-4/rootfs/etc']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1791898349183783}
+ready {'condition': 'PX4 DDS telemetry'}
+sensor_readiness {'ready': True, 'reasons': [], 'continuous_host_s': 2.0076533649116755, 'native_publication_stamps': {'sensor_baro': 1791898356215785, 'vehicle_air_data': 1791898356175785, 'vehicle_local_position': 1791898356207785}, 'raw_pressure_pa': 101318.1796875, 'raw_device_id': 6619404, 'selected_pressure_pa': 101322.015625, 'selected_device_id': 6619404}
+mavlink_identity {'system_id': 22, 'autopilot': 12, 'udp_port': 18591}
+process_started {'name': 'agent-reconnected', 'pid': 1578467, 'command': ['/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1791898349183788}
+ready {'condition': 'DDS Client reconnection with fresh telemetry'}
+command_requested {'command': 176, 'params': {'param1': 1, 'param2': 4, 'param3': 3}}
+command_ack {'command': 176, 'result': 0, 'timestamp': 1791898367087791}
+ready {'condition': 'command acknowledgement'}
+command_requested {'command': 100001, 'params': {'param1': 14}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1791898368203791}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=14'}
+mode_confirmed {'mode': 14, 'px4_timestamp': 1791898368215791}
+command_requested {'command': 100001, 'params': {'param1': 4}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1791898368683791}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=4'}
+mode_confirmed {'mode': 4, 'px4_timestamp': 1791898368695791}
+state_operation {'target': 'raptor', 'operation': 'read', 'response': {'request_id': 24984000, 'applied_us': 24988000, 'target': 1, 'operation': 1, 'result': 1, 'dimension': 26, 'active': False, 'holding': False, 'values': [-0.205176726, -0.24151507, -0.369128704, -0.658942759, -0.386805087, -0.4075526, -0.382539541, -0.18082048, -0.830533266, 0.973168552, 0.000138084724, -0.518085659, 0.6227175, 0.878252268, -0.544505119, 0.662328064, -0.780510426, -0.743044078, -0.599765718, -0.602467775, 0.0271022189, 0.0137922764, -0.0512011833, -0.000511759776, -0.000511759776, 0.699488044]}}
+ready {'condition': 'valid local position'}
+state_operation {'target': 'raptor', 'operation': 'hold', 'response': {'request_id': 29120000, 'applied_us': 29124000, 'target': 1, 'operation': 4, 'result': 0, 'dimension': 26, 'active': False, 'holding': True, 'values': [-0.21412845, -0.240173534, -0.370906204, -0.6588009, -0.395700991, -0.390058994, -0.379776657, -0.170095235, -0.830098569, 0.972001255, -0.03082156, -0.523053646, 0.617083669, 0.872210085, -0.546105564, 0.65143913, -0.775684714, -0.748214722, -0.612652957, -0.606248617, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'read', 'response': {'request_id': 29140000, 'applied_us': 29144000, 'target': 1, 'operation': 1, 'result': 0, 'dimension': 26, 'active': False, 'holding': True, 'values': [-0.21412845, -0.240173534, -0.370906204, -0.6588009, -0.395700991, -0.390058994, -0.379776657, -0.170095235, -0.830098569, 0.972001255, -0.03082156, -0.523053646, 0.617083669, 0.872210085, -0.546105564, 0.65143913, -0.775684714, -0.748214722, -0.612652957, -0.606248617, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'inject', 'response': {'request_id': 29160000, 'applied_us': 29160000, 'target': 1, 'operation': 6, 'result': 0, 'dimension': 26, 'active': False, 'holding': True, 'values': [0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0299999993, 0.0299999993, 0.0299999993, 0.0299999993, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'read', 'response': {'request_id': 29176000, 'applied_us': 29180000, 'target': 1, 'operation': 1, 'result': 0, 'dimension': 26, 'active': False, 'holding': True, 'values': [0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0299999993, 0.0299999993, 0.0299999993, 0.0299999993, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'snapshot', 'response': {'request_id': 29196000, 'applied_us': 29200000, 'target': 1, 'operation': 2, 'result': 0, 'dimension': 26, 'active': False, 'holding': True, 'values': [0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0299999993, 0.0299999993, 0.0299999993, 0.0299999993, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'reset', 'response': {'request_id': 29216000, 'applied_us': 29220000, 'target': 1, 'operation': 3, 'result': 0, 'dimension': 26, 'active': False, 'holding': True, 'values': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'restore', 'response': {'request_id': 29236000, 'applied_us': 29240000, 'target': 1, 'operation': 5, 'result': 0, 'dimension': 26, 'active': False, 'holding': True, 'values': [0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0299999993, 0.0299999993, 0.0299999993, 0.0299999993, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'inject', 'response': {'request_id': 29256000, 'applied_us': 29260000, 'target': 1, 'operation': 6, 'result': 3, 'dimension': 26, 'active': False, 'holding': True, 'values': [0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0299999993, 0.0299999993, 0.0299999993, 0.0299999993, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'inject', 'response': {'request_id': 29276000, 'applied_us': 29280000, 'target': 1, 'operation': 6, 'result': 4, 'dimension': 26, 'active': False, 'holding': True, 'values': [0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0299999993, 0.0299999993, 0.0299999993, 0.0299999993, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'inject', 'response': {'request_id': 29296000, 'applied_us': 29300000, 'target': 1, 'operation': 6, 'result': 5, 'dimension': 26, 'active': False, 'holding': True, 'values': [0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0500000007, 0.0299999993, 0.0299999993, 0.0299999993, 0.0299999993, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'reset', 'response': {'request_id': 29316000, 'applied_us': 29320000, 'target': 1, 'operation': 3, 'result': 0, 'dimension': 26, 'active': False, 'holding': True, 'values': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'raptor', 'operation': 'release', 'response': {'request_id': 29336000, 'applied_us': 29336000, 'target': 1, 'operation': 7, 'result': 0, 'dimension': 26, 'active': False, 'holding': False, 'values': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.00107660005, 0.00200176099, -0.0525127277, 0.00103336596, 0.00103358598, 0.698848009]}}
+state_operation {'target': 'rate', 'operation': 'hold', 'response': {'request_id': 29352000, 'applied_us': 29356000, 'target': 2, 'operation': 4, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0, 0, 0]}}
+state_operation {'target': 'rate', 'operation': 'read', 'response': {'request_id': 29372000, 'applied_us': 29376000, 'target': 2, 'operation': 1, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0, 0, 0]}}
+state_operation {'target': 'rate', 'operation': 'inject', 'response': {'request_id': 29392000, 'applied_us': 29396000, 'target': 2, 'operation': 6, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'rate', 'operation': 'read', 'response': {'request_id': 29412000, 'applied_us': 29416000, 'target': 2, 'operation': 1, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'rate', 'operation': 'snapshot', 'response': {'request_id': 29432000, 'applied_us': 29436000, 'target': 2, 'operation': 2, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'rate', 'operation': 'reset', 'response': {'request_id': 29448000, 'applied_us': 29452000, 'target': 2, 'operation': 3, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0, 0, 0]}}
+state_operation {'target': 'rate', 'operation': 'restore', 'response': {'request_id': 29468000, 'applied_us': 29472000, 'target': 2, 'operation': 5, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'rate', 'operation': 'inject', 'response': {'request_id': 29488000, 'applied_us': 29492000, 'target': 2, 'operation': 6, 'result': 3, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'rate', 'operation': 'inject', 'response': {'request_id': 29508000, 'applied_us': 29512000, 'target': 2, 'operation': 6, 'result': 4, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'rate', 'operation': 'inject', 'response': {'request_id': 29528000, 'applied_us': 29532000, 'target': 2, 'operation': 6, 'result': 5, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'rate', 'operation': 'reset', 'response': {'request_id': 29548000, 'applied_us': 29548000, 'target': 2, 'operation': 3, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0, 0, 0]}}
+state_operation {'target': 'rate', 'operation': 'release', 'response': {'request_id': 29564000, 'applied_us': 29568000, 'target': 2, 'operation': 7, 'result': 0, 'dimension': 3, 'active': False, 'holding': False, 'values': [0, 0, 0]}}
+state_operation {'target': 'velocity', 'operation': 'hold', 'response': {'request_id': 29584000, 'applied_us': 29592000, 'target': 3, 'operation': 4, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0, 0, 0]}}
+state_operation {'target': 'velocity', 'operation': 'read', 'response': {'request_id': 29608000, 'applied_us': 29616000, 'target': 3, 'operation': 1, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0, 0, 0]}}
+state_operation {'target': 'velocity', 'operation': 'inject', 'response': {'request_id': 29632000, 'applied_us': 29640000, 'target': 3, 'operation': 6, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'velocity', 'operation': 'read', 'response': {'request_id': 29652000, 'applied_us': 29656000, 'target': 3, 'operation': 1, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'velocity', 'operation': 'snapshot', 'response': {'request_id': 29672000, 'applied_us': 29680000, 'target': 3, 'operation': 2, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'velocity', 'operation': 'reset', 'response': {'request_id': 29692000, 'applied_us': 29696000, 'target': 3, 'operation': 3, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0, 0, 0]}}
+state_operation {'target': 'velocity', 'operation': 'restore', 'response': {'request_id': 29712000, 'applied_us': 29720000, 'target': 3, 'operation': 5, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'velocity', 'operation': 'inject', 'response': {'request_id': 29736000, 'applied_us': 29744000, 'target': 3, 'operation': 6, 'result': 3, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'velocity', 'operation': 'inject', 'response': {'request_id': 29760000, 'applied_us': 29768000, 'target': 3, 'operation': 6, 'result': 4, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'velocity', 'operation': 'inject', 'response': {'request_id': 29788000, 'applied_us': 29792000, 'target': 3, 'operation': 6, 'result': 5, 'dimension': 3, 'active': False, 'holding': True, 'values': [0.00999999978, -0.00999999978, 0.0149999997]}}
+state_operation {'target': 'velocity', 'operation': 'reset', 'response': {'request_id': 29804000, 'applied_us': 29808000, 'target': 3, 'operation': 3, 'result': 0, 'dimension': 3, 'active': False, 'holding': True, 'values': [0, 0, 0]}}
+state_operation {'target': 'velocity', 'operation': 'release', 'response': {'request_id': 29824000, 'applied_us': 29832000, 'target': 3, 'operation': 7, 'result': 0, 'dimension': 3, 'active': False, 'holding': False, 'values': [0, 0, 0]}}
+command_requested {'command': 400, 'params': {'param1': 1}}
+command_ack {'command': 400, 'result': 0, 'timestamp': 1791898373771791}
+ready {'condition': 'command acknowledgement'}
+command_requested {'command': 22, 'params': {'param4': None, 'param5': None, 'param6': None, 'param7': None}}
+command_ack {'command': 22, 'result': 0, 'timestamp': 1791898373879791}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'takeoff altitude'}
+command_requested {'command': 100001, 'params': {'param1': 4}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1791898382003792}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=4'}
+mode_confirmed {'mode': 4, 'px4_timestamp': 1791898382003792}
+hover_started {'label': 'classic_before', 'duration_s': 10, 'px4_start_us': 38276000}
+hover_ended {'label': 'classic_before', 'px4_end_us': 48428000}
+p1_reference_origin {'source': 'classic trajectory_setpoint (listener)', 'origin_ned_m': [0.00253, -0.00671, -3.06443], 'yaw_rad': 1.67705}
+p1_reference_started {'origin_ned_m': [0.00253, -0.00671, -3.06443], 'yaw_rad': 1.67705, 'offboard': True, 'axis_ned': [1.0, 0.0, 0.0], 'speed_m_s': 0.0, 'period_s': 0.02}
+command_requested {'command': 100001, 'params': {'param1': 14}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1791898393391792}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=14'}
+mode_confirmed {'mode': 14, 'px4_timestamp': 1791898393403792}
+p1_profile_started {'px4_bound_us': 49664000, 'duration_s': 9.0}
+p1_reference_stopped {'published': 495, 'last_position_ned_m': [0.002529999939724803, -0.006709999870508909, -3.064429998397827], 'last_velocity_ned_m_s': [0.0, 0.0, 0.0], 'since_last_publish_s': 0.010553138796240091}
+p1_trigger {'subject': 'C_to_N', 'condition': 'S1', 'speed_m_s': 0.0, 'end_bound_px4_us': 58664000}
+handover_requested {'end_bound_px4_us': 58664000, 'from_controller': 'C', 'to_controller': 'N', 'iteration': 0, 'subject': True}
+command_requested {'command': 100001, 'params': {'param1': 23}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1791898402619792}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=23'}
+mode_confirmed {'mode': 23, 'px4_timestamp': 1791898402643792}
+ready {'condition': 'RAPTOR active diagnostic DDS'}
+state_capture_started {'label': 'neural_after_entry'}
+state_operation {'target': 'raptor', 'operation': 'read', 'response': {'request_id': 59016000, 'applied_us': 59020000, 'target': 1, 'operation': 1, 'result': 0, 'dimension': 26, 'active': True, 'holding': False, 'values': [-0.355962515, 0.0531550311, 0.31636253, 0.474612981, 0.34015891, 0.478034288, 0.34232989, -0.269568652, -0.79206109, 0.847585142, 0.386339575, 0.275767237, 0.194462106, -0.406611174, -0.545675159, -0.316275507, 0.497893631, 0.482866943, 0.510883272, 0.51532948, -0.000638285128, -0.0180546381, -3.07240319, 0, 0, 0]}}
+state_operation {'target': 'rate', 'operation': 'read', 'response': {'request_id': 59036000, 'applied_us': 59040000, 'target': 2, 'operation': 1, 'result': 0, 'dimension': 3, 'active': False, 'holding': False, 'values': [-3.67872854e-05, 5.82313623e-05, -2.87159401e-05]}}
+state_operation {'target': 'velocity', 'operation': 'read', 'response': {'request_id': 59056000, 'applied_us': 59060000, 'target': 3, 'operation': 1, 'result': 0, 'dimension': 3, 'active': False, 'holding': False, 'values': [0, 0, 0]}}
+state_capture_finished {'label': 'neural_after_entry'}
+p1_phase_started {'label': 'post_event', 'duration_s': 10.0, 'px4_start_us': 59072000}
+p1_phase_ended {'label': 'post_event', 'px4_end_us': 69236000}
+handover_requested {'end_bound_px4_us': 69248000, 'from_controller': 'N', 'to_controller': 'C', 'iteration': 1, 'subject': False}
+command_requested {'command': 100001, 'params': {'param1': 4}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1791898413191791}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=4'}
+mode_confirmed {'mode': 4, 'px4_timestamp': 1791898413203791}
+state_capture_started {'label': 'classic_after_entry'}
+state_operation {'target': 'raptor', 'operation': 'read', 'response': {'request_id': 69468000, 'applied_us': 69472000, 'target': 1, 'operation': 1, 'result': 0, 'dimension': 26, 'active': False, 'holding': False, 'values': [-0.34040451, 0.0421413146, 0.221023217, 0.30171755, 0.271907747, 0.368490845, 0.267101288, -0.240539789, -0.796893775, 0.8697384, 0.330949813, 0.215331495, 0.260176718, -0.318528235, -0.534640074, -0.195879787, 0.341978014, 0.372777402, 0.39179489, 0.351179659, -0.00587440515, 0.00298720901, -3.05479431, -0.00156283693, -0.00556245726, 0.000484943419]}}
+state_operation {'target': 'rate', 'operation': 'read', 'response': {'request_id': 69488000, 'applied_us': 69492000, 'target': 2, 'operation': 1, 'result': 0, 'dimension': 3, 'active': True, 'holding': False, 'values': [-0.000128215441, -0.000285348826, 1.39309268e-05]}}
+state_operation {'target': 'velocity', 'operation': 'read', 'response': {'request_id': 69508000, 'applied_us': 69516000, 'target': 3, 'operation': 1, 'result': 0, 'dimension': 3, 'active': True, 'holding': False, 'values': [0.00065917446, 0.000976930722, 0.000326092209]}}
+state_capture_finished {'label': 'classic_after_entry'}
+p1_phase_started {'label': 'return_classic', 'duration_s': 8.0, 'px4_start_us': 69532000}
+p1_phase_ended {'label': 'return_classic', 'px4_end_us': 77744000}
+landing_requested {'end_bound_px4_us': 77760000}
+command_requested {'command': 21, 'params': {}}
+command_ack {'command': 21, 'result': 0, 'timestamp': 1791898421699792}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'landing'}
+ready {'condition': 'disarmed'}
+process_stopped {'name': 'agent-reconnected', 'pid': 1578467, 'exit_code': -2}
+process_stopped {'name': 'px4', 'pid': 1577729, 'exit_code': 0}
+process_stopped {'name': 'tegrastats', 'pid': 1577679, 'exit_code': -2}
+process_stopped {'name': 'gz-stats', 'pid': 1577678, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 1577677, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 1577676, 'exit_code': -2}
+/home/car/uav_handover/data/p1-20261013-b01-S1-c_to_n-4 PASS

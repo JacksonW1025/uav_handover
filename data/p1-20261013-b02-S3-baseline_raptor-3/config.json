@@ -1,0 +1,91 @@
+{
+  "seed": 42,
+  "instance": 21,
+  "ros_domain_id": 71,
+  "agent_port": 18888,
+  "startup_timeout_s": 90,
+  "takeoff_timeout_s": 45,
+  "landing_timeout_s": 60,
+  "hover_s": 10,
+  "neural_s": 5,
+  "repetitions": 3,
+  "altitude_m": 3,
+  "hover_max_error_m": 1.0,
+  "hover_max_tilt_deg": 15,
+  "safety_radius_m": 10,
+  "safety_altitude_m": 8,
+  "safety_tilt_deg": 45,
+  "safety_angular_rate_rad_s": 8,
+  "inference_p99_us": 2500,
+  "settling_band_m": 0.2,
+  "settling_dwell_s": 2.0,
+  "joint_recovery": {
+    "position_reference": "active_controller_target",
+    "position_reference_note": "Same rule as P0 (the controller's own position target), extended to RAPTOR: its internal target is not published on trajectory_setpoint, so while RAPTOR owns the actuators the target is its logged capture (activation reset or setpoint-stale hold); classic stages use trajectory_setpoint as in P0. trajectory_setpoint-only and fixed NED results are kept as comparisons.",
+    "position_reference_ned_m": [
+      0,
+      0,
+      -3
+    ],
+    "velocity_reference_ned_m_s": [
+      0,
+      0,
+      0
+    ],
+    "angular_velocity_reference_frd_rad_s": [
+      0,
+      0,
+      0
+    ],
+    "position_threshold_m": 0.2,
+    "velocity_threshold_m_s": 0.1,
+    "angular_velocity_threshold_rad_s": 0.1,
+    "dwell_s": 2.0,
+    "max_observation_gap_s": 0.02
+  },
+  "p0_strict": true,
+  "p1": {
+    "conditions": {
+      "S1": {
+        "speed_m_s": 0.0,
+        "description": "stable hover"
+      },
+      "S2": {
+        "speed_m_s": 0.5,
+        "description": "low-speed horizontal motion"
+      },
+      "S3": {
+        "speed_m_s": 1.0,
+        "description": "moderate horizontal motion"
+      }
+    },
+    "speed_rationale": "Requested starting values kept. Travel along +N is accel_s*v/2 + cruise_s*v (S3: 5.0 m, S2: 2.5 m) plus braking; the worst case stays below 7 m, leaving at least 3 m to the frozen 10 m safety radius, and 0.5 m/s^2 ramp acceleration is gentle for both controllers.",
+    "motion_axis_ned": [
+      1,
+      0,
+      0
+    ],
+    "reference_hold_s": 3.0,
+    "accel_s": 2.0,
+    "cruise_s": 4.0,
+    "offboard_prestream_s": 1.0,
+    "setpoint_period_s": 0.02,
+    "post_handover_s": 10.0,
+    "return_hold_s": 8.0,
+    "reference": "Before the subject event the outgoing controller tracks one runner-published trajectory_setpoint (position ramp, velocity and acceleration feed-forward, constant yaw) starting from its own current target: classic through OFFBOARD, RAPTOR through its external trajectory_setpoint input. At the event the stream stops and the incoming controller uses its original mechanism: RAPTOR mode-entry reset holds the activation position/yaw with zero velocity; classic AUTO_LOITER brakes to the navigator loiter point.",
+    "baselines": "p1_baseline_classic: classic OFFBOARD motion then AUTO_LOITER (same takeover mechanism, no controller switch). p1_baseline_raptor: RAPTOR external-setpoint motion then the stream stops; after RAPTOR's 200 ms setpoint timeout it holds its position (same capture rule as mode entry, no reset or switch).",
+    "handover_repetitions": 5,
+    "baseline_repetitions": 3,
+    "motor_saturation": {
+      "upper": 0.999,
+      "lower": 0.001,
+      "note": "actuator_motors control in [0,1]; upper/lower limit within 1e-3"
+    },
+    "motor_step_window_s": [
+      -0.1,
+      0.5
+    ]
+  },
+  "p1_condition": "S3",
+  "p1_speed_m_s": 1.0
+}

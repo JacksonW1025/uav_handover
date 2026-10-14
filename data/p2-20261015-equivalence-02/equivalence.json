@@ -1,0 +1,419 @@
+{
+  "batch": "data/p2-20261015-equivalence-02",
+  "criteria": {
+    "purpose": "New candidate with MC_RAPTOR_RINI=0 / MC_RAPTOR_NCO=0 must reproduce P1/P0 behaviour before any P2 batch.",
+    "groups": "p1_c_to_n:S1:-:3@config/p1.json,p1_baseline_raptor:S1:-:2@config/p1.json,state_restore:-:-:1@config/p0.json,state_injection:-:-:1@config/p0.json",
+    "p1_reference_batch": "data/p1-20261013-batch-02",
+    "p0_reference_runs": "data/prep-20261012-b05-flight-*-{state_restore,state_injection}",
+    "metric_tolerance": {
+      "motor_step_at_change": 0.02,
+      "max_altitude_loss_m": 0.01,
+      "recovery_from_change_s": 0.15,
+      "max_tilt_deg": 0.5,
+      "trigger_to_change_ms": 8.0
+    },
+    "metric_rule": "each run inside [min - t, max + t] of the P1 reference group, t = max(tolerance, half the reference spread)",
+    "required": [
+      "all batch checks accepted (execution, PX4 exit, crash markers, trace, output-chain gate, metrics)",
+      "C->N capture activation_reset_hold with zero target velocity (P1 rule)",
+      "RINI=0 entry evidence: research_memory entry row with mode 0, written GRU and previous action all zero, no teacher forcing",
+      "P0 restore/inject: analyzer PASS (or PASS_WITH_WARNINGS) with state log/value validation PASS, all recovery stages SETTLED and executor acceptance PASS, as in P0 batch-05"
+    ]
+  },
+  "runs": [
+    {
+      "id": "S1-p1_c_to_n-1",
+      "kind": "p1_c_to_n",
+      "accepted": true,
+      "problems": [],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.21106493473052979,
+          "reference_min": 0.19302362203598022,
+          "reference_max": 0.2205592393875122,
+          "allowed": [
+            0.17302362203598023,
+            0.2405592393875122
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.03567647933959961,
+          "reference_min": 0.030168771743774414,
+          "reference_max": 0.042525291442871094,
+          "allowed": [
+            0.020168771743774412,
+            0.052525291442871096
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.728,
+          "reference_min": 0.4,
+          "reference_max": 0.7,
+          "allowed": [
+            0.25,
+            0.85
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 1.312687873840332,
+          "reference_min": 1.2223732471466064,
+          "reference_max": 1.5279028415679932,
+          "allowed": [
+            0.7223732471466064,
+            2.027902841567993
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 40.0,
+          "reference_min": 36.0,
+          "reference_max": 44.0,
+          "allowed": [
+            28.0,
+            52.0
+          ],
+          "inside": true
+        }
+      },
+      "capture": "activation_reset_hold",
+      "capture_state_read_matches": true,
+      "entries": [
+        {
+          "px4_us": 58076000,
+          "entry_mode": 0,
+          "entry_result": 0,
+          "max_abs_written": 0.0,
+          "max_abs_written_previous_action": 0.0
+        }
+      ],
+      "teacher_forced_rows": 0,
+      "equivalent": true
+    },
+    {
+      "id": "S1-p1_baseline_raptor-1",
+      "kind": "p1_baseline_raptor",
+      "accepted": true,
+      "problems": [],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.024859070777893066,
+          "reference_min": 0.011794209480285645,
+          "reference_max": 0.023432433605194092,
+          "allowed": [
+            -0.008205790519714356,
+            0.043432433605194096
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.0205838680267334,
+          "reference_min": 0.022617340087890625,
+          "reference_max": 0.027088642120361328,
+          "allowed": [
+            0.012617340087890625,
+            0.03708864212036133
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.0,
+          "reference_min": 0.0,
+          "reference_max": 0.144,
+          "allowed": [
+            -0.15,
+            0.294
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 0.543206512928009,
+          "reference_min": 0.5811455249786377,
+          "reference_max": 1.0499706268310547,
+          "allowed": [
+            0.0811455249786377,
+            1.5499706268310547
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 200.0,
+          "reference_min": 196.0,
+          "reference_max": 204.0,
+          "allowed": [
+            188.0,
+            212.0
+          ],
+          "inside": true
+        }
+      },
+      "entries": [
+        {
+          "px4_us": 47964000,
+          "entry_mode": 0,
+          "entry_result": 0,
+          "max_abs_written": 0.0,
+          "max_abs_written_previous_action": 0.0
+        }
+      ],
+      "teacher_forced_rows": 0,
+      "equivalent": true
+    },
+    {
+      "id": "state_restore-1",
+      "kind": "state_restore",
+      "accepted": true,
+      "problems": [],
+      "p0": {
+        "status": "PASS",
+        "state_values": "PASS",
+        "state_log": "PASS",
+        "recovery": {
+          "SETTLED": 5,
+          "NOT_SETTLED": 0,
+          "INSUFFICIENT_OBSERVATION": 0
+        },
+        "executor": "PASS"
+      },
+      "p0_reference_statuses": [
+        "PASS"
+      ],
+      "equivalent": true
+    },
+    {
+      "id": "state_injection-1",
+      "kind": "state_injection",
+      "accepted": true,
+      "problems": [],
+      "p0": {
+        "status": "PASS",
+        "state_values": "PASS",
+        "state_log": "PASS",
+        "recovery": {
+          "SETTLED": 3,
+          "NOT_SETTLED": 0,
+          "INSUFFICIENT_OBSERVATION": 0
+        },
+        "executor": "PASS"
+      },
+      "p0_reference_statuses": [
+        "PASS"
+      ],
+      "equivalent": true
+    },
+    {
+      "id": "S1-p1_c_to_n-2",
+      "kind": "p1_c_to_n",
+      "accepted": true,
+      "problems": [],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.20266193151474,
+          "reference_min": 0.19302362203598022,
+          "reference_max": 0.2205592393875122,
+          "allowed": [
+            0.17302362203598023,
+            0.2405592393875122
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.0362851619720459,
+          "reference_min": 0.030168771743774414,
+          "reference_max": 0.042525291442871094,
+          "allowed": [
+            0.020168771743774412,
+            0.052525291442871096
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.42,
+          "reference_min": 0.4,
+          "reference_max": 0.7,
+          "allowed": [
+            0.25,
+            0.85
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 1.7215830087661743,
+          "reference_min": 1.2223732471466064,
+          "reference_max": 1.5279028415679932,
+          "allowed": [
+            0.7223732471466064,
+            2.027902841567993
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 40.0,
+          "reference_min": 36.0,
+          "reference_max": 44.0,
+          "allowed": [
+            28.0,
+            52.0
+          ],
+          "inside": true
+        }
+      },
+      "capture": "activation_reset_hold",
+      "capture_state_read_matches": true,
+      "entries": [
+        {
+          "px4_us": 58228000,
+          "entry_mode": 0,
+          "entry_result": 0,
+          "max_abs_written": 0.0,
+          "max_abs_written_previous_action": 0.0
+        }
+      ],
+      "teacher_forced_rows": 0,
+      "equivalent": true
+    },
+    {
+      "id": "S1-p1_baseline_raptor-2",
+      "kind": "p1_baseline_raptor",
+      "accepted": true,
+      "problems": [],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.022767245769500732,
+          "reference_min": 0.011794209480285645,
+          "reference_max": 0.023432433605194092,
+          "allowed": [
+            -0.008205790519714356,
+            0.043432433605194096
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.02270340919494629,
+          "reference_min": 0.022617340087890625,
+          "reference_max": 0.027088642120361328,
+          "allowed": [
+            0.012617340087890625,
+            0.03708864212036133
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.0,
+          "reference_min": 0.0,
+          "reference_max": 0.144,
+          "allowed": [
+            -0.15,
+            0.294
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 0.5868415832519531,
+          "reference_min": 0.5811455249786377,
+          "reference_max": 1.0499706268310547,
+          "allowed": [
+            0.0811455249786377,
+            1.5499706268310547
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 200.0,
+          "reference_min": 196.0,
+          "reference_max": 204.0,
+          "allowed": [
+            188.0,
+            212.0
+          ],
+          "inside": true
+        }
+      },
+      "entries": [
+        {
+          "px4_us": 48152000,
+          "entry_mode": 0,
+          "entry_result": 0,
+          "max_abs_written": 0.0,
+          "max_abs_written_previous_action": 0.0
+        }
+      ],
+      "teacher_forced_rows": 0,
+      "equivalent": true
+    },
+    {
+      "id": "S1-p1_c_to_n-3",
+      "kind": "p1_c_to_n",
+      "accepted": true,
+      "problems": [],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.21720916032791138,
+          "reference_min": 0.19302362203598022,
+          "reference_max": 0.2205592393875122,
+          "allowed": [
+            0.17302362203598023,
+            0.2405592393875122
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.0390627384185791,
+          "reference_min": 0.030168771743774414,
+          "reference_max": 0.042525291442871094,
+          "allowed": [
+            0.020168771743774412,
+            0.052525291442871096
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.672,
+          "reference_min": 0.4,
+          "reference_max": 0.7,
+          "allowed": [
+            0.25,
+            0.85
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 1.1914045810699463,
+          "reference_min": 1.2223732471466064,
+          "reference_max": 1.5279028415679932,
+          "allowed": [
+            0.7223732471466064,
+            2.027902841567993
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 40.0,
+          "reference_min": 36.0,
+          "reference_max": 44.0,
+          "allowed": [
+            28.0,
+            52.0
+          ],
+          "inside": true
+        }
+      },
+      "capture": "activation_reset_hold",
+      "capture_state_read_matches": true,
+      "entries": [
+        {
+          "px4_us": 58292000,
+          "entry_mode": 0,
+          "entry_result": 0,
+          "max_abs_written": 0.0,
+          "max_abs_written_previous_action": 0.0
+        }
+      ],
+      "teacher_forced_rows": 0,
+      "equivalent": true
+    }
+  ],
+  "equivalent": true
+}

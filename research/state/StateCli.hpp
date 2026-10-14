@@ -10,15 +10,15 @@
 #include <drivers/drv_hrt.h>
 namespace handover_research {
 inline int state_command(int argc,char *argv[]) {
-    if(argc<3){PX4_ERR("state <raptor|rate|velocity> <read|snapshot|reset|hold|restore|inject|release> [values...]");return -1;}
+    if(argc<3){PX4_ERR("state <raptor|rate|velocity> <read|snapshot|reset|hold|restore|inject|release|stage> [values...]");return -1;}
     research_state_request_s req{};
     const char *targets[]={"raptor","rate","velocity"};
-    const char *ops[]={"read","snapshot","reset","hold","restore","inject","release"};
+    const char *ops[]={"read","snapshot","reset","hold","restore","inject","release","stage"};
     for(unsigned i=0;i<3;i++)if(strcmp(argv[1],targets[i])==0)req.target=i+1;
-    for(unsigned i=0;i<7;i++)if(strcmp(argv[2],ops[i])==0)req.operation=i+1;
+    for(unsigned i=0;i<8;i++)if(strcmp(argv[2],ops[i])==0)req.operation=i+1;
     if(!req.target || !req.operation || argc-3>32)return -1;
     req.dimension=argc-3;
-    if(req.operation!=6 && req.dimension!=0)return -1;
+    if(req.operation!=6 && req.operation!=8 && req.dimension!=0)return -1;
     for(unsigned i=0;i<req.dimension;i++) {
         char *end=nullptr;req.values[i]=strtof(argv[3+i],&end);
         if(end==argv[3+i] || *end!='\0')return -1;

@@ -25,7 +25,10 @@ ROOT = Path(__file__).resolve().parents[1]
 LAB = ROOT/'uav_lab'
 TYPES = ['classic_hover','raptor_hover','handover_c_to_n','handover_n_to_c',
          'handover_c_n_c','repeated_handover','state_reset','state_hold','state_restore','state_injection',
-         'p1_c_to_n','p1_n_to_c','p1_baseline_classic','p1_baseline_raptor']
+         'p1_c_to_n','p1_n_to_c','p1_baseline_classic','p1_baseline_raptor',
+         'p2_c_to_n','p2_n_to_c','p2_baseline_classic','p2_baseline_raptor','p2_crash_probe']
+# P2 reuses the P1 flight sequence; only the treatment parameters and the condition profile differ.
+P2_TREATMENT_KINDS={'p2_c_to_n':['N0','N1','N2g','N2','N2s','Nstar'],'p2_n_to_c':['C0','C2'],'p2_baseline_classic':['B'],'p2_baseline_raptor':['B']}
 
 def write(path, value):
     path.write_text(json.dumps(value,indent=2,ensure_ascii=False,allow_nan=False)+'\n')
@@ -39,11 +42,23 @@ class Experiment:
         self.startup_only=args.startup_only
         self.cfg=json.loads(args.config.read_text())
         if args.hover_s is not None:self.cfg['hover_s']=args.hover_s
+        self.pcfg=None
         if args.kind.startswith('p1_'):
             # P1 condition is part of the recorded run configuration.
             if 'p1' not in self.cfg or args.condition not in self.cfg['p1']['conditions']:raise RuntimeError('P1 kinds need --condition from config p1.conditions')
             self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(self.cfg['p1']['conditions'][args.condition]['speed_m_s'])
-        elif args.condition:raise RuntimeError('--condition applies only to P1 kinds')
+            if args.treatment:raise RuntimeError('--treatment applies only to P2 kinds')
+        elif args.kind in P2_TREATMENT_KINDS:
+            # Condition, treatment and the merged reference profile are part of the recorded run configuration.
+            p2=self.cfg.get('p2',{})
+            if args.condition not in p2.get('conditions',{}):raise RuntimeError('P2 kinds need --condition from config p2.conditions')
+            if args.treatment not in P2_TREATMENT_KINDS[args.kind] or args.treatment not in p2['treatments']:raise RuntimeError(f'{args.kind} needs --treatment in {P2_TREATMENT_KINDS[args.kind]}')
+            condition=p2['conditions'][args.condition]
+            self.pcfg={k:v for k,v in p2.items() if k not in ['conditions','treatments']};self.pcfg.update({k:v for k,v in condition.items() if k in p2['profile_overrides']})
+            speed=condition.get('raptor_baseline_speed_m_s',condition['speed_m_s']) if args.kind=='p2_baseline_raptor' else condition['speed_m_s']
+            self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(speed)
+            self.cfg['p2_treatment']=args.treatment;self.cfg['p2_treatment_parameters']=p2['treatments'][args.treatment];self.cfg['p2_profile']=self.pcfg
+        elif args.condition or args.treatment:raise RuntimeError('--condition/--treatment apply only to P1/P2 flight kinds')
         self.variant='classic' if args.kind=='classic_hover' else 'raptor'
         if os.environ.get('HANDOVER_VARIANT')!=self.variant:raise RuntimeError('use tools/experiment to select the correct overlay')
         self.out=(args.output or ROOT/'data'/(dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).strftime('%Y%m%dT%H%M%S')+'-'+args.kind+'-'+uuid.uuid4().hex[:6])).resolve()
@@ -259,16 +274,37 @@ class Experiment:
         values=self.state('raptor','read')['values']
         return [float(v) for v in values[20:23]],float(self.latest['vehicle_local_position'].heading),'raptor state values[20:23]; yaw from vehicle_local_position.heading'
 
+    def profile_cfg(self):
+        return getattr(self,'pcfg',None) or self.cfg['p1']
+
+    def reposition(self,t):
+        # Optional P2 move to start_offset_m along the axis (trapezoidal speed) before the hold. (s,v,a,duration)
+        p=Experiment.profile_cfg(self);d=float(p.get('start_offset_m',0.))
+        if not d:return 0.,0.,0.,0.
+        r=p['reposition'];vm,am=float(r['speed_m_s']),float(r['accel_m_s2']);sign=1. if d>0 else -1.;d=abs(d)
+        ta=min(vm/am,(d/am)**.5);vp=am*ta;tc=(d-am*ta*ta)/vp;total=2*ta+tc
+        if t>=total:return sign*d,0.,0.,total
+        if t<ta:return sign*.5*am*t*t,sign*am*t,sign*am,total
+        if t<ta+tc:return sign*(.5*am*ta*ta+vp*(t-ta)),sign*vp,0.,total
+        tau=total-t;return sign*(d-.5*am*tau*tau),sign*am*tau,-sign*am,total
+
+    def profile_duration(self):
+        p=Experiment.profile_cfg(self);return Experiment.reposition(self,0.)[3]+p['reference_hold_s']+p['accel_s']+p['cruise_s']
+
     def p1_profile(self,t):
-        # Hold, linear velocity ramp, cruise. Returns path length, speed, acceleration along the motion axis.
-        p=self.cfg['p1'];v=self.cfg['p1_speed_m_s'];hold,acc=p['reference_hold_s'],p['accel_s']
-        if t<hold:return 0.,0.,0.
+        # [Reposition,] hold, linear velocity ramp, cruise. Returns path length, speed, acceleration along the motion axis.
+        # Class-qualified helpers keep this a pure function of cfg (unit-tested without an Experiment).
+        p=Experiment.profile_cfg(self);v=self.cfg['p1_speed_m_s'];hold,acc=p['reference_hold_s'],p['accel_s']
+        s0,v0,a0,tr=Experiment.reposition(self,t)
+        if t<tr:return s0,v0,a0
+        t-=tr
+        if t<hold:return s0,0.,0.
         if t<hold+acc:
-            tau=t-hold;return .5*v*tau*tau/acc,v*tau/acc,v/acc
-        return .5*v*acc+v*(t-hold-acc),v,0.
+            tau=t-hold;return s0+.5*v*tau*tau/acc,v*tau/acc,v/acc
+        return s0+.5*v*acc+v*(t-hold-acc),v,0.
 
     def start_stream(self,origin,yaw,offboard):
-        axis=[float(x) for x in self.cfg['p1']['motion_axis_ned']];period=self.cfg['p1']['setpoint_period_s']
+        axis=[float(x) for x in self.profile_cfg()['motion_axis_ned']];period=self.profile_cfg()['setpoint_period_s']
         state={'last':0.,'count':0,'origin':origin,'yaw':yaw,'offboard':offboard}
         self.stream_t0=None;self.stream_state=state
         def publish():
@@ -292,7 +328,7 @@ class Experiment:
             last_velocity_ned_m_s=state.get('last_velocity'),since_last_publish_s=time.monotonic()-state['last'])
 
     def p1_flight(self,mode):
-        kind=self.args.kind;p=self.cfg['p1']
+        kind=self.args.kind.replace('p2_','p1_');p=self.profile_cfg()
         classic_out=kind in ['p1_c_to_n','p1_baseline_classic']
         if classic_out:origin,yaw,source=self.classic_target()
         else:
@@ -306,14 +342,14 @@ class Experiment:
         if classic_out:
             self.pump(p['offboard_prestream_s'])
             self.mode(self.msgs.VehicleStatus.NAVIGATION_STATE_OFFBOARD)
-        total=p['reference_hold_s']+p['accel_s']+p['cruise_s']
+        total=self.profile_duration()
         self.stream_t0=time.monotonic()
         self.event('p1_profile_started',px4_bound_us=self.native_bound_streaming(),duration_s=total)
         while time.monotonic()-self.stream_t0<total:self.pump(0.01)
         # Measured event: native bound while streaming, stop the stream, then request at once.
         bound=self.native_bound_streaming();self.stop_stream()
         subject={'p1_c_to_n':'C_to_N','p1_n_to_c':'N_to_C','p1_baseline_classic':'classic_brake','p1_baseline_raptor':'raptor_hold'}[kind]
-        self.event('p1_trigger',subject=subject,condition=self.cfg['p1_condition'],speed_m_s=self.cfg['p1_speed_m_s'],end_bound_px4_us=bound)
+        self.event('p1_trigger',subject=subject,condition=self.cfg['p1_condition'],speed_m_s=self.cfg['p1_speed_m_s'],end_bound_px4_us=bound,treatment=self.cfg.get('p2_treatment'))
         if kind=='p1_c_to_n':
             self.event('handover_requested',end_bound_px4_us=bound,from_controller='C',to_controller='N',iteration=0,subject=True)
             self.mode(mode);self.wait_raptor_active();self.capture_states('neural_after_entry')
@@ -332,6 +368,37 @@ class Experiment:
             self.mode(4);self.capture_states('classic_after_entry')
             self.hover(p['return_hold_s'],'return_classic',prefix='p1_phase')
         self.checks['p1_sequence']='PASS'
+
+    def apply_treatment(self):
+        # P2: controller-side parameters are set once before arming; RAPTOR applies them in its own thread.
+        name=self.cfg['p2_treatment'];t=self.cfg['p2_treatment_parameters']
+        rini,nco=int(t.get('rini',0)),int(t.get('nco',0))
+        self.command('param','set','MC_RAPTOR_RINI',str(rini));self.command('param','set','MC_RAPTOR_NCO',str(nco))
+        shown={}
+        for name_ in ['MC_RAPTOR_RINI','MC_RAPTOR_NCO','MC_RAPTOR_RSH']:
+            text=self.command('param','show',name_);match=re.search(name_+r'\s*\[[^\]]*\]\s*:\s*(-?\d+)',text)
+            if not match:raise RuntimeError('parameter readback failed: '+name_+': '+text)
+            shown[name_]=int(match.group(1))
+        if shown!={'MC_RAPTOR_RINI':rini,'MC_RAPTOR_NCO':nco,'MC_RAPTOR_RSH':1}:raise RuntimeError(f'treatment parameters not applied: {shown}')
+        staged=None
+        if rini==5:
+            values=[float(v) for v in self.cfg['p2']['nstar_memory']['values']]
+            if len(values)!=20:raise RuntimeError('N* needs 20 staged values (GRU 16 + previous action 4)')
+            staged=self.state('raptor','stage',*values)
+        self.event('p2_treatment',treatment=name,parameters=shown,staged_values=self.cfg['p2']['nstar_memory']['values'] if staged else None)
+        self.checks['p2_treatment']='PASS'
+
+    def crash_probe(self):
+        # Infrastructure probe only: forced disarm in the air, free fall to the ground, then normal cleanup.
+        self.safe=False
+        self.event('crash_probe_disarm_requested',end_bound_px4_us=self.native_phase_end_bound())
+        self.ros_command(400,param1=0,param2=21196)
+        self.wait(lambda:-self.latest['vehicle_local_position'].z<0.3 and abs(self.latest['vehicle_local_position'].vz)<0.2,20,'crash probe on ground')
+        self.pump(3)
+        self.event('crash_probe_ground',px4_us=self.native_phase_end_bound(),position_ned_m=[float(self.latest['vehicle_local_position'].x),float(self.latest['vehicle_local_position'].y),float(self.latest['vehicle_local_position'].z)],
+            arming_state=int(self.latest['vehicle_status'].arming_state))
+        self.command('param','show');self.command('logger','status');self.command('mc_raptor','status')
+        self.checks['crash_probe']='PASS'
 
     def wait_sensor_readiness(self):
         gate=Readiness();deadline=time.monotonic()+self.cfg['startup_timeout_s'];last_log=0
@@ -432,7 +499,7 @@ class Experiment:
         shutil.copytree(self.runtime/'etc',self.rootfs/'etc')
         logging=self.rootfs/'etc/logging';logging.mkdir(exist_ok=True)
         names=['sensor_baro','vehicle_air_data','actuator_outputs','sensor_gyro','vehicle_imu','vehicle_imu_status','vehicle_local_position','vehicle_global_position','position_setpoint_triplet','takeoff_status','vehicle_attitude','vehicle_angular_velocity','vehicle_status','vehicle_control_mode','trajectory_setpoint','vehicle_attitude_setpoint','vehicle_rates_setpoint','vehicle_torque_setpoint','vehicle_thrust_setpoint','rate_ctrl_status','actuator_motors','vehicle_command','vehicle_command_ack']
-        if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator']
+        if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator','research_memory']
         (logging/'logger_topics.txt').write_text(''.join(n+' 0 0\n' for n in names)+(''.join(f'route_observability 0 {i}\n' for i in range(1,10)) if self.variant=='raptor' else ''))
         self.spawn('agent',[str(LAB/'scripts/MicroXRCEAgent'),'udp4','-p',str(self.cfg['agent_port']),'-v','4'])
         self.spawn('gazebo',['gz','sim','-r','-s','-v','3',str(self.source/'Tools/simulation/gz/worlds/default.sdf')])
@@ -519,13 +586,16 @@ class Experiment:
         self.wait(lambda:self.latest['vehicle_local_position'].xy_valid and self.latest['vehicle_local_position'].z_valid,45,'valid local position')
         self.pump(4)
         if self.variant=='raptor':self.state_contract()
+        if self.args.kind in P2_TREATMENT_KINDS:self.apply_treatment()
         self.ros_command(400,param1=1)
         self.safe=True
         self.ros_command(22,param4=None,param5=None,param6=None,param7=None)
         self.wait(lambda:-self.latest['vehicle_local_position'].z>self.cfg['altitude_m']-0.5,self.cfg['takeoff_timeout_s'],'takeoff altitude')
         self.mode(4) # AUTO_LOITER
         self.hover(self.cfg['hover_s'],'classic_before')
-        if self.args.kind.startswith('p1_'):self.p1_flight(mode)
+        if self.args.kind=='p2_crash_probe':
+            self.crash_probe();return
+        if self.args.kind.startswith(('p1_','p2_')):self.p1_flight(mode)
         elif self.variant=='raptor':
             count=self.cfg['repetitions'] if self.args.kind=='repeated_handover' else 1
             for iteration in range(count):
@@ -617,7 +687,8 @@ def main():
     p.add_argument('--capture-raw-sensors',action='store_true',help='Diagnostic only: adds sensor subscribers and may change startup behavior')
     p.add_argument('--startup-only',action='store_true',help='Preparation cold start; readiness only, never arm')
     p.add_argument('--output',type=Path);p.add_argument('--hover-s',type=float)
-    p.add_argument('--condition',choices=['S1','S2','S3'],help='P1 pre-handover motion condition (config p1.conditions)')
+    p.add_argument('--condition',help='P1/P2 pre-handover motion condition (config p1.conditions / p2.conditions)')
+    p.add_argument('--treatment',help='P2 treatment (config p2.treatments): N0 N1 N2g N2 N2s Nstar for p2_c_to_n, C0 C2 for p2_n_to_c, B for baselines')
     args=p.parse_args();e=Experiment(args);status='FAIL';reason=None
     try:
         e.execute();status='PASS'

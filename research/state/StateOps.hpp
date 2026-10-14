@@ -5,12 +5,15 @@
 // Fixed-size, allocation-free state operations. Only invoked by a controller's own thread.
 namespace handover_research {
 constexpr unsigned MAX_DIM=32;
-enum Operation {READ=1,SNAPSHOT=2,RESET=3,HOLD=4,RESTORE=5,INJECT=6,RELEASE=7};
+enum Operation {READ=1,SNAPSHOT=2,RESET=3,HOLD=4,RESTORE=5,INJECT=6,RELEASE=7,STAGE=8};
 enum Result {SUCCESS=0,DISABLED=1,ACTIVE_WRITE=2,DIMENSION=3,NONFINITE=4,BOUNDS=5,NO_SNAPSHOT=6,UNKNOWN=7};
 struct StateOps {
     float snapshot[MAX_DIM]{};
     float held[MAX_DIM]{};
     unsigned saved_dim=0;
+    // STAGE keeps values for a controller-side consumer (P2 mode-entry injection); the live state is untouched.
+    float staged[MAX_DIM]{};
+    unsigned staged_dim=0;
     bool holding=false;
     static void copy(float *to,const float *from,unsigned dim) {for(unsigned i=0;i<dim;i++)to[i]=from[i];}
     static Result validate(const float *v,unsigned dim,const float *bounds) {
@@ -29,6 +32,11 @@ struct StateOps {
             copy(snapshot,v,dim);saved_dim=dim;return SUCCESS;
         }
         if(op==RELEASE){holding=false;return SUCCESS;}
+        if(op==STAGE) {
+            if(count==0 || count>dim)return DIMENSION;
+            Result r=validate(input,count,bounds);if(r!=SUCCESS)return r;
+            copy(staged,input,count);staged_dim=count;return SUCCESS;
+        }
         if(op==HOLD) {
             Result r=validate(v,dim,bounds);if(r!=SUCCESS)return r;
             copy(held,v,dim);holding=true;return SUCCESS;

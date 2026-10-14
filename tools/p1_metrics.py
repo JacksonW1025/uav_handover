@@ -39,21 +39,30 @@ def hold_durations(t,mask,start,end):
 
 def tilt_deg(q):return np.degrees(np.arccos(np.clip(1-2*(q[:,1]**2+q[:,2]**2),-1,1)))
 
-def analyze(run):
+def analyze(run,allow_abort=False):
     run=Path(run).resolve();cfg=json.loads((run/'config.json').read_text());meta=json.loads((run/'metadata.json').read_text())
     events=[json.loads(s) for s in (run/'events.jsonl').read_text().splitlines()]
     metrics=json.loads((run/'metrics.json').read_text())
-    kind=meta['experiment_type'];p1=cfg['p1'];problems=[]
+    # P2 kinds reuse the P1 flight sequence and measurement; their profile is the recorded merged p2_profile.
+    kind=meta['experiment_type'];flow=kind.replace('p2_','p1_');p1=cfg.get('p2_profile') or cfg['p1'];problems=[]
     ulog=ULog(str(run/'flight.ulg'),TOPICS)
     topics={d.name:d.data for d in ulog.data_list if d.multi_id==0}
     messages=[(int(m.timestamp),m.message) for m in ulog.logged_messages]
     trig=next((e for e in events if e['event']=='p1_trigger'),None)
     post=[e for e in events if e['event']=='p1_phase_ended' and e['label']=='post_event']
     stopped=next((e for e in events if e['event']=='p1_reference_stopped'),None)
-    out={'run':str(run),'kind':kind,'subject':SUBJECTS.get(kind),'condition':cfg.get('p1_condition'),'speed_m_s':cfg.get('p1_speed_m_s'),
+    out={'run':str(run),'kind':kind,'subject':SUBJECTS.get(flow),'condition':cfg.get('p1_condition'),'speed_m_s':cfg.get('p1_speed_m_s'),
          'ulog_sha256':hashlib.sha256((run/'flight.ulg').read_bytes()).hexdigest(),'time_base':'native PX4 us (simulation time)'}
-    if trig is None or not post:return {**out,'status':'INCOMPLETE','problems':['p1_trigger or post_event phase missing']}
-    t_r=int(trig['end_bound_px4_us']);t_e=int(post[0]['px4_end_us']);out['trigger_px4_us']=t_r;out['window_end_px4_us']=t_e
+    if trig is None or not (post or allow_abort):return {**out,'status':'INCOMPLETE','problems':['p1_trigger or post_event phase missing']}
+    t_r=int(trig['end_bound_px4_us'])
+    if post:t_e=int(post[0]['px4_end_us'])
+    else:
+        # Exploration only: an aborted flight is measured up to the planned window end, disarm or log end.
+        vs=next(d.data for d in ulog.data_list if d.name=='vehicle_status' and d.multi_id==0)
+        disarm=vs['timestamp'][(vs['timestamp']>t_r)&(vs['arming_state']!=2)]
+        t_e=int(min([t_r+p1['post_handover_s']*1e6,ulog.last_timestamp]+([int(disarm[0])] if len(disarm) else [])))
+        out['window_truncated']={'reason':'post_event phase missing (flight aborted)','window_end_px4_us':t_e}
+    out['trigger_px4_us']=t_r;out['window_end_px4_us']=t_e
     transitions=metrics.get('actuator_owner_transitions',[])
     intervals=neural_intervals(transitions,metrics['ulog_end_us'])
     captures=raptor_captures(messages,intervals)
@@ -61,12 +70,12 @@ def analyze(run):
     status=topics['vehicle_status']
     # Actual change and the incoming controller's reference capture.
     reference={};t_c=None;mode_us=None
-    if kind in ['p1_c_to_n','p1_n_to_c']:
-        want=(2,1) if kind=='p1_c_to_n' else (1,2)
+    if flow in ['p1_c_to_n','p1_n_to_c']:
+        want=(2,1) if flow=='p1_c_to_n' else (1,2)
         tr=next((x for x in transitions if x['px4_us']>=t_r and (x['from'],x['to'])==want),None)
         if tr is None:problems.append('owner change after trigger missing')
         else:t_c=int(tr['px4_us']);mode_us=tr.get('mode_change_us');out['owner_transition']=tr
-    elif kind=='p1_baseline_classic':
+    elif flow=='p1_baseline_classic':
         rows=np.flatnonzero((status['timestamp']>=t_r)&(status['nav_state']==LOITER))
         if len(rows):mode_us=t_c=int(status['nav_state_timestamp'][rows[0]])
         else:problems.append('AUTO_LOITER after trigger missing')
@@ -81,12 +90,12 @@ def analyze(run):
         'nav_state_to_change':(t_c-mode_us)/1e3 if mode_us else None,
         'note':'trigger is a native lower bound read before the request, so trigger-based delays are upper bounds of the true request delay'}
     sp=topics['trajectory_setpoint'];st=sp['timestamp'].astype(np.int64)
-    if kind in ['p1_c_to_n','p1_baseline_raptor']:
+    if flow in ['p1_c_to_n','p1_baseline_raptor']:
         cap=next((c for c in captures if c[0]>=t_c-20000),None)
         on_change=cap is not None and abs(cap[0]-t_c)<=50000
         reference={'mechanism':'RAPTOR internal capture (current position and yaw, zero velocity)',
                    'capture_px4_us':cap[0] if cap else None,'position_ned_m':cap[1] if cap else None,'velocity_ned_m_s':[0.,0.,0.]}
-        if kind=='p1_c_to_n':
+        if flow=='p1_c_to_n':
             reference['classification']='activation_reset_hold' if on_change else 'not_at_activation'
             r=topics['research_state_response'];rows=np.flatnonzero((r['timestamp']>=t_c)&(r['target']==1)&(r['operation']==1)&(r['result']==0)&(r['active']==1))
             if len(rows):

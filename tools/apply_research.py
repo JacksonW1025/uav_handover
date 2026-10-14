@@ -10,6 +10,11 @@ def edit(name,old,new):
  if old not in s:raise RuntimeError('expected source anchor missing: '+name)
  p.write_text(s.replace(old,new,1))
 
+def migrate(name,old,new):
+ # Upgrade text inserted by an earlier version of an edit; the edit itself keeps its own anchor.
+ p=PX/name;s=p.read_text()
+ if new not in s and old in s:p.write_text(s.replace(old,new,1))
+
 def main():
  dest=PX/'src/lib/handover_research';dest.mkdir(exist_ok=True)
  for p in (ROOT/'research/state').glob('*.hpp'):shutil.copy2(p,dest/p.name)
@@ -153,19 +158,30 @@ for module in ['mc_raptor/mc_raptor.cpp','control_allocator/ControlAllocator.cpp
     static uORB::Publication<research_actuator_s> ownership_pub{{ORB_ID(research_actuator)}};
     ownership_pub.publish(ownership);
 #endif''')
-if 'MC_RAPTOR_RINI:' not in (PX/'src/modules/mc_raptor/module.yaml').read_text():edit('src/modules/mc_raptor/module.yaml','    - group: Handover Research\n','''    - group: Handover Research
-      definitions:
-        MC_RAPTOR_RINI:
+RINI_P1='''        MC_RAPTOR_RINI:
             description:
                 short: SITL research preserve memory on mode entry
             type: boolean
             default: false
-    - group: Handover Research
+'''
+RINI_P2='''        MC_RAPTOR_RINI:
+            description:
+                short: SITL research mode-entry memory treatment
+                long: 0 original reset, 1 preserve shadow memory, 2 GRU reset with classic previous action, 3 teacher-forced GRU, 4 teacher-forced GRU with classic previous action, 5 staged memory
+            type: int32
+            min: 0
+            max: 5
+            default: 0
+'''
+# P2 widened the P1 boolean to modes; 0/1 keep their meaning. Migrate a checkout prepared before P2.
+migrate('src/modules/mc_raptor/module.yaml',RINI_P1,RINI_P2)
+if 'MC_RAPTOR_RINI:' not in (PX/'src/modules/mc_raptor/module.yaml').read_text():edit('src/modules/mc_raptor/module.yaml','    - group: Handover Research\n','''    - group: Handover Research
+      definitions:
+'''+RINI_P2+'''    - group: Handover Research
 ''')
 edit('src/modules/mc_raptor/mc_raptor.hpp','ext_component_mode_id;','ext_component_mode_id = 255;')
 edit('src/modules/mc_raptor/mc_raptor.cpp','bool next_active = timestamp_last_vehicle_status_set && _vehicle_status.nav_state == ext_component_mode_id;','bool next_active = flightmode_state == FlightModeState::CONFIGURED && timestamp_last_vehicle_status_set && _vehicle_status.nav_state == ext_component_mode_id;')
-edit('src/modules/mc_raptor/mc_raptor.cpp','''\t\tthis->reset();
-\t\tPX4_INFO("Resetting Inference Executor (Recurrent State)");''','''#ifdef __PX4_POSIX
+ENTRY_P1='''#ifdef __PX4_POSIX
         int32_t preserve=0, enabled=0;
         param_get(param_find("MC_RAPTOR_RINI"),&preserve);
         param_get(param_find("MC_RAPTOR_RSH"),&enabled);
@@ -177,7 +193,29 @@ edit('src/modules/mc_raptor/mc_raptor.cpp','''\t\tthis->reset();
         if(preserve && enabled)research_set(memory,false);
         PX4_INFO("Research mode-entry memory: %s",preserve && enabled?"preserved; timing rebased":"reset");
 #endif
-\t\tPX4_INFO("Resetting Inference Executor (Recurrent State)");''')
+\t\tPX4_INFO("Resetting Inference Executor (Recurrent State)");'''
+# Modes 0 and 1 keep the P1 statements; modes 2..5 (P2) write only GRU and previous action after the reset.
+ENTRY_P2='''#ifdef __PX4_POSIX
+        int32_t preserve=0, enabled=0;
+        param_get(param_find("MC_RAPTOR_RINI"),&preserve);
+        param_get(param_find("MC_RAPTOR_RSH"),&enabled);
+        float memory[32]{};
+        if(preserve==1 && enabled)research_get(memory);
+        const int32_t entry_mode=enabled?preserve:0;
+        float entry_before[32]{};research_get(entry_before);
+        float entry_classic[4]{};
+        const bool entry_classic_valid=handover_research::needs_classic_action(entry_mode) && research_classic_action(entry_classic);
+#endif
+        this->reset();
+#ifdef __PX4_POSIX
+        if(preserve==1 && enabled)research_set(memory,false);
+        PX4_INFO("Research mode-entry memory: %s",preserve==1 && enabled?"preserved; timing rebased":"reset");
+        research_entry(entry_mode,entry_before,entry_classic,entry_classic_valid);
+#endif
+\t\tPX4_INFO("Resetting Inference Executor (Recurrent State)");'''
+migrate('src/modules/mc_raptor/mc_raptor.cpp',ENTRY_P1,ENTRY_P2)
+edit('src/modules/mc_raptor/mc_raptor.cpp','''\t\tthis->reset();
+\t\tPX4_INFO("Resetting Inference Executor (Recurrent State)");''',ENTRY_P2)
 # Export the existing matching RAPTOR diagnostics; experimental state payloads stay local uORB/ULog.
 dds=PX/'src/modules/uxrce_dds_client/dds_topics.yaml'
 if '/fmu/out/raptor_status' not in dds.read_text():
@@ -322,6 +360,235 @@ _saved_px=PX
 PX=ROOT/'uav_lab/.local/checkouts/px4-classic'
 apply_daemon_stdout_key()
 PX=_saved_px
+
+# P2: RAPTOR mode-entry memory treatments (MC_RAPTOR_RINI 2..5), teacher forcing of the inactive shadow
+# inference, recurrent-memory evidence (research_memory) and the N->C velocity-integrator coordination
+# (MC_RAPTOR_NCO). Anchors are upstream lines outside earlier inserted blocks.
+edit('msg/CMakeLists.txt','\tRouteObservability.msg\n\tRtlStatus.msg','\tRouteObservability.msg\n\tResearchMemory.msg\n\tRtlStatus.msg')
+if 'MC_RAPTOR_NCO:' not in (PX/'src/modules/mc_raptor/module.yaml').read_text():edit('src/modules/mc_raptor/module.yaml','    - group: Multicopter Raptor\n','''    - group: Handover Research
+      definitions:
+        MC_RAPTOR_NCO:
+            description:
+                short: SITL research N-to-C velocity integrator coordination
+                long: 0 original classic takeover, 1 set the classic velocity integrator on the first position-control cycle after RAPTOR so that its thrust equals RAPTOR's last applied collective thrust along the current body z axis
+            type: int32
+            min: 0
+            max: 1
+            default: 0
+    - group: Multicopter Raptor
+''')
+rap_h='src/modules/mc_raptor/mc_raptor.hpp'
+edit(rap_h,'#include <uORB/topics/actuator_motors.h>','''#include <uORB/topics/actuator_motors.h>
+#ifdef __PX4_POSIX
+#include <uORB/topics/research_actuator.h>
+#include <uORB/topics/research_memory.h>
+#include <lib/handover_research/ActionMap.hpp>
+#include <lib/handover_research/MemoryInit.hpp>
+#endif''')
+edit(rap_h,'\tfloat previous_action[EXECUTOR_SPEC::OUTPUT_DIM];','''\tfloat previous_action[EXECUTOR_SPEC::OUTPUT_DIM];
+#ifdef __PX4_POSIX
+    // P2 mode-entry treatments and recurrent-memory evidence (SITL research only).
+    void research_set_memory(const float *values);
+    bool research_classic_action(float *action);
+    void research_teacher_force(bool active);
+    void research_entry(int32_t mode, const float *before, const float *classic, bool classic_valid);
+    void research_log_step(bool active, const float *previous_action_used, bool native_step);
+    uORB::Subscription _research_actuator_sub{ORB_ID(research_actuator)};
+    uORB::Publication<research_memory_s> _research_memory_pub{ORB_ID(research_memory)};
+    research_actuator_s _research_classic{};
+    bool _research_classic_set{false}, _research_teacher_forced{false};
+    int32_t _research_mode{0};
+    float _research_classic_action[4]{};
+    uint32_t _research_clipped_total{0}, _research_classic_unavailable_total{0};
+#endif''')
+rap='src/modules/mc_raptor/mc_raptor.cpp'
+edit(rap,'ModuleBase::Descriptor Raptor::desc{task_spawn, custom_command, print_usage};','''#ifdef __PX4_POSIX
+// Only the GRU hidden state and previous action; never RAPTOR's position/velocity target.
+void Raptor::research_set_memory(const float *v) {
+    auto &hidden = executor.executor.policy_state.content_state.next_content_state.state.state;
+    auto &temp = executor.executor.policy_state_temp.content_state.next_content_state.state.state;
+    for (TI i=0;i<handover_research::GRU_DIM;i++) {rlt::set(device,hidden,v[i],0,i);rlt::set(device,temp,v[i],0,i);}
+    for (TI i=0;i<handover_research::ACTION_DIM;i++) previous_action[i]=v[handover_research::GRU_DIM+i];
+}
+// Latest motor command actually published by the classic allocator, in RAPTOR action space.
+bool Raptor::research_classic_action(float *action) {
+    research_actuator_s sample{};
+    while (_research_actuator_sub.update(&sample)) if (sample.owner==2) {_research_classic=sample;_research_classic_set=true;}
+    constexpr hrt_abstime MAX_AGE_US=50000;
+    bool valid=_research_classic_set && hrt_absolute_time()-_research_classic.timestamp<=MAX_AGE_US;
+    if (valid) {
+        const handover_research::ActionConversion r=handover_research::motor_to_action(_research_classic.control,_research_classic_action);
+        _research_clipped_total+=r.clipped;valid=r.valid;
+    }
+    if (!valid) {++_research_classic_unavailable_total;return false;}
+    for (TI i=0;i<4;i++) action[i]=_research_classic_action[i];
+    return true;
+}
+void Raptor::research_teacher_force(bool active) {
+    static const param_t rini=param_find("MC_RAPTOR_RINI"), rsh=param_find("MC_RAPTOR_RSH");
+    int32_t mode=0, enabled=0;param_get(rini,&mode);param_get(rsh,&enabled);
+    _research_mode=enabled?mode:0;_research_teacher_forced=false;
+    if (active || !handover_research::teacher_forcing(_research_mode)) return;
+    float action[4];
+    if (research_classic_action(action)) {
+        for (TI i=0;i<4;i++) previous_action[i]=action[i];
+        _research_teacher_forced=true;
+    }
+}
+void Raptor::research_entry(int32_t mode, const float *before, const float *classic, bool classic_valid) {
+    research_memory_s m{};
+    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
+    m.kind=research_memory_s::KIND_ENTRY;m.entry_mode=mode;m.active=true;
+    for (TI i=0;i<16;i++) m.gru_before_entry[i]=before[i];
+    for (TI i=0;i<4;i++) {m.previous_action_before_entry[i]=before[16+i];m.classic_action[i]=classic_valid?classic[i]:NAN;}
+    if (mode>=handover_research::ENTRY_CLASSIC_ACTION) {
+        float written[handover_research::MEMORY_DIM]{};
+        m.entry_result=handover_research::entry_memory(mode,before,classic,classic_valid,_research_state.engine.staged,
+            _research_state.engine.staged_dim,RESET_PREVIOUS_ACTION_VALUE,written);
+        if (m.entry_result==handover_research::ENTRY_APPLIED) {
+            research_set_memory(written);
+            PX4_INFO("Research mode-entry treatment %d applied",(int)mode);
+        } else {
+            PX4_ERR("Research mode-entry treatment %d NOT applied: result %d",(int)mode,(int)m.entry_result);
+        }
+    }
+    float after[32]{};research_get(after);
+    for (TI i=0;i<16;i++) m.gru[i]=after[i];
+    for (TI i=0;i<4;i++) m.previous_action[i]=after[16+i];
+    m.classic_actuator_timestamp=_research_classic_set?_research_classic.actuator_timestamp:0;
+    m.clipped_total=_research_clipped_total;m.classic_unavailable_total=_research_classic_unavailable_total;
+    _research_memory_pub.publish(m);
+}
+void Raptor::research_log_step(bool active, const float *previous_action_used, bool native_step) {
+    research_memory_s m{};
+    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
+    m.kind=research_memory_s::KIND_STEP;m.entry_mode=_research_mode;m.active=active;m.native_step=native_step;
+    m.teacher_forced=_research_teacher_forced;
+    float memory[32]{};research_get(memory);
+    for (TI i=0;i<16;i++) m.gru[i]=memory[i];
+    for (TI i=0;i<4;i++) {m.previous_action[i]=previous_action_used[i];m.classic_action[i]=_research_teacher_forced?_research_classic_action[i]:NAN;}
+    m.classic_actuator_timestamp=_research_teacher_forced?_research_classic.actuator_timestamp:0;
+    m.clipped_total=_research_clipped_total;m.classic_unavailable_total=_research_classic_unavailable_total;
+    _research_memory_pub.publish(m);
+}
+#endif
+
+ModuleBase::Descriptor Raptor::desc{task_spawn, custom_command, print_usage};''')
+edit(rap,'''\t\tif (previous_active && !next_active) {
+\t\t\tPX4_INFO("inactive");
+\t\t}
+\t}
+''','''\t\tif (previous_active && !next_active) {
+\t\t\tPX4_INFO("inactive");
+\t\t}
+\t}
+#ifdef __PX4_POSIX
+    research_teacher_force(next_active);
+#endif
+''')
+edit(rap,'\tif (!executor_status.OK) {\n\t\tif (executor_status.TIMESTAMP_INVALID) {','''#ifdef __PX4_POSIX
+    // Logged after the timed observe+control span; the GRU is the committed state after this inference.
+    if (executor_status.source==decltype(executor_status.source)::CONTROL)
+        research_log_step(next_active,observation.previous_action,executor_status.step_type==decltype(executor_status.step_type)::NATIVE);
+#endif
+\tif (!executor_status.OK) {
+\t\tif (executor_status.TIMESTAMP_INVALID) {''')
+# C2 (N->C): classic velocity integrator coordinated with RAPTOR's last applied output.
+pc_h='src/modules/mc_pos_control/PositionControl/PositionControl.hpp'
+edit(pc_h,'\tvoid resetIntegralXY() { _vel_int.xy() = matrix::Vector2f(); }','''\tvoid resetIntegralXY() { _vel_int.xy() = matrix::Vector2f(); }
+#ifdef __PX4_POSIX
+	/** P2 C2: set the velocity integrator so that this cycle's thrust is `thrust` along body z axis `body_z` (NED). */
+	matrix::Vector3f researchCoordinate(float thrust, const matrix::Vector3f &body_z);
+#endif''')
+pc='src/modules/mc_pos_control/PositionControl/PositionControl.cpp'
+edit(pc,'bool PositionControl::_inputValid()\n{','''#ifdef __PX4_POSIX
+matrix::Vector3f PositionControl::researchCoordinate(float thrust, const matrix::Vector3f &body_z)
+{
+	// Inverse of _accelerationControl() for the produced collective thrust and body attitude.
+	const float acc_z = (_hover_thrust - thrust * body_z(2)) * CONSTANTS_ONE_G / _hover_thrust;
+	const float vertical = _decouple_horizontal_and_vertical_acceleration ? CONSTANTS_ONE_G : CONSTANTS_ONE_G - acc_z;
+	const Vector3f acc_target(-vertical * body_z(0) / body_z(2), -vertical * body_z(1) / body_z(2), acc_z);
+	const Vector3f previous = _vel_int;
+	_vel_int += acc_target - _acc_sp;
+	_vel_int(2) = math::constrain(_vel_int(2), -CONSTANTS_ONE_G, CONSTANTS_ONE_G);
+	_acc_sp += _vel_int - previous;
+	_accelerationControl();
+	return _vel_int;
+}
+#endif
+
+bool PositionControl::_inputValid()
+{''')
+mpc_h='src/modules/mc_pos_control/MulticopterPositionControl.hpp'
+edit(mpc_h,'#include <uORB/topics/vehicle_land_detected.h>','''#include <uORB/topics/vehicle_land_detected.h>
+#ifdef __PX4_POSIX
+#include <uORB/topics/research_actuator.h>
+#include <uORB/topics/vehicle_attitude.h>
+#endif''')
+edit(mpc_h,'\tuORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};','''\tuORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
+#ifdef __PX4_POSIX
+	void researchTrackNeural();
+	void researchCoordinateTakeover();
+	uORB::Subscription _research_actuator_sub{ORB_ID(research_actuator)};
+	uORB::Subscription _research_attitude_sub{ORB_ID(vehicle_attitude)};
+	research_actuator_s _research_neural{};
+	bool _research_neural_set{false}, _research_controlled{false};
+#endif''')
+mpc='src/modules/mc_pos_control/MulticopterPositionControl.cpp'
+edit(mpc,'\t\t\t// Publish internal position control setpoints','''#ifdef __PX4_POSIX
+            researchCoordinateTakeover();
+#endif
+\t\t\t// Publish internal position control setpoints''')
+edit(mpc,'''\t\t\t_control.resetIntegral();
+\t\t}
+
+\t\t// Publish takeoff status''','''\t\t\t_control.resetIntegral();
+#ifdef __PX4_POSIX
+            _research_controlled=false;
+            researchTrackNeural();
+#endif
+\t\t}
+
+\t\t// Publish takeoff status''')
+edit(mpc,'trajectory_setpoint_s MulticopterPositionControl::generateFailsafeSetpoint(const hrt_abstime &now,','''#ifdef __PX4_POSIX
+static bool research_coordination_enabled()
+{
+	static const param_t nco = param_find("MC_RAPTOR_NCO"), rsh = param_find("MC_RAPTOR_RSH");
+	int32_t mode = 0, enabled = 0;
+	param_get(nco, &mode); param_get(rsh, &enabled);
+	return mode == 1 && enabled;
+}
+void MulticopterPositionControl::researchTrackNeural()
+{
+	if (!research_coordination_enabled()) return;
+	research_actuator_s sample{};
+	while (_research_actuator_sub.update(&sample)) if (sample.owner == 1) {_research_neural = sample; _research_neural_set = true;}
+}
+void MulticopterPositionControl::researchCoordinateTakeover()
+{
+	// First classic position-control cycle after RAPTOR owned the motors (position control disabled).
+	const bool first = !_research_controlled;
+	_research_controlled = true;
+	if (!first || !research_coordination_enabled()) return;
+	researchTrackNeural();
+	vehicle_attitude_s attitude{};
+	const hrt_abstime age = hrt_absolute_time() - _research_neural.timestamp;
+	float thrust = 0.f;
+	for (int i = 0; i < 4; i++) thrust += _research_neural.control[i] / 4.f;
+	if (!_research_neural_set || age > 50_ms || !PX4_ISFINITE(thrust) || !_research_attitude_sub.copy(&attitude)) {
+		PX4_WARN("Research velocity integrator coordination unavailable");
+		return;
+	}
+	const Vector3f body_z = matrix::Dcmf(matrix::Quatf(attitude.q)).col(2);
+	const Vector3f before = _control.researchGet();
+	const Vector3f after = _control.researchCoordinate(thrust, body_z);
+	PX4_INFO("Research velocity integrator coordinated: thrust %.5f age %llu us vel_int %.5f %.5f %.5f -> %.5f %.5f %.5f",
+		 (double)thrust, (unsigned long long)age, (double)before(0), (double)before(1), (double)before(2),
+		 (double)after(0), (double)after(1), (double)after(2));
+}
+#endif
+
+trajectory_setpoint_s MulticopterPositionControl::generateFailsafeSetpoint(const hrt_abstime &now,''')
 
 print('Applied SITL research instrumentation and POSIX daemon TLS initialization; policy files unchanged.')
 

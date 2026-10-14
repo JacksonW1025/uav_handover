@@ -128,9 +128,33 @@
       }
     },
     "nstar_memory": {
-      "values": null,
-      "source": null,
-      "note": "GRU[16] + previous action[4], filled from a development RAPTOR S1 baseline before the S1 batch is frozen"
+      "values": [
+        -0.3560881018638611,
+        0.048067495226860046,
+        0.26853084564208984,
+        0.4074706435203552,
+        0.3177782893180847,
+        0.46001094579696655,
+        0.2689172327518463,
+        -0.26783421635627747,
+        -0.7964303493499756,
+        0.8689482808113098,
+        0.35409682989120483,
+        0.270914226770401,
+        0.24861067533493042,
+        -0.3970729410648346,
+        -0.551681399345398,
+        -0.2627330720424652,
+        0.4586929678916931,
+        0.4579644203186035,
+        0.45826324820518494,
+        0.45831915736198425
+      ],
+      "source": "data/p2-20261015-dev02-S1-baseline_raptor-B-1",
+      "extraction": "data/p2-20261015-nstar/nstar-memory.json (tools/p2_nstar.py)",
+      "phase": "RAPTOR S1 baseline at trigger + 36 ms (median C->N trigger-to-owner-change of the development runs)",
+      "layout": "GRU hidden state [0:16] committed after native step k, previous action [16:20] = action output by step k",
+      "note": "Only used by treatment Nstar (S1). Development baselines differ by at most 0.018 in GRU norm distance."
     },
     "motion_axis_ned": [
       1,
@@ -218,6 +242,11 @@
         "RINI=0 entry evidence: research_memory entry row with mode 0, written GRU and previous action all zero, no teacher forcing",
         "P0 restore/inject: analyzer PASS (or PASS_WITH_WARNINGS) with state log/value validation PASS, all recovery stages SETTLED and executor acceptance PASS, as in P0 batch-05"
       ]
+    },
+    "host": {
+      "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+      "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+      "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
     }
   }
 }

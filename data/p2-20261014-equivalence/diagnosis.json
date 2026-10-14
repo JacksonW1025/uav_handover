@@ -1,0 +1,42 @@
+{
+  "batch": "data/p2-20261014-equivalence",
+  "status": "FAIL (stopped at run 1 of 7; 6 NOT_RUN); retained unchanged",
+  "failed_run": "data/p2-20261014-eq-S1-p1_c_to_n-1",
+  "failed_check": "output-chain gate: applied-command age p99 8 ms (gate 4 ms) and 3 consecutive over-target steps (gate 2) on all four motors; max 12 ms (gate 12 ms); 63 of 2609 neural steps over target",
+  "other_checks": "execution PASS, analyzer PASS, PX4 exit 0, trace MEASURED, P1 metrics MEASURED (capture activation_reset_hold)",
+  "evidence": {
+    "host_cpu_mean_percent": {
+      "this_run": 30.1,
+      "p2_dev_01": 31.4,
+      "p1_batch_02_S1_runs": [
+        13.2,
+        11.2,
+        12.5,
+        11.6
+      ]
+    },
+    "p99_applied_age_ms": {
+      "this_run": 8,
+      "p2_dev_01": 8,
+      "p1_batch_02_S1_runs": [
+        4,
+        4,
+        4,
+        4
+      ]
+    },
+    "executor_runtime_mean_us": {
+      "this_run_note": "unchanged from P1 (about 7 us per inference, neural authority scope)"
+    },
+    "gazebo_real_time_factor": "mean 0.990, max 3.77 (catch-up after stalls)",
+    "host": "A ToDesk remote-desktop session (root, about 170% CPU) was active during the run; CPU governor schedutil without fixed clocks"
+  },
+  "diagnosis": "Host scheduling contention, not the candidate: the same candidate stage (dev-01) shows the same tail at the same host load, executor work is unchanged, and P1 runs at about 12% host CPU had p99 4 ms. The new research_memory logging adds about 50 kB/s.",
+  "actions": [
+    "remote desktop disconnected during batches (user)",
+    "jetson_clocks: all CPUs fixed at 2601 MHz, idle states off, EMC max (user-authorized sudo; previous settings stored in the Lab archive)",
+    "runner pins PX4 (8-11), Gazebo (12-13), Agent (6-7) and itself (4-5) with taskset (config/p2.json p2.host)",
+    "ten S1 development runs must each show maximum applied age <= 8 ms before any P2 batch is frozen; then the equivalence check is repeated as a new batch"
+  ],
+  "rules": "Gate not relaxed, nothing re-run in place, no splicing: the equivalence result will come only from the new batch."
+}

@@ -30,6 +30,13 @@ TYPES = ['classic_hover','raptor_hover','handover_c_to_n','handover_n_to_c',
 # P2 reuses the P1 flight sequence; only the treatment parameters and the condition profile differ.
 P2_TREATMENT_KINDS={'p2_c_to_n':['N0','N1','N2g','N2','N2s','Nstar'],'p2_n_to_c':['C0','C2'],'p2_baseline_classic':['B'],'p2_baseline_raptor':['B']}
 
+def cpu_affinity():
+    # Optional host pinning, e.g. HANDOVER_CPU_AFFINITY='px4=8-11;gazebo=12-13;agent=6-7;runner=4-5'.
+    text=os.environ.get('HANDOVER_CPU_AFFINITY','');out={}
+    for item in filter(None,text.split(';')):
+        name,_,cores=item.partition('=');out[name.strip()]=cores.strip()
+    return out
+
 def write(path, value):
     path.write_text(json.dumps(value,indent=2,ensure_ascii=False,allow_nan=False)+'\n')
 
@@ -118,7 +125,12 @@ class Experiment:
                        'source_diff_sha256':hashlib.sha256(subprocess.check_output(['git','-C',str(self.source),'diff','--binary'])).hexdigest(),
                        'binary':str(self.binary),'binary_sha256':digest(self.binary),
                        'gz_research_plugin_sha256':digest(plugins/'libResearchMulticopterMotorModel.so') if 'HANDOVER_GZ_MOTOR_TRACE' in self.env else None,
-                       'environment':{k:v for k,v in self.env.items() if k.startswith(('PX4_','GZ_','ROS_DOMAIN','HANDOVER_GZ'))},'processes':[]}
+                       'environment':{k:v for k,v in self.env.items() if k.startswith(('PX4_','GZ_','ROS_DOMAIN','HANDOVER_GZ','HANDOVER_CPU'))},'processes':[]}
+        self.affinity=cpu_affinity()
+        if self.affinity:
+            # The runner (and listener/CLI children it starts) runs on its own cores; spawned processes via taskset.
+            if 'runner' in self.affinity:os.sched_setaffinity(0,{c for part in self.affinity['runner'].split(',') for c in (range(int(part.split('-')[0]),int(part.split('-')[-1])+1))})
+            self.metadata['cpu_affinity']={'requested':self.affinity,'runner_actual':sorted(os.sched_getaffinity(0))}
         self.event('created',thresholds=self.cfg)
 
     def event(self,event_name,**values):
@@ -127,6 +139,8 @@ class Experiment:
         print(event_name,values,flush=True)
 
     def spawn(self,name,argv,cwd=None):
+        cores=self.affinity.get(name.split('-')[0]) if getattr(self,'affinity',None) else None
+        if cores:argv=['taskset','-c',cores]+list(argv)  # taskset execs the target: same pid
         log=(self.out/'logs'/(name+'.log')).open('w');self.files.append(log)
         p=subprocess.Popen(argv,cwd=cwd,env=self.env,stdin=subprocess.DEVNULL,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
         self.procs.append((name,p));self.metadata['processes'].append({'name':name,'pid':p.pid,'command':argv})

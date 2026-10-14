@@ -10,7 +10,7 @@ exploration: levels from config p2.exploration run in order. A flight failure (p
 infrastructure checks pass) is a result and does not stop the batch, but escalation stops after that level; then the
 highest level gets the N->C group and the failed level the best step-1 treatment. Infrastructure failures stop.
 """
-import argparse,datetime,json,re,subprocess
+import argparse,datetime,glob,json,os,re,subprocess
 from pathlib import Path
 from preparation_batch import identity,write
 from p1_batch import chain_gate
@@ -18,8 +18,17 @@ from p0_closure import GATE
 from preparation_audit import CRASH
 ROOT=Path(__file__).resolve().parents[1]
 PY=str(ROOT/'uav_lab/.local/venv/bin/python')
+HOST=json.loads((ROOT/'config/p2.json').read_text())['p2'].get('host',{})
 SHORT={'p2_c_to_n':'c_to_n','p2_n_to_c':'n_to_c','p2_baseline_raptor':'baseline_raptor','p2_baseline_classic':'baseline_classic',
        'p1_c_to_n':'p1_c_to_n','p1_n_to_c':'p1_n_to_c','p1_baseline_raptor':'p1_baseline_raptor','p1_baseline_classic':'p1_baseline_classic'}
+
+def host_state():
+    # Clock, governor and load state actually in force when the batch starts (recorded, not enforced).
+    read=lambda f:Path(f).read_text().strip() if Path(f).exists() else None
+    cpus=sorted(glob.glob('/sys/devices/system/cpu/cpu[0-9]*/cpufreq'),key=lambda x:int(re.search(r'cpu(\d+)',x).group(1)))
+    return {'cpu':{Path(c).parent.name:{'cur':read(c+'/scaling_cur_freq'),'min':read(c+'/scaling_min_freq'),'max':read(c+'/scaling_max_freq'),'governor':read(c+'/scaling_governor')} for c in cpus},
+        'loadavg':read('/proc/loadavg'),'affinity':HOST.get('cpu_affinity'),
+        'remote_desktop_session_running':bool(subprocess.run(['pgrep','-x','ToDesk_Session'],capture_output=True).stdout.strip())}
 
 def now():return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()
 
@@ -49,7 +58,8 @@ def run_one(row,out):
     if row['condition']:command+=['--condition',row['condition']]
     if row['treatment']:command+=['--treatment',row['treatment']]
     row['command']=command;row['started_at']=now()
-    with (out/(row['id']+'.log')).open('w') as log:code=subprocess.run(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT).returncode
+    env=dict(os.environ,HANDOVER_CPU_AFFINITY=HOST['cpu_affinity']) if HOST.get('cpu_affinity') else None
+    with (out/(row['id']+'.log')).open('w') as log:code=subprocess.run(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,env=env).returncode
     run=ROOT/row['directory'];row['exit_code']=code;row['finished_at']=now()
     validation=json.loads((run/'validation.json').read_text()) if (run/'validation.json').exists() else {}
     row['status']=validation.get('status','FAIL');row['reason']=validation.get('reason')
@@ -111,8 +121,8 @@ def main():
     p.add_argument('--config',default='config/p2.json');p.add_argument('--purpose',required=True)
     p.add_argument('--exploration',action='store_true');p.add_argument('--best-treatment',help='exploration: best step-1 treatment')
     args=p.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
-    candidate=identity();write(out/'candidate.json',candidate)
-    doc={'created_at':now(),'purpose':args.purpose,'config':args.config,'output_chain_gate':GATE,'candidate':'candidate.json'}
+    candidate=identity();write(out/'candidate.json',candidate);write(out/'host.json',host_state())
+    doc={'created_at':now(),'host':HOST,'purpose':args.purpose,'config':args.config,'output_chain_gate':GATE,'candidate':'candidate.json'}
     if not args.exploration:
         groups=parse_groups(args.groups,args.config);plan=build_plan(args.prefix,groups)
         doc.update({'mode':'standard','groups':groups,'order':'repetitions interleave the groups',

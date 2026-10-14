@@ -101,15 +101,15 @@ def teacher_check(cfg,memory,actuator,t_c,treatment,mapping):
 
 def coordination_check(cfg,messages,t_c):
     nco=int(cfg['p2_treatment_parameters'].get('nco',0))
-    hits=[(t,m) for t,m in messages if 'Research velocity integrator coordinat' in m and t>=t_c-20000]
+    hits=[(t,m) for t,m in messages if ('Research velocity integrator coordinat' in m or 'Research vel_int' in m) and t>=t_c-20000]
     out={'nco':nco,'messages':[{'px4_us':t,'text':m} for t,m in hits[:3]]}
     coordinated=[x for x in hits if 'coordinated:' in x[1] and x[0]<=t_c+200000]
     if nco==1:
-        out['status']='VERIFIED' if coordinated and not any('unavailable' in m for _,m in hits[:1]) else 'FAILED'
+        values={k:[float(v) for v in m.split(k)[1].split()[:3]] for _,m in hits[:3] for k in ['vel_int before','vel_int after'] if k in m}
+        out['status']='VERIFIED' if coordinated and len(values)==2 and not any('unavailable' in m for _,m in hits[:1]) else 'FAILED'
         if coordinated:
-            nums=[float(x) for x in coordinated[0][1].split('vel_int')[1].replace('->',' ').split()]
-            out['vel_int_before'],out['vel_int_after']=nums[:3],nums[3:6]
             out['thrust']=float(coordinated[0][1].split('thrust ')[1].split()[0])
+            out['vel_int_before'],out['vel_int_after']=values.get('vel_int before'),values.get('vel_int after')
     else:out['status']='VERIFIED' if not hits else 'FAILED'
     return out
 

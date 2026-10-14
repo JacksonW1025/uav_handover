@@ -535,6 +535,12 @@ edit(mpc_h,'\tuORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_
 	bool _research_neural_set{false}, _research_controlled{false};
 #endif''')
 mpc='src/modules/mc_pos_control/MulticopterPositionControl.cpp'
+migrate(mpc,'''	PX4_INFO("Research velocity integrator coordinated: thrust %.5f age %llu us vel_int %.5f %.5f %.5f -> %.5f %.5f %.5f",
+		 (double)thrust, (unsigned long long)age, (double)before(0), (double)before(1), (double)before(2),
+		 (double)after(0), (double)after(1), (double)after(2));''','''	// ULog keeps about 127 characters per message: before and after are printed separately.
+	PX4_INFO("Research velocity integrator coordinated: thrust %.5f age %llu us", (double)thrust, (unsigned long long)age);
+	PX4_INFO("Research vel_int before %.5f %.5f %.5f", (double)before(0), (double)before(1), (double)before(2));
+	PX4_INFO("Research vel_int after %.5f %.5f %.5f", (double)after(0), (double)after(1), (double)after(2));''')
 edit(mpc,'\t\t\t// Publish internal position control setpoints','''#ifdef __PX4_POSIX
             researchCoordinateTakeover();
 #endif
@@ -582,9 +588,10 @@ void MulticopterPositionControl::researchCoordinateTakeover()
 	const Vector3f body_z = matrix::Dcmf(matrix::Quatf(attitude.q)).col(2);
 	const Vector3f before = _control.researchGet();
 	const Vector3f after = _control.researchCoordinate(thrust, body_z);
-	PX4_INFO("Research velocity integrator coordinated: thrust %.5f age %llu us vel_int %.5f %.5f %.5f -> %.5f %.5f %.5f",
-		 (double)thrust, (unsigned long long)age, (double)before(0), (double)before(1), (double)before(2),
-		 (double)after(0), (double)after(1), (double)after(2));
+	// ULog keeps about 127 characters per message: before and after are printed separately.
+	PX4_INFO("Research velocity integrator coordinated: thrust %.5f age %llu us", (double)thrust, (unsigned long long)age);
+	PX4_INFO("Research vel_int before %.5f %.5f %.5f", (double)before(0), (double)before(1), (double)before(2));
+	PX4_INFO("Research vel_int after %.5f %.5f %.5f", (double)after(0), (double)after(1), (double)after(2));
 }
 #endif
 

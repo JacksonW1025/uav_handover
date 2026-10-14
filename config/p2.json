@@ -53,8 +53,12 @@
       },
       "S3": {
         "speed_m_s": 1.0,
-        "raptor_baseline_speed_m_s": 1.0,
-        "description": "1.0 m/s along +N (P1 S3). raptor_baseline_speed_m_s is calibrated by development runs so that the RAPTOR baseline capture speed lies in 1.00-1.04 m/s like the C->N handovers."
+        "raptor_baseline_speed_m_s": 1.05,
+        "description": "1.0 m/s along +N (P1 S3). The RAPTOR baseline is commanded at 1.05 m/s so that its capture speed (after the 200 ms setpoint timeout) lies in 1.00-1.04 m/s like the C->N handovers (P1: 1.005-1.035); calibrated in data/p2-20261015-dev-05 (1.05 -> 1.009/1.024, 1.07 -> 1.041). Capture speed outside the target is reported, not a stop criterion.",
+        "raptor_baseline_capture_speed_target_m_s": [
+          1.0,
+          1.04
+        ]
       },
       "X1.5": {
         "speed_m_s": 1.5,

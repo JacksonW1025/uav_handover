@@ -1,0 +1,17 @@
+{
+  "batch": "data/p2-20261015-dev-03",
+  "kind": "development (not acceptance)",
+  "status": "FAIL: stopped at run 4 of 10 (S1-c_to_n-N2g-1); 6 NOT_RUN; retained unchanged",
+  "findings": [
+    {
+      "item": "P2 evidence check",
+      "detail": "1 of 247 teacher-forced rows did not match the last research_actuator row with the same actuator_motors.timestamp. Under lockstep the classic allocator published twice within one simulation step (same timestamp, slightly different motors); RAPTOR had used the earlier one. The checker, not the controller, was ambiguous.",
+      "action": "tools/p2_metrics.py matches the command whose independent conversion equals the logged action among all commands with that timestamp, and counts such rows. Re-check of the dev-03 runs: all MEASURED."
+    },
+    {
+      "item": "tail latency",
+      "detail": "max applied age 12 ms in S1-c_to_n-N2g-1 (gate 12 ms passed, development criterion <= 8 ms not met); host CPU mean 21-52% in dev-03 against 3-13% in dev-02. A transient git process at about 43% CPU was observed right after the batch: VS Code file watcher and git auto-refresh reacting to run output written into data/ (motor traces are written continuously).",
+      "action": "workspace .vscode/settings.json (git-ignored) excludes data/, uav_lab/, patches/ and log/ from file watching and disables git auto-refresh/auto-fetch. The 10-run development check is repeated as dev-04 on the same binary."
+    }
+  ]
+}

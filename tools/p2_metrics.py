@@ -33,10 +33,17 @@ def longest_run(t,mask,end):
         else:cur=0
     return best/1e6
 
-def classic_command(actuator,stamp):
-    """research_actuator row of the classic command with actuator_motors.timestamp == stamp."""
-    rows=np.flatnonzero((actuator['owner']==2)&(actuator['actuator_timestamp'].astype(np.int64)==int(stamp)))
-    return int(rows[-1]) if len(rows) else None
+def classic_commands(actuator,stamp):
+    """research_actuator rows of classic commands with actuator_motors.timestamp == stamp. Under lockstep the
+    allocator can publish twice within one simulation step, so one timestamp may carry several commands."""
+    return [int(i) for i in np.flatnonzero((actuator['owner']==2)&(actuator['actuator_timestamp'].astype(np.int64)==int(stamp)))]
+
+def matching_command(actuator,stamp,action,mapping,tol):
+    """(row, recomputed action) of the classic command whose independent conversion equals `action`, else (None, None)."""
+    for k in classic_commands(actuator,stamp):
+        recomputed=motor_to_action(vec(actuator,'control',k,4),mapping)[0]
+        if recomputed is not None and np.max(np.abs(recomputed-action))<=tol:return k,recomputed
+    return None,None
 
 def entry_check(cfg,m,memory,actuator,t_r,t_c,treatment,mapping):
     tol=cfg['p2']['entry_check']['value_tolerance'];problems=[]
@@ -51,13 +58,12 @@ def entry_check(cfg,m,memory,actuator,t_r,t_c,treatment,mapping):
     if out['entry_mode']!=rini:problems.append(f'entry mode {out["entry_mode"]} != treatment RINI {rini}')
     expected=None
     if rini in (2,4):
-        k=classic_command(actuator,int(memory['classic_actuator_timestamp'][i]))
-        if k is None:problems.append('classic command used at entry not found in research_actuator')
+        stamp=int(memory['classic_actuator_timestamp'][i]);k,recomputed=matching_command(actuator,stamp,classic,mapping,tol)
+        if k is None:problems.append('classic action at entry matches no logged classic command (independent conversion)')
         else:
-            recomputed,clipped=motor_to_action(vec(actuator,'control',k,4),mapping)
             out['classic_command']={'px4_us':int(actuator['timestamp'][k]),'age_at_entry_ms':(out['px4_us']-int(actuator['timestamp'][k]))/1e3,
-                                    'motors':vec(actuator,'control',k,4),'recomputed_action':recomputed,'clipped_components':clipped}
-            if recomputed is None or np.max(np.abs(recomputed-classic))>tol:problems.append('classic action differs from independent conversion')
+                                    'motors':vec(actuator,'control',k,4),'recomputed_action':recomputed,'clipped_components':motor_to_action(vec(actuator,'control',k,4),mapping)[1],
+                                    'commands_with_same_timestamp':len(classic_commands(actuator,stamp))}
             if out['classic_command']['age_at_entry_ms']>cfg['p2']['entry_check']['classic_command_max_age_ms']:problems.append('classic command too old at entry')
     if rini==0:expected=np.zeros(20)
     elif rini==1:expected=before
@@ -86,14 +92,14 @@ def teacher_check(cfg,memory,actuator,t_c,treatment,mapping):
         w=step&(memory['active']==0)&(mt>=t_c-e['teacher_forcing_check_window_s']*1e6)&(mt<t_c)
         out['inactive_rows_before_change']=int(w.sum());out['teacher_forced_fraction']=float(tf[w].mean()) if w.sum() else None
         if not w.sum() or out['teacher_forced_fraction']<e['teacher_forced_min_fraction']:problems.append('teacher forcing not in force before the change')
-        rows=np.flatnonzero(w&tf);bad=0;ages=[]
+        rows=np.flatnonzero(w&tf);bad=0;ages=[];ambiguous=0
         for i in rows:
-            used=vec(memory,'previous_action',i,4);classic=vec(memory,'classic_action',i,4)
-            k=classic_command(actuator,int(memory['classic_actuator_timestamp'][i]))
-            recomputed=motor_to_action(vec(actuator,'control',k,4),mapping)[0] if k is not None else None
-            if recomputed is None or np.max(np.abs(used-classic))>e['value_tolerance'] or np.max(np.abs(recomputed-classic))>e['value_tolerance']:bad+=1
+            used=vec(memory,'previous_action',i,4);classic=vec(memory,'classic_action',i,4);stamp=int(memory['classic_actuator_timestamp'][i])
+            k,_=matching_command(actuator,stamp,classic,mapping,e['value_tolerance'])
+            ambiguous+=len(classic_commands(actuator,stamp))>1
+            if k is None or np.max(np.abs(used-classic))>e['value_tolerance']:bad+=1
             if k is not None:ages.append((int(memory['timestamp'][i])-int(actuator['timestamp'][k]))/1e3)
-        out['rows_checked']=len(rows);out['rows_mismatched']=bad;out['classic_command_age_ms']={'max':max(ages),'median':float(np.median(ages))} if ages else None
+        out['rows_checked']=len(rows);out['rows_mismatched']=bad;out['rows_with_several_commands_at_one_timestamp']=ambiguous;out['classic_command_age_ms']={'max':max(ages),'median':float(np.median(ages))} if ages else None
         if bad:problems.append('teacher-forced previous action differs from classic applied motors')
     elif tf.any():problems.append('teacher forcing active without a teacher-forcing treatment')
     out['problems']=problems;out['status']='VERIFIED' if not problems else 'FAILED'

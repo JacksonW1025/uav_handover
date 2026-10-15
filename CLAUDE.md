@@ -104,7 +104,8 @@ python3 tests/check_apply_idempotence.py
 
 ## Data and evidence rules
 
-- `--output` directories must not already exist. Each run keeps `flight.ulg`, `config.json`, `metadata.json` (source commit, diff summary, binary/policy hashes), `events.jsonl`, `telemetry.jsonl`, `logs/`, `metrics.json`, `validation.json`. Only `data/*/rootfs/` and `data/*/cli/` are ignored.
+- `--output` directories must not already exist. Each run keeps `flight.ulg`, `config.json`, `metadata.json` (source commit, diff summary, binary/policy hashes, `ulog_sha256`), `events.jsonl`, `telemetry.jsonl`, `logs/`, `metrics.json`, `validation.json` on the lab machine.
+- Remote repository policy (user decision 2026-10-15, history rewritten): large raw flight data stays local only and is git-ignored — `flight.ulg`, `gz-motor/`, `telemetry.jsonl`, `resources.jsonl`, raw Gazebo sensor logs — except three example ULogs listed in `.gitignore`. Commit the small per-run evidence, batch files, audits, reports and figures. Never delete the local raw files; the pre-rewrite history is kept locally on branch `archive/full-raw-history`.
 - Never delete, overwrite, or selectively hide failed or diagnostic runs. Never re-run a newer analyzer in place on an old run directory; use `tools/reanalyze_p0.py` into a new directory.
 - Never splice passes from different batches or candidate builds into one acceptance result. A fixed build gets a new batch (e.g. `data/preparation-20261011/batch-03/`).
 - Do not change frozen thresholds, sim step/deadlines, or policy weights without explicit instruction. Known scope limits: native RAPTOR runs at ~125 Hz under 250 Hz Gazebo while training was 100 Hz; the neural window starts and ends under classic takeoff/landing; executor timing covers observe+control, not just the network forward pass.

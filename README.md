@@ -2,6 +2,8 @@
 
 NVIDIA Jetson AGX Thor 上的 PX4 经典控制、RAPTOR 神经控制、C → N → C 双向交接及控制器状态干预研究。2026-10-09 已完成本机环境建设和真实 headless SITL 验证。
 
+> 2026-10-15：**P2 完成**（RAPTOR 接管时的内部状态干预），见 [P2 报告](docs/THOR_P2_REPORT.md)；P1（原始双向交接性能）见 [P1 报告](docs/THOR_P1_REPORT.md)。
+>
 > 2026-10-12：**P0 完成**，判定依据见 [P0 报告收尾节](docs/THOR_P0_FINAL_REPORT.md#2026-10-12-p0-收尾判定完成)。2026-10-10 的历史 FAIL 记录保留；旧环境验收 PASS 本身不代表 P0 完成。
 
 - [环境检查](Environment%20Check.md)
@@ -19,7 +21,7 @@ NVIDIA Jetson AGX Thor 上的 PX4 经典控制、RAPTOR 神经控制、C → N �
 ./tools/experiment state_restore
 ```
 
-整个 `uav_lab/` 属于本机环境并被 Git 忽略。仓库保存研究源码、补丁、配置、原始实验日志和文档；克隆后需按锁清单准备 Lab。运行资源来自当前 Lab，系统 ROS 2、Gazebo、CUDA 继续使用本机安装。重建步骤见 Quickstart。
+整个 `uav_lab/` 属于本机环境并被 Git 忽略。仓库保存研究源码、补丁、配置、每轮实验的配置/身份/事件/日志/指标/判定/图、批次复核和报告；大体积原始飞行数据（ULog、逐物理步电机轨迹、逐帧遥测）只保存在实验机本地，仓库保留三个完整示例 ULog，见 [数据保存策略](data/README.md#数据保存策略)。克隆后需按锁清单准备 Lab。运行资源来自当前 Lab，系统 ROS 2、Gazebo、CUDA 继续使用本机安装。重建步骤见 Quickstart。
 
 当前验收范围为冻结 x500 配置的短时 SITL，神经控制窗口由经典控制起飞和降落。完整训练动力学元数据、长时间统计验证及完整 EKF/FlightTask 状态快照仍超出当前验证范围，详见最终报告。
 

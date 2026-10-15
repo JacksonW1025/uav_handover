@@ -1,0 +1,187 @@
+{
+  "created_at": "2026-10-15T19:48:36.139536+08:00",
+  "host": {
+    "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+    "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+    "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+  },
+  "purpose": "P3 tail-latency check on the final binary before freezing: 10 P3 sequences covering every condition and treatment; every run must keep its maximum applied-command age <= 8 ms (config p3.dev_latency) with the frozen gate unchanged",
+  "config": "config/p3.json",
+  "output_chain_gate": {
+    "p99_us": 4000,
+    "max_us": 12000,
+    "longest_over_target_steps": 2,
+    "overwritten_fraction": 0.001,
+    "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+  },
+  "candidate": "candidate.json",
+  "mode": "standard",
+  "groups": [
+    {
+      "kind": "p3_sequence",
+      "condition": "D1",
+      "treatment": "N3",
+      "n": 1
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N0",
+      "n": 1
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D3",
+      "treatment": "N2",
+      "n": 1
+    },
+    {
+      "kind": "p3_baseline_raptor",
+      "condition": "R",
+      "treatment": "B",
+      "n": 1
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D1",
+      "treatment": "N2s",
+      "n": 1
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N3",
+      "n": 1
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D3",
+      "treatment": "N2s",
+      "n": 1
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D1",
+      "treatment": "N0",
+      "n": 1
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2",
+      "n": 1
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D3",
+      "treatment": "N3",
+      "n": 1
+    }
+  ],
+  "order": "repetitions interleave the groups",
+  "flight_failures": {
+    "criteria": {
+      "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+      "no_joint_recovery_s": 10.0,
+      "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+      "motor_saturation_continuous_s": 0.5,
+      "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+      "ground_altitude_m": 0.2,
+      "ground": "altitude <= 0.2 m inside [trigger, window end]"
+    },
+    "rule": "Pre-registered flight failures (frozen criteria above, all infrastructure checks passing) are results and do not stop the batch, as approved for the P2 N->C batches; any infrastructure or evidence failure stops the batch."
+  },
+  "stop_rule": "Pre-registered flight failures with every infrastructure and evidence check passing are results and do not stop the batch; any other failed check stops it. Remaining runs stay NOT_RUN; nothing is re-run in place.",
+  "runs": [
+    {
+      "id": "D1-N3-1",
+      "kind": "p3_sequence",
+      "condition": "D1",
+      "treatment": "N3",
+      "config": "config/p3.json",
+      "repetition": 1,
+      "directory": "data/p3-20261015-dev10-D1-N3-1"
+    },
+    {
+      "id": "D2-N0-1",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N0",
+      "config": "config/p3.json",
+      "repetition": 1,
+      "directory": "data/p3-20261015-dev10-D2-N0-1"
+    },
+    {
+      "id": "D3-N2-1",
+      "kind": "p3_sequence",
+      "condition": "D3",
+      "treatment": "N2",
+      "config": "config/p3.json",
+      "repetition": 1,
+      "directory": "data/p3-20261015-dev10-D3-N2-1"
+    },
+    {
+      "id": "R-B-1",
+      "kind": "p3_baseline_raptor",
+      "condition": "R",
+      "treatment": "B",
+      "config": "config/p3.json",
+      "repetition": 1,
+      "directory": "data/p3-20261015-dev10-R-B-1"
+    },
+    {
+      "id": "D1-N2s-1",
+      "kind": "p3_sequence",
+      "condition": "D1",
+      "treatment": "N2s",
+      "config": "config/p3.json",
+      "repetition": 1,
+      "directory": "data/p3-20261015-dev10-D1-N2s-1"
+    },
+    {
+      "id": "D2-N3-1",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N3",
+      "config": "config/p3.json",
+      "repetition": 1,
+      "directory": "data/p3-20261015-dev10-D2-N3-1"
+    },
+    {
+      "id": "D3-N2s-1",
+      "kind": "p3_sequence",
+      "condition": "D3",
+      "treatment": "N2s",
+      "config": "config/p3.json",
+      "repetition": 1,
+      "directory": "data/p3-20261015-dev10-D3-N2s-1"
+    },
+    {
+      "id": "D1-N0-1",
+      "kind": "p3_sequence",
+      "condition": "D1",
+      "treatment": "N0",
+      "config": "config/p3.json",
+      "repetition": 1,
+      "directory": "data/p3-20261015-dev10-D1-N0-1"
+    },
+    {
+      "id": "D2-N2-1",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2",
+      "config": "config/p3.json",
+      "repetition": 1,
+      "directory": "data/p3-20261015-dev10-D2-N2-1"
+    },
+    {
+      "id": "D3-N3-1",
+      "kind": "p3_sequence",
+      "condition": "D3",
+      "treatment": "N3",
+      "config": "config/p3.json",
+      "repetition": 1,
+      "directory": "data/p3-20261015-dev10-D3-N3-1"
+    }
+  ]
+}

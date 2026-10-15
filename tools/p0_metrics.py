@@ -120,7 +120,11 @@ def add_p0(metrics,topics,cfg,events,windows,px4_time,variant,stats,messages=Non
         metrics['recovery_stages'].append(result)
     metrics['joint_recovery_status_counts']=dict(Counter(x['joint_recovery']['status'] for x in metrics['recovery_stages']))
     for state in ['SETTLED','NOT_SETTLED','INSUFFICIENT_OBSERVATION']:metrics['joint_recovery_status_counts'].setdefault(state,0)
-    metrics['recovery_status']='PASS' if stages and all(x['joint_recovery']['status']=='SETTLED' for x in metrics['recovery_stages']) else 'FAIL'
+    # P3 config pre-registers that a stage shorter than the dwell cannot settle by definition (thresholds unchanged).
+    if (cfg.get('short_stage_rule') or {}).get('exempt_below_dwell'):
+        for x in metrics['recovery_stages']:
+            if x['joint_recovery']['status']=='INSUFFICIENT_OBSERVATION' and x['end_us']-x['start_us']<cfg['joint_recovery']['dwell_s']*1e6:x['planned_short_stage']=True
+    metrics['recovery_status']='PASS' if stages and all(x['joint_recovery']['status']=='SETTLED' or x.get('planned_short_stage') for x in metrics['recovery_stages']) else 'FAIL'
     if variant!='raptor':return
     timing=topics.get('research_timing',{})
     if 'scope_calls[0]' not in timing:

@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A research harness on an NVIDIA Jetson AGX Thor (aarch64, Ubuntu 24.04, ROS 2 Jazzy, Gazebo Harmonic). It studies handover between PX4's classic multicopter controller and the RAPTOR neural controller (C → N → C), and interventions on controller internal state (reset / hold / snapshot+restore / inject). All flight is **headless SITL only**. Project docs and most comments are in Chinese.
 
-Current project status: **P2 complete** as of 2026-10-15 (`docs/THOR_P2_REPORT.md`, accepted batches `data/p2-20261015-batch-{s1a,s1b,s3-03,nc-03,explore-02}` + `data/p2-20261015-equivalence-02`; stopped batches kept with `diagnosis.json`). P2 adds `MC_RAPTOR_RINI` modes 0–5 (0 original reset, 1 shadow memory, 2 N1, 3 N2g, 4 N2, 5 staged N*), teacher forcing of the inactive shadow inference, `MC_RAPTOR_NCO` (C2 velocity-integrator coordination), the `research_memory` evidence topic and `state raptor stage`; config `config/p2.json`, tools `tools/p2_*.py`. P1 complete 2026-10-13 (`docs/THOR_P1_REPORT.md`), P0 complete 2026-10-12. No real flight. Joint recovery's position reference is the controller's active target (`active_controller_target`: trajectory_setpoint for classic, RAPTOR's logged internal-target captures while RAPTOR owns the actuators); the fixed NED reference is reported only as `fixed_reference_comparison`.
+Current project status: **P3 complete** as of 2026-10-15 (`docs/THOR_P3_REPORT.md`, accepted batch `data/p3-20261015-batch-01` 39/39, `data/p3-20261015-equivalence`, `data/p3-20261015-dev-10b`; stopped `dev-10` kept with `diagnosis.json`). P3 adds `MC_RAPTOR_RINI=6` (N3: RAPTOR stores its GRU + previous action on its own thread on the first inactive cycle after an exit, `research_memory` `KIND_EXIT`, written back at re-entry), `research_memory.policy_input[22]` (exact executor input, used by the offline policy replay in `tools/p3_memory.py`), kinds `p3_sequence` / `p3_baseline_raptor`, config `config/p3.json` (incl. the pre-registered `short_stage_rule`), tools `tools/p3_*.py`. Before that, **P2 complete** as of 2026-10-15 (`docs/THOR_P2_REPORT.md`, accepted batches `data/p2-20261015-batch-{s1a,s1b,s3-03,nc-03,explore-02}` + `data/p2-20261015-equivalence-02`; stopped batches kept with `diagnosis.json`). P2 adds `MC_RAPTOR_RINI` modes 0–5 (0 original reset, 1 shadow memory, 2 N1, 3 N2g, 4 N2, 5 staged N*), teacher forcing of the inactive shadow inference, `MC_RAPTOR_NCO` (C2 velocity-integrator coordination), the `research_memory` evidence topic and `state raptor stage`; config `config/p2.json`, tools `tools/p2_*.py`. P1 complete 2026-10-13 (`docs/THOR_P1_REPORT.md`), P0 complete 2026-10-12. No real flight. Joint recovery's position reference is the controller's active target (`active_controller_target`: trajectory_setpoint for classic, RAPTOR's logged internal-target captures while RAPTOR owns the actuators); the fixed NED reference is reported only as `fixed_reference_comparison`.
 
-P2 batch operation notes: run `sudo jetson_clocks` after every reboot; `config/p2.json` `p2.host.cpu_affinity` pins PX4/Gazebo/Agent/runner via `HANDOVER_CPU_AFFINITY`; launch batches through the session background mechanism, never as `( cmd & )` in a non-interactive shell (SIGINT is then ignored and the Agent reconnection check fails); keep the editor from watching `data/` during batches.
+P2/P3 batch operation notes: run `sudo jetson_clocks` after every reboot; restrict user-session processes to cores 0–3 (`taskset -a -p -c 0-3` on the user's processes) and disconnect the ToDesk remote desktop before latency-relevant batches (P3 dev-10 missed its 8 ms margin without the restriction); the batch identity includes the git HEAD, so never commit while a batch runs; `config/p2.json` `p2.host.cpu_affinity` pins PX4/Gazebo/Agent/runner via `HANDOVER_CPU_AFFINITY`; launch batches through the session background mechanism, never as `( cmd & )` in a non-interactive shell (SIGINT is then ignored and the Agent reconnection check fails); keep the editor from watching `data/` during batches.
 
 ## Repository vs. Lab
 
@@ -62,6 +62,17 @@ uav_lab/.local/venv/bin/python tools/p2_equivalence.py data/<batch> # RINI=0 equ
 uav_lab/.local/venv/bin/python tools/p2_report.py --s1 ... --s3 ... --nc ... --explore ...   # figures -> docs/figures/p2
 ```
 
+P3 (`config/p3.json`; kinds `p3_sequence` with `--condition D1|D2|D3 --treatment N0|N3|N2s|N2`, `p3_baseline_raptor` with `--condition R --treatment B`). Every C→N starts from classic OFFBOARD tracking a stationary runner stream that stops right before the request; N→C requests OFFBOARD with RAPTOR's own target streamed; the treatment RINI is set 1 s after the first entry:
+
+```bash
+uav_lab/.local/venv/bin/python tools/p3_batch.py data/<batch> --prefix <prefix> --groups "p3_sequence:D1:N3:3,p3_baseline_raptor:R:B:3" --purpose "..."
+uav_lab/.local/venv/bin/python tools/p3_metrics.py data/<run>     # -> p3-metrics.json (3 events, parameters, exit/entry memory, teacher forcing, capture)
+uav_lab/.local/venv/bin/python tools/p3_memory.py data/<run>      # -> p3-memory.json (exact policy replay, memory length)
+uav_lab/.local/venv/bin/python tools/p3_audit.py data/<batch>     # -> batch-audit.json
+uav_lab/.local/venv/bin/python tools/p3_equivalence.py data/<batch>   # P2 S1 N0/N2 on a new candidate vs accepted P2 ranges
+uav_lab/.local/venv/bin/python tools/p3_report.py data/<batch>    # figures -> docs/figures/p3, table -> <batch>/p3-table.md
+```
+
 Rebuild (what `tools/prepare_lab.sh` does after venv/colcon setup):
 
 ```bash
@@ -73,8 +84,8 @@ uav_lab/.local/venv/bin/python tools/apply_research.py
 Tests:
 
 ```bash
-# Python (32 tests); single test: append ::test_name
-uav_lab/.local/venv/bin/python -m pytest -q tests/test_readiness.py tests/test_recovery.py tests/test_executor_acceptance.py tests/test_output_chain.py tests/test_p0_closure.py tests/test_p1.py tests/test_p2.py
+# Python (38 tests); single test: append ::test_name
+uav_lab/.local/venv/bin/python -m pytest -q tests/test_readiness.py tests/test_recovery.py tests/test_executor_acceptance.py tests/test_output_chain.py tests/test_p0_closure.py tests/test_p1.py tests/test_p2.py tests/test_p3.py
 uav_lab/.local/venv/bin/python -m pytest -q tests/test_recovery.py::test_missing_data_does_not_count_as_continuous
 
 # Header-only C++ units, with sanitizers (as recorded in data/p0-20261010/commands/)

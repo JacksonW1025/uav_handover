@@ -793,7 +793,7 @@ index fb467f7..6a997ce 100644
  	/**
  	 * If set, the tilt setpoint is computed by assuming no vertical acceleration
 diff --git a/src/modules/mc_raptor/mc_raptor.cpp b/src/modules/mc_raptor/mc_raptor.cpp
-index df27d92..f844a34 100644
+index df27d92..3c7b1bf 100644
 --- a/src/modules/mc_raptor/mc_raptor.cpp
 +++ b/src/modules/mc_raptor/mc_raptor.cpp
 @@ -1,3 +1,7 @@
@@ -804,7 +804,7 @@ index df27d92..f844a34 100644
  #include "mc_raptor.hpp"
  #undef OK
  
-@@ -5,6 +9,97 @@
+@@ -5,6 +9,98 @@
  #include <rl_tools/persist/backends/tar/operations_generic.h>
  
  #include <sys/stat.h>
@@ -871,7 +871,7 @@ index df27d92..f844a34 100644
 +    if (mode>=handover_research::ENTRY_CLASSIC_ACTION) {
 +        float written[handover_research::MEMORY_DIM]{};
 +        m.entry_result=handover_research::entry_memory(mode,before,classic,classic_valid,_research_state.engine.staged,
-+            _research_state.engine.staged_dim,RESET_PREVIOUS_ACTION_VALUE,written);
++            _research_state.engine.staged_dim,_research_exit.memory,_research_exit.valid,RESET_PREVIOUS_ACTION_VALUE,written);
 +        if (m.entry_result==handover_research::ENTRY_APPLIED) {
 +            research_set_memory(written);
 +            PX4_INFO("Research mode-entry treatment %d applied",(int)mode);
@@ -891,6 +891,7 @@ index df27d92..f844a34 100644
 +    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
 +    m.kind=research_memory_s::KIND_STEP;m.entry_mode=_research_mode;m.active=active;m.native_step=native_step;
 +    m.teacher_forced=_research_teacher_forced;
++    for (TI i=0;i<22;i++) m.policy_input[i]=rlt::get(device,executor.input,0,i);
 +    float memory[32]{};research_get(memory);
 +    for (TI i=0;i<16;i++) m.gru[i]=memory[i];
 +    for (TI i=0;i<4;i++) {m.previous_action[i]=previous_action_used[i];m.classic_action[i]=_research_teacher_forced?_research_classic_action[i]:NAN;}
@@ -902,16 +903,45 @@ index df27d92..f844a34 100644
  
  ModuleBase::Descriptor Raptor::desc{task_spawn, custom_command, print_usage};
  
-@@ -518,7 +613,7 @@ void Raptor::Run()
+@@ -413,6 +509,24 @@ void Raptor::observe(rl_tools::inference::applications::l2f::Observation<EXECUTO
+ }
+ 
+ 
++#ifdef __PX4_POSIX
++void Raptor::research_exit_lifecycle(bool active) {
++    static const param_t rsh=param_find("MC_RAPTOR_RSH");
++    int32_t enabled=0;param_get(rsh,&enabled);
++    if (!enabled || !_research_exit.due(active)) return;
++    float live[32]{};research_get(live);
++    _research_exit.store(live);
++    research_memory_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=research_memory_s::KIND_EXIT;m.entry_mode=_research_mode;m.active=false;
++    for (TI i=0;i<16;i++) m.gru[i]=_research_exit.memory[i];
++    for (TI i=0;i<4;i++) {m.previous_action[i]=_research_exit.memory[16+i];m.classic_action[i]=NAN;}
++    m.clipped_total=_research_clipped_total;m.classic_unavailable_total=_research_classic_unavailable_total;
++    _research_memory_pub.publish(m);
++    PX4_INFO("Research exit memory stored");
++}
++#endif
++
+ void Raptor::updateArmingCheckReply()
+ {
+ 	if (flightmode_state == FlightModeState::CONFIGURED) {
+@@ -518,8 +632,11 @@ void Raptor::Run()
  		timestamp_last_vehicle_status_set = true;
  	}
  
 -	bool next_active = timestamp_last_vehicle_status_set && _vehicle_status.nav_state == ext_component_mode_id;
 +	bool next_active = flightmode_state == FlightModeState::CONFIGURED && timestamp_last_vehicle_status_set && _vehicle_status.nav_state == ext_component_mode_id;
  
++#ifdef __PX4_POSIX
++    research_exit_lifecycle(next_active);
++#endif
  	if (!previous_active && next_active) {
  
-@@ -530,7 +625,23 @@ void Raptor::Run()
+ 		// Activate setpoint type
+@@ -530,7 +647,23 @@ void Raptor::Run()
  		setpoint_config.should_apply = true;
  		_setpoint_config_pub.publish(setpoint_config);
  
@@ -936,7 +966,7 @@ index df27d92..f844a34 100644
  		PX4_INFO("Resetting Inference Executor (Recurrent State)");
  
  	} else {
-@@ -538,9 +649,16 @@ void Raptor::Run()
+@@ -538,9 +671,16 @@ void Raptor::Run()
  			PX4_INFO("inactive");
  		}
  	}
@@ -953,7 +983,7 @@ index df27d92..f844a34 100644
  
  	if (status.subscription_update_angular_velocity) {
  		timestamp_last_angular_velocity = current_time;
-@@ -809,10 +927,95 @@ void Raptor::Run()
+@@ -809,10 +949,95 @@ void Raptor::Run()
  
  	rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;
  	rl_tools::inference::applications::l2f::Action<EXECUTOR_SPEC> action;
@@ -1049,7 +1079,7 @@ index df27d92..f844a34 100644
  	if (!executor_status.OK) {
  		if (executor_status.TIMESTAMP_INVALID) {
  			PX4_ERR("RLtools executor error: Timestamp invalid");
-@@ -868,7 +1071,13 @@ void Raptor::Run()
+@@ -868,7 +1093,13 @@ void Raptor::Run()
  	for (TI action_i = 0; action_i < actuator_motors_s::NUM_CONTROLS; action_i++) {
  		if (action_i < EXECUTOR_CONFIG::OUTPUT_DIM) {
  			T value = action.action[action_i];
@@ -1064,7 +1094,7 @@ index df27d92..f844a34 100644
  			value = (value + 1) / 2;
  			constexpr T training_min = 0;
  			constexpr T training_max = 1.0;
-@@ -890,7 +1099,25 @@ void Raptor::Run()
+@@ -890,7 +1121,25 @@ void Raptor::Run()
  	}
  
  	if (status.active) {
@@ -1090,7 +1120,7 @@ index df27d92..f844a34 100644
  	}
  
  	perf_end(_loop_perf);
-@@ -994,6 +1221,9 @@ int Raptor::print_status()
+@@ -994,6 +1243,9 @@ int Raptor::print_status()
  
  int Raptor::custom_command(int argc, char *argv[])
  {
@@ -1101,7 +1131,7 @@ index df27d92..f844a34 100644
  		if (strcmp(argv[1], "lissajous") == 0) {
  			// Usage: mc_raptor intref lissajous <A> <B> <C> <fa> <fb> <fc> <duration> <ramp>
 diff --git a/src/modules/mc_raptor/mc_raptor.hpp b/src/modules/mc_raptor/mc_raptor.hpp
-index fcd3203..9cffaa6 100644
+index fcd3203..da453d1 100644
 --- a/src/modules/mc_raptor/mc_raptor.hpp
 +++ b/src/modules/mc_raptor/mc_raptor.hpp
 @@ -1,4 +1,7 @@
@@ -1177,7 +1207,19 @@ index fcd3203..9cffaa6 100644
  	uORB::Publication<actuator_motors_s> _actuator_motors_pub{ORB_ID(actuator_motors)};
  	uORB::Publication<raptor_status_s> _raptor_status_pub{ORB_ID(raptor_status)};
  	uORB::Publication<raptor_input_s> _raptor_input_pub{ORB_ID(raptor_input)};
-@@ -263,6 +291,21 @@ private:
+@@ -231,6 +259,11 @@ private:
+ #endif
+ 
+ 	void reset();
++#ifdef __PX4_POSIX
++    // P3 N3: memory held unchanged since RAPTOR's most recent exit (SITL research only).
++    void research_exit_lifecycle(bool active);
++    handover_research::ExitMemory _research_exit{};
++#endif
+ 	void observe(rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> &observation);
+ 
+ 	static constexpr bool REMAP_FROM_CRAZYFLIE =
+@@ -263,6 +296,21 @@ private:
  	TI trajectory_setpoint_invalid_count = 0;
  
  	float previous_action[EXECUTOR_SPEC::OUTPUT_DIM];
@@ -1200,7 +1242,7 @@ index fcd3203..9cffaa6 100644
  	bool internal_reference_params_changed = false;
  	T internal_reference_activation_position[3];
 diff --git a/src/modules/mc_raptor/module.yaml b/src/modules/mc_raptor/module.yaml
-index 2b61df8..ba6b50d 100644
+index 2b61df8..665f302 100644
 --- a/src/modules/mc_raptor/module.yaml
 +++ b/src/modules/mc_raptor/module.yaml
 @@ -1,5 +1,32 @@
@@ -1211,10 +1253,10 @@ index 2b61df8..ba6b50d 100644
 +        MC_RAPTOR_RINI:
 +            description:
 +                short: SITL research mode-entry memory treatment
-+                long: 0 original reset, 1 preserve shadow memory, 2 GRU reset with classic previous action, 3 teacher-forced GRU, 4 teacher-forced GRU with classic previous action, 5 staged memory
++                long: 0 original reset, 1 preserve shadow memory, 2 GRU reset with classic previous action, 3 teacher-forced GRU, 4 teacher-forced GRU with classic previous action, 5 staged memory, 6 memory held unchanged since the most recent exit
 +            type: int32
 +            min: 0
-+            max: 5
++            max: 6
 +            default: 0
 +    - group: Handover Research
 +      definitions:

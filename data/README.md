@@ -52,3 +52,7 @@ cat data/verified-raptor_hover/validation.json
 ## 2026-10-14/15 P2
 
 接受批次：`p2-20261015-batch-{s1a,s1b,s3-03,nc-03,explore-02}` 与 `p2-20261015-equivalence-02`；停批批次（`p2-20261014-equivalence`、`batch-s3`、`batch-s3-02`、`batch-nc`、`batch-nc-02`、`batch-explore`）和开发运行（`dev-0*`、`crash-probe-01`）原样保留并附 `diagnosis.json`。`p2-20261014-action-map/` 为动作映射拟合，`p2-20261015-nstar/` 为 N★ 记忆提取。每批 `p2-table.md` 为逐轮结果表。见 [P2 报告](../docs/THOR_P2_REPORT.md)。
+
+## 2026-10-15 P3
+
+接受批次：`p3-20261015-batch-01`（39/39，运行目录 `p3-20261015-b01-*`）、候选等价性 `p3-20261015-equivalence`（运行 `p3-20261015-eq-*`）、冻结前尾延迟检查 `p3-20261015-dev-10b`（运行 `p3-20261015-dev10b-*`）。未达到 8 ms 余量的 `p3-20261015-dev-10`（运行 `p3-20261015-dev10-*`）原样保留并附 `diagnosis.json`。开发运行 `p3-20261015-dev0{1..6}-*` 保留。每轮新增 `p3-metrics.json`（三个事件与记忆证据）和 `p3-memory.json`（策略精确回放与记忆长度）；批次目录有 `p3-table.md`。见 [P3 报告](../docs/THOR_P3_REPORT.md)。

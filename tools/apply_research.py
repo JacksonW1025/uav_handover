@@ -173,11 +173,13 @@ RINI_P2='''        MC_RAPTOR_RINI:
             max: 5
             default: 0
 '''
-# P2 widened the P1 boolean to modes; 0/1 keep their meaning. Migrate a checkout prepared before P2.
+RINI_P3=RINI_P2.replace(', 5 staged memory\n',', 5 staged memory, 6 memory held unchanged since the most recent exit\n').replace('            max: 5\n','            max: 6\n')
+# P2 widened the P1 boolean to modes; 0/1 keep their meaning. P3 adds mode 6. Migrate checkouts prepared earlier.
 migrate('src/modules/mc_raptor/module.yaml',RINI_P1,RINI_P2)
+migrate('src/modules/mc_raptor/module.yaml',RINI_P2,RINI_P3)
 if 'MC_RAPTOR_RINI:' not in (PX/'src/modules/mc_raptor/module.yaml').read_text():edit('src/modules/mc_raptor/module.yaml','    - group: Handover Research\n','''    - group: Handover Research
       definitions:
-'''+RINI_P2+'''    - group: Handover Research
+'''+RINI_P3+'''    - group: Handover Research
 ''')
 edit('src/modules/mc_raptor/mc_raptor.hpp','ext_component_mode_id;','ext_component_mode_id = 255;')
 edit('src/modules/mc_raptor/mc_raptor.cpp','bool next_active = timestamp_last_vehicle_status_set && _vehicle_status.nav_state == ext_component_mode_id;','bool next_active = flightmode_state == FlightModeState::CONFIGURED && timestamp_last_vehicle_status_set && _vehicle_status.nav_state == ext_component_mode_id;')
@@ -402,6 +404,10 @@ edit(rap_h,'\tfloat previous_action[EXECUTOR_SPEC::OUTPUT_DIM];','''\tfloat prev
     uint32_t _research_clipped_total{0}, _research_classic_unavailable_total{0};
 #endif''')
 rap='src/modules/mc_raptor/mc_raptor.cpp'
+# P3: the mode-entry call also receives the memory held since the most recent exit (MC_RAPTOR_RINI=6).
+# P3: inference rows also log the exact policy input (executor.input) for the offline GRU replay.
+migrate(rap,'    m.teacher_forced=_research_teacher_forced;\n    float memory[32]{};research_get(memory);','    m.teacher_forced=_research_teacher_forced;\n    for (TI i=0;i<22;i++) m.policy_input[i]=rlt::get(device,executor.input,0,i);\n    float memory[32]{};research_get(memory);')
+migrate(rap,'_research_state.engine.staged_dim,RESET_PREVIOUS_ACTION_VALUE,written);','_research_state.engine.staged_dim,_research_exit.memory,_research_exit.valid,RESET_PREVIOUS_ACTION_VALUE,written);')
 edit(rap,'ModuleBase::Descriptor Raptor::desc{task_spawn, custom_command, print_usage};','''#ifdef __PX4_POSIX
 // Only the GRU hidden state and previous action; never RAPTOR's position/velocity target.
 void Raptor::research_set_memory(const float *v) {
@@ -444,7 +450,7 @@ void Raptor::research_entry(int32_t mode, const float *before, const float *clas
     if (mode>=handover_research::ENTRY_CLASSIC_ACTION) {
         float written[handover_research::MEMORY_DIM]{};
         m.entry_result=handover_research::entry_memory(mode,before,classic,classic_valid,_research_state.engine.staged,
-            _research_state.engine.staged_dim,RESET_PREVIOUS_ACTION_VALUE,written);
+            _research_state.engine.staged_dim,_research_exit.memory,_research_exit.valid,RESET_PREVIOUS_ACTION_VALUE,written);
         if (m.entry_result==handover_research::ENTRY_APPLIED) {
             research_set_memory(written);
             PX4_INFO("Research mode-entry treatment %d applied",(int)mode);
@@ -464,6 +470,7 @@ void Raptor::research_log_step(bool active, const float *previous_action_used, b
     m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
     m.kind=research_memory_s::KIND_STEP;m.entry_mode=_research_mode;m.active=active;m.native_step=native_step;
     m.teacher_forced=_research_teacher_forced;
+    for (TI i=0;i<22;i++) m.policy_input[i]=rlt::get(device,executor.input,0,i);
     float memory[32]{};research_get(memory);
     for (TI i=0;i<16;i++) m.gru[i]=memory[i];
     for (TI i=0;i<4;i++) {m.previous_action[i]=previous_action_used[i];m.classic_action[i]=_research_teacher_forced?_research_classic_action[i]:NAN;}
@@ -596,6 +603,41 @@ void MulticopterPositionControl::researchCoordinateTakeover()
 #endif
 
 trajectory_setpoint_s MulticopterPositionControl::generateFailsafeSetpoint(const hrt_abstime &now,''')
+
+# P3 (N3): RAPTOR stores its memory (committed GRU, previous action) on its own thread on the first inactive cycle
+# after it was active, before that cycle's teacher forcing or inference; MC_RAPTOR_RINI=6 writes it back at re-entry.
+edit(rap_h,'\tvoid reset();\n','''\tvoid reset();
+#ifdef __PX4_POSIX
+    // P3 N3: memory held unchanged since RAPTOR's most recent exit (SITL research only).
+    void research_exit_lifecycle(bool active);
+    handover_research::ExitMemory _research_exit{};
+#endif
+''')
+edit(rap,'\tif (!previous_active && next_active) {\n','''#ifdef __PX4_POSIX
+    research_exit_lifecycle(next_active);
+#endif
+\tif (!previous_active && next_active) {
+''')
+edit(rap,'void Raptor::updateArmingCheckReply()\n{','''#ifdef __PX4_POSIX
+void Raptor::research_exit_lifecycle(bool active) {
+    static const param_t rsh=param_find("MC_RAPTOR_RSH");
+    int32_t enabled=0;param_get(rsh,&enabled);
+    if (!enabled || !_research_exit.due(active)) return;
+    float live[32]{};research_get(live);
+    _research_exit.store(live);
+    research_memory_s m{};
+    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
+    m.kind=research_memory_s::KIND_EXIT;m.entry_mode=_research_mode;m.active=false;
+    for (TI i=0;i<16;i++) m.gru[i]=_research_exit.memory[i];
+    for (TI i=0;i<4;i++) {m.previous_action[i]=_research_exit.memory[16+i];m.classic_action[i]=NAN;}
+    m.clipped_total=_research_clipped_total;m.classic_unavailable_total=_research_classic_unavailable_total;
+    _research_memory_pub.publish(m);
+    PX4_INFO("Research exit memory stored");
+}
+#endif
+
+void Raptor::updateArmingCheckReply()
+{''')
 
 print('Applied SITL research instrumentation and POSIX daemon TLS initialization; policy files unchanged.')
 

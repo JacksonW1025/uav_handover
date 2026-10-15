@@ -1,0 +1,32 @@
+{
+  "batch": "data/p3-20261015-dev-10",
+  "result": "all 10 runs accepted under the frozen gate; batch-audit passed; pre-freeze margin criterion (config p3.dev_latency: every run max applied-command age <= 8 ms) NOT met",
+  "max_applied_age_us_per_run": {
+    "D1-N3-1": 4000.0,
+    "D2-N0-1": 8000.0,
+    "D3-N2-1": 8000.0,
+    "R-B-1": 8000.0,
+    "D1-N2s-1": 4000.0,
+    "D2-N3-1": 12000.0,
+    "D3-N2s-1": 8000.0,
+    "D1-N0-1": 8000.0,
+    "D2-N2-1": 8000.0,
+    "D3-N3-1": 8000.0
+  },
+  "event": {
+    "run": "D2-N3-1",
+    "sim_us": 70884000,
+    "age_us": 12000,
+    "phase": "second RAPTOR hover, 3.16 s after the second C->N",
+    "preceding_steps_at_8ms": [
+      70852000,
+      70860000,
+      70880000
+    ],
+    "gazebo_step_wall_gap_ms": 7.0,
+    "host_cpu_percent_median": 11.65,
+    "host_cpu_percent_max": 20.2
+  },
+  "diagnosis": "Isolated host-scheduling tail event (same class as P1 batch-01 and P2 batch-nc-02), not in a handover window. Clocks locked (jetson_clocks), remote desktop disconnected, PX4/Gazebo/Agent/runner pinned; user-session processes (VS Code about 45% CPU) were NOT restricted to cores 0-3 (the P2 nc-03 remedy), because the restriction was blocked by the session permission policy. VS Code processes were observed running on cores 9 and 11 (PX4 cores 8-11).",
+  "action": "Chain stopped before freezing; main batch not started. Remedy: restrict user-session processes to cores 0-3, then a new full dev batch (dev-10b) on the same binary. This batch is kept unchanged."
+}

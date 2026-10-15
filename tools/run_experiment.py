@@ -26,9 +26,12 @@ LAB = ROOT/'uav_lab'
 TYPES = ['classic_hover','raptor_hover','handover_c_to_n','handover_n_to_c',
          'handover_c_n_c','repeated_handover','state_reset','state_hold','state_restore','state_injection',
          'p1_c_to_n','p1_n_to_c','p1_baseline_classic','p1_baseline_raptor',
-         'p2_c_to_n','p2_n_to_c','p2_baseline_classic','p2_baseline_raptor','p2_crash_probe']
+         'p2_c_to_n','p2_n_to_c','p2_baseline_classic','p2_baseline_raptor','p2_crash_probe',
+         'p3_sequence','p3_baseline_raptor']
 # P2 reuses the P1 flight sequence; only the treatment parameters and the condition profile differ.
 P2_TREATMENT_KINDS={'p2_c_to_n':['N0','N1','N2g','N2','N2s','Nstar'],'p2_n_to_c':['C0','C2'],'p2_baseline_classic':['B'],'p2_baseline_raptor':['B']}
+# P3: C->N (N0), RAPTOR hover, N->C, classic deactivation, second C->N with a memory treatment; or the RAPTOR baseline.
+P3_TREATMENT_KINDS={'p3_sequence':['N0','N3','N2s','N2'],'p3_baseline_raptor':['B']}
 
 def cpu_affinity():
     # Optional host pinning, e.g. HANDOVER_CPU_AFFINITY='px4=8-11;gazebo=12-13;agent=6-7;runner=4-5'.
@@ -65,7 +68,14 @@ class Experiment:
             speed=condition.get('raptor_baseline_speed_m_s',condition['speed_m_s']) if args.kind=='p2_baseline_raptor' else condition['speed_m_s']
             self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(speed)
             self.cfg['p2_treatment']=args.treatment;self.cfg['p2_treatment_parameters']=p2['treatments'][args.treatment];self.cfg['p2_profile']=self.pcfg
-        elif args.condition or args.treatment:raise RuntimeError('--condition/--treatment apply only to P1/P2 flight kinds')
+        elif args.kind in P3_TREATMENT_KINDS:
+            p3=self.cfg.get('p3',{});spec=p3.get('conditions',{}).get(args.condition)
+            if spec is None:raise RuntimeError('P3 kinds need --condition from config p3.conditions')
+            if bool(spec.get('baseline_only'))!=(args.kind=='p3_baseline_raptor'):raise RuntimeError('p3_baseline_raptor runs condition R only; p3_sequence runs the deactivation conditions')
+            if args.treatment not in P3_TREATMENT_KINDS[args.kind]:raise RuntimeError(f'{args.kind} needs --treatment in {P3_TREATMENT_KINDS[args.kind]}')
+            self.cfg['p3_condition']=args.condition;self.cfg['p3_condition_spec']=spec
+            self.cfg['p3_treatment']=args.treatment;self.cfg['p3_treatment_parameters']=p3['treatments'][args.treatment]
+        elif args.condition or args.treatment:raise RuntimeError('--condition/--treatment apply only to P1/P2/P3 flight kinds')
         self.variant='classic' if args.kind=='classic_hover' else 'raptor'
         if os.environ.get('HANDOVER_VARIANT')!=self.variant:raise RuntimeError('use tools/experiment to select the correct overlay')
         self.out=(args.output or ROOT/'data'/(dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).strftime('%Y%m%dT%H%M%S')+'-'+args.kind+'-'+uuid.uuid4().hex[:6])).resolve()
@@ -75,7 +85,7 @@ class Experiment:
         self.events=(self.out/'events.jsonl').open('w')
         self.procs=[];self.files=[];self.latest={};self.received={};self.acks=[];self.expected_stopped=set()
         self.node=None;self.rclpy=None;self.safe=False;self.checks={};self.last_sample=0
-        self.stream=None;self.stream_t0=None;self.stream_state=None
+        self.stream=None;self.stream_t0=None;self.stream_state=None;self.listener_durations=[];self.p3_motion_t0=None
         self.samples=(self.out/'telemetry.jsonl').open('w')
         self.resources=(self.out/'resources.jsonl').open('w');self.last_resource=0
         self.rootfs=self.out/'rootfs'
@@ -257,12 +267,13 @@ class Experiment:
         link=self.out/'cli'/'px4-listener'
         if not link.exists():link.symlink_to(self.binary)
         argv=[str(link),'--instance',str(self.instance),'vehicle_angular_velocity','-n','1']
+        started=time.monotonic()
         p=subprocess.Popen(argv,env=self.env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,cwd=self.rootfs)
         deadline=time.monotonic()+12
         while p.poll() is None:
             if time.monotonic()>deadline:p.kill();p.wait();raise RuntimeError('native boundary listener timeout')
             self.pump(0.005)
-        output=p.stdout.read();p.stdout.close()
+        output=p.stdout.read();p.stdout.close();self.listener_durations.append(time.monotonic()-started)
         with (self.out/'logs/commands.log').open('a') as f:f.write(json.dumps({'command':argv,'exit_code':p.returncode,'output':output})+'\n')
         match=re.search(r'\btimestamp:\s*(\d+)',output)
         if p.returncode or not match:raise RuntimeError('native phase boundary timestamp missing')
@@ -401,6 +412,157 @@ class Experiment:
             staged=self.state('raptor','stage',*values)
         self.event('p2_treatment',treatment=name,parameters=shown,staged_values=self.cfg['p2']['nstar_memory']['values'] if staged else None)
         self.checks['p2_treatment']='PASS'
+
+    # ---- P3: RAPTOR memory lifecycle -------------------------------------------------------------------------------
+    def p3_motion(self,t):
+        """D3 classic motion at time t [s] after the N->C request: (path s, speed v, accel a, yaw change, yaw rate) along
+        one trapezoid; yaw turns in proportion to the path. Zero for conditions without motion. Pure function of cfg."""
+        m=self.cfg['p3_condition_spec'].get('motion')
+        if not m:return 0.,0.,0.,0.,0.
+        d,vm,am=float(m['distance_m']),float(m['speed_m_s']),float(m['accel_m_s2'])
+        ta=min(vm/am,(d/am)**.5);vp=am*ta;tc=(d-am*ta*ta)/vp;total=2*ta+tc;tau=t-float(m['start_after_s'])
+        if tau<=0:s,v,a=0.,0.,0.
+        elif tau>=total:s,v,a=d,0.,0.
+        elif tau<ta:s,v,a=.5*am*tau*tau,am*tau,am
+        elif tau<ta+tc:s,v,a=.5*am*ta*ta+vp*(tau-ta),vp,0.
+        else:r=total-tau;s,v,a=d-.5*am*r*r,am*r,-am
+        k=math.radians(float(m['yaw_change_deg']))/d
+        return s,v,a,k*s,k*v
+
+    def p3_motion_end(self,origin):
+        m=self.cfg['p3_condition_spec'].get('motion')
+        if not m:return list(origin)
+        return [origin[i]+float(m['axis_ned'][i])*float(m['distance_m']) for i in range(3)]
+
+    def start_p3_stream(self,origin,yaw):
+        # One stationary OFFBOARD/RAPTOR-external trajectory_setpoint; during D3 it follows p3_motion from p3_motion_t0.
+        period=self.cfg['p3']['sequence']['setpoint_period_s'];m=self.cfg['p3_condition_spec'].get('motion') or {}
+        axis=[float(x) for x in m.get('axis_ned',[0.,0.,0.])]
+        state={'last':0.,'count':0,'origin':origin,'yaw':yaw};self.stream_state=state;self.p3_motion_t0=None
+        def publish():
+            now=time.monotonic()
+            if now-state['last']<period:return
+            s,v,a,dyaw,rate=(0.,)*5 if self.p3_motion_t0 is None else self.p3_motion(now-self.p3_motion_t0)
+            stamp=int(time.time()*1e6)
+            off=self.msgs.OffboardControlMode();off.timestamp=stamp;off.position=True;self.offpub.publish(off)
+            traj=self.msgs.TrajectorySetpoint();traj.timestamp=stamp
+            traj.position=[origin[i]+axis[i]*s for i in range(3)];traj.velocity=[axis[i]*v for i in range(3)]
+            traj.acceleration=[axis[i]*a for i in range(3)];traj.yaw=math.atan2(math.sin(yaw+dyaw),math.cos(yaw+dyaw));traj.yawspeed=rate
+            self.trajpub.publish(traj)
+            state['last']=now;state['count']+=1;state['last_position']=list(map(float,traj.position));state['last_velocity']=list(map(float,traj.velocity));state['last_yaw']=float(traj.yaw)
+        self.stream=publish
+        self.event('p3_reference_started',origin_ned_m=origin,yaw_rad=yaw,period_s=period)
+
+    def p3_phase(self,duration,label):
+        # Native-time phase that keeps the reference stream publishing (no blocking listener while streaming).
+        bound=self.native_bound_streaming if self.stream else self.native_phase_end_bound
+        start=bound();self.event('p3_phase_started',label=label,duration_s=duration,px4_start_us=start);t0=time.monotonic()
+        while time.monotonic()<t0+3*duration+15:
+            if time.monotonic()-t0<duration:self.pump(0.01);continue
+            end=bound()
+            if end-start>=duration*1e6:self.event('p3_phase_ended',label=label,px4_end_us=end);return
+            self.pump(0.02)
+        raise TimeoutError('native simulation phase duration '+label)
+
+    def read_research_parameters(self):
+        shown={}
+        for name in ['MC_RAPTOR_RINI','MC_RAPTOR_NCO','MC_RAPTOR_RSH']:
+            text=self.command('param','show',name);match=re.search(name+r'\s*\[[^\]]*\]\s*:\s*(-?\d+)',text)
+            if not match:raise RuntimeError('parameter readback failed: '+name+': '+text)
+            shown[name]=int(match.group(1))
+        return shown
+
+    def p3_parameters(self,rini,label):
+        self.command('param','set','MC_RAPTOR_RINI',str(rini));self.command('param','set','MC_RAPTOR_NCO','0')
+        shown=self.read_research_parameters()
+        if shown!={'MC_RAPTOR_RINI':rini,'MC_RAPTOR_NCO':0,'MC_RAPTOR_RSH':1}:raise RuntimeError(f'P3 parameters not applied ({label}): {shown}')
+        self.event('p3_parameters',label=label,treatment=self.cfg['p3_treatment'],parameters=shown)
+
+    def raptor_capture_target(self):
+        # RAPTOR's exact activation capture: position from the state read, yaw from its own capture message.
+        values=self.state('raptor','read')['values'];position=[float(v) for v in values[20:23]]
+        text=(self.out/'logs/px4.log').read_text(errors='replace')
+        found=re.findall(r'trajectory_setpoint (?:turned stale|reset due to activation) at: (\S+) (\S+) (\S+), yaw: (\S+)',text)
+        if not found:raise RuntimeError('RAPTOR capture message missing in px4.log')
+        x,y,z,yaw=[float(v) for v in found[-1]]
+        if max(abs(a-b) for a,b in zip(position,[x,y,z]))>1e-4:raise RuntimeError(f'RAPTOR capture message {found[-1]} differs from state read {position}')
+        return position,yaw,'raptor state values[20:23]; yaw from RAPTOR capture message'
+
+    def send_mode(self,mode):
+        # Non-blocking NAV_SET request; the caller checks acknowledgement and nav_state.
+        msg=self.msgs.VehicleCommand();msg.timestamp=int(time.time()*1e6);msg.command=100001;msg.param1=float(mode)
+        msg.target_system=self.instance+1;msg.target_component=1;msg.source_system=245;msg.source_component=191;msg.from_external=True
+        start=len(self.acks);self.event('command_requested',command=100001,params={'param1':mode})
+        sent=time.monotonic();self.cmdpub.publish(msg);return start,sent
+
+    def mode_progress(self,start,mode,state):
+        if not state.get('acked'):
+            ack=next((a for a in self.acks[start:] if a.command==100001),None)
+            if ack is not None:
+                if ack.result!=0:raise RuntimeError(f'command 100001 rejected: {ack.result}')
+                state['acked']=True
+        if not state.get('confirmed') and self.latest['vehicle_status'].nav_state==mode:
+            state['confirmed']=True;self.event('mode_confirmed',mode=mode,px4_timestamp=int(self.latest['vehicle_status'].timestamp))
+        return state.get('acked') and state.get('confirmed')
+
+    def p3_c_to_n(self,mode,subject,iteration,bound=None):
+        if bound is None:bound=self.native_bound_streaming()
+        self.stop_stream()
+        self.event('p3_trigger',subject=subject,end_bound_px4_us=bound,condition=self.cfg['p3_condition'],treatment=self.cfg['p3_treatment'])
+        self.event('handover_requested',end_bound_px4_us=bound,from_controller='C',to_controller='N',iteration=iteration,subject=True)
+        self.mode(mode);self.wait_raptor_active();self.capture_states('neural_after_entry')
+
+    def p3_deactivation(self,mode,origin):
+        seq=self.cfg['p3']['sequence'];spec=self.cfg['p3_condition_spec'];offboard=self.msgs.VehicleStatus.NAVIGATION_STATE_OFFBOARD
+        if spec.get('motion'):
+            end=self.p3_motion_end(origin);limit=self.cfg['safety_radius_m']-self.cfg['p3']['safety_check']['radius_margin_m']
+            radius=max(math.hypot(origin[0],origin[1]),math.hypot(end[0],end[1]))
+            self.event('p3_motion_check',origin_ned_m=origin,end_ned_m=end,max_planned_radius_m=radius,limit_m=limit)
+            if radius>limit:raise RuntimeError(f'D3 motion would leave the safety radius margin: {radius:.2f} m > {limit:.2f} m')
+        bound=self.native_bound_streaming()
+        self.event('p3_trigger',subject='N_to_C',end_bound_px4_us=bound,condition=self.cfg['p3_condition'],treatment=self.cfg['p3_treatment'])
+        self.event('handover_requested',end_bound_px4_us=bound,from_controller='N',to_controller='C',iteration=1,subject=True)
+        start,t0=self.send_mode(offboard)
+        if spec.get('motion'):self.p3_motion_t0=t0
+        deadline=t0+float(spec['deactivation_s']);lead=max(seq['listener_lead_min_s'],1.5*max(self.listener_durations or [0.]));state={}
+        # The acknowledgement gates the second request; the DDS nav_state echo (~0.2 s) is recorded when seen and
+        # the actual ownership order is checked from the ULog.
+        while not (self.mode_progress(start,offboard,state) or state.get('acked')) or time.monotonic()<deadline-lead:
+            if time.monotonic()>t0+5 and not state.get('acked'):raise TimeoutError('N->C OFFBOARD not acknowledged')
+            self.pump(0.002)
+        bound=self.native_bound_streaming()
+        while time.monotonic()<deadline:self.pump(0.002);self.mode_progress(start,offboard,state)
+        if not state.get('confirmed'):
+            self.mode_progress(start,offboard,state)
+            if not state.get('confirmed'):self.event('p3_nav_state_echo_pending',mode=offboard)
+        self.event('p3_deactivation_request',requested_s=float(spec['deactivation_s']),listener_lead_s=lead,
+                   since_n_to_c_request_s=time.monotonic()-t0,stream_last_position_ned_m=self.stream_state.get('last_position'),stream_last_yaw_rad=self.stream_state.get('last_yaw'))
+        self.p3_c_to_n(mode,'second_C_to_N',2,bound=bound)
+
+    def p3_flight(self,mode):
+        seq=self.cfg['p3']['sequence'];spec=self.cfg['p3_condition_spec'];baseline=self.args.kind=='p3_baseline_raptor'
+        origin,yaw,source=self.classic_target()
+        self.event('p3_reference_origin',stage='classic_hold',source=source,origin_ned_m=origin,yaw_rad=yaw)
+        self.start_p3_stream(origin,yaw);self.pump(seq['offboard_prestream_s'])
+        self.mode(self.msgs.VehicleStatus.NAVIGATION_STATE_OFFBOARD)
+        self.p3_phase(seq['classic_hold_s'],'classic_offboard_hold')
+        self.p3_c_to_n(mode,'first_C_to_N',0)
+        self.p3_phase(seq['treatment_parameter_after_entry_s'],'neural_first_entry')
+        self.p3_parameters(int(self.cfg['p3_treatment_parameters']['rini']),'treatment')
+        origin,yaw,source=self.raptor_capture_target()
+        self.event('p3_reference_origin',stage='raptor_hold',source=source,origin_ned_m=origin,yaw_rad=yaw)
+        self.start_p3_stream(origin,yaw)
+        self.p3_phase(seq['neural_s']-seq['treatment_parameter_after_entry_s'],'neural_hold')
+        if baseline:
+            self.p3_phase(float(spec['deactivation_s']),'neural_continued')
+            bound=self.native_bound_streaming();self.stop_stream()
+            self.event('p3_trigger',subject='baseline_recapture',end_bound_px4_us=bound,condition=self.cfg['p3_condition'],treatment=self.cfg['p3_treatment'])
+        else:self.p3_deactivation(mode,origin)
+        self.p3_phase(seq['post_handover_s'],'post_event')
+        self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='N',to_controller='C',iteration=3,subject=False)
+        self.mode(4);self.capture_states('classic_after_entry')
+        self.p3_phase(seq['return_hold_s'],'return_classic')
+        self.checks['p3_sequence']='PASS'
 
     def crash_probe(self):
         # Infrastructure probe only: forced disarm in the air, free fall to the ground, then normal cleanup.
@@ -601,6 +763,7 @@ class Experiment:
         self.pump(4)
         if self.variant=='raptor':self.state_contract()
         if self.args.kind in P2_TREATMENT_KINDS:self.apply_treatment()
+        if self.args.kind in P3_TREATMENT_KINDS:self.p3_parameters(0,'before_arming')
         self.ros_command(400,param1=1)
         self.safe=True
         self.ros_command(22,param4=None,param5=None,param6=None,param7=None)
@@ -610,6 +773,7 @@ class Experiment:
         if self.args.kind=='p2_crash_probe':
             self.crash_probe();return
         if self.args.kind.startswith(('p1_','p2_')):self.p1_flight(mode)
+        elif self.args.kind.startswith('p3_'):self.p3_flight(mode)
         elif self.variant=='raptor':
             count=self.cfg['repetitions'] if self.args.kind=='repeated_handover' else 1
             for iteration in range(count):
@@ -702,7 +866,7 @@ def main():
     p.add_argument('--startup-only',action='store_true',help='Preparation cold start; readiness only, never arm')
     p.add_argument('--output',type=Path);p.add_argument('--hover-s',type=float)
     p.add_argument('--condition',help='P1/P2 pre-handover motion condition (config p1.conditions / p2.conditions)')
-    p.add_argument('--treatment',help='P2 treatment (config p2.treatments): N0 N1 N2g N2 N2s Nstar for p2_c_to_n, C0 C2 for p2_n_to_c, B for baselines')
+    p.add_argument('--treatment',help='P2 treatment (config p2.treatments): N0 N1 N2g N2 N2s Nstar for p2_c_to_n, C0 C2 for p2_n_to_c, B for baselines; P3: N0 N3 N2s N2 for p3_sequence (conditions D1 D2 D3), B for p3_baseline_raptor (condition R)')
     args=p.parse_args();e=Experiment(args);status='FAIL';reason=None
     try:
         e.execute();status='PASS'

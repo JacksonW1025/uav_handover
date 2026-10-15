@@ -42,7 +42,8 @@ def gru_at(m,offsets):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('batch',type=Path);args=p.parse_args()
     batch=args.batch.resolve();results=json.loads((batch/'results.json').read_text());plan=json.loads((batch/'plan.json').read_text())
-    exploration=plan.get('mode')=='exploration';runs=[];metrics={}
+    # Flight failures are results in exploration batches and in standard batches pre-registered that way.
+    exploration=plan.get('mode')=='exploration' or bool(plan.get('flight_failures_are_results'));runs=[];metrics={}
     for r in results['runs']:
         run=ROOT/r['directory']
         if r['status']=='NOT_RUN' or not run.exists():continue

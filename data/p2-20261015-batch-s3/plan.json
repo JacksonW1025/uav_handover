@@ -1,0 +1,285 @@
+{
+  "created_at": "2026-10-15T02:43:49.354464+08:00",
+  "host": {
+    "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+    "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+    "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+  },
+  "purpose": "P2 step 2 (S3, 1.0 m/s): N0/N1/N2 x5 plus N2g x5 (step-1 best N2 is already in the set; N2g separates the GRU part) and the speed-matched RAPTOR S3 baseline x5 (1.05 m/s command, capture 1.00-1.04 m/s). Exploratory budget.",
+  "config": "config/p2.json",
+  "output_chain_gate": {
+    "p99_us": 4000,
+    "max_us": 12000,
+    "longest_over_target_steps": 2,
+    "overwritten_fraction": 0.001,
+    "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+  },
+  "candidate": "candidate.json",
+  "mode": "standard",
+  "groups": [
+    {
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N0",
+      "n": 5,
+      "config": "config/p2.json"
+    },
+    {
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N1",
+      "n": 5,
+      "config": "config/p2.json"
+    },
+    {
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2",
+      "n": 5,
+      "config": "config/p2.json"
+    },
+    {
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2g",
+      "n": 5,
+      "config": "config/p2.json"
+    },
+    {
+      "kind": "p2_baseline_raptor",
+      "condition": "S3",
+      "treatment": "B",
+      "n": 5,
+      "config": "config/p2.json"
+    }
+  ],
+  "order": "repetitions interleave the groups",
+  "stop_rule": "Any failed check stops the batch for diagnosis; remaining runs stay NOT_RUN; nothing is re-run in place.",
+  "runs": [
+    {
+      "id": "S3-c_to_n-N0-1",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N0",
+      "config": "config/p2.json",
+      "repetition": 1,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N0-1"
+    },
+    {
+      "id": "S3-c_to_n-N1-1",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N1",
+      "config": "config/p2.json",
+      "repetition": 1,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N1-1"
+    },
+    {
+      "id": "S3-c_to_n-N2-1",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2",
+      "config": "config/p2.json",
+      "repetition": 1,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N2-1"
+    },
+    {
+      "id": "S3-c_to_n-N2g-1",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2g",
+      "config": "config/p2.json",
+      "repetition": 1,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N2g-1"
+    },
+    {
+      "id": "S3-baseline_raptor-B-1",
+      "kind": "p2_baseline_raptor",
+      "condition": "S3",
+      "treatment": "B",
+      "config": "config/p2.json",
+      "repetition": 1,
+      "directory": "data/p2-20261015-s3-S3-baseline_raptor-B-1"
+    },
+    {
+      "id": "S3-c_to_n-N0-2",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N0",
+      "config": "config/p2.json",
+      "repetition": 2,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N0-2"
+    },
+    {
+      "id": "S3-c_to_n-N1-2",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N1",
+      "config": "config/p2.json",
+      "repetition": 2,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N1-2"
+    },
+    {
+      "id": "S3-c_to_n-N2-2",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2",
+      "config": "config/p2.json",
+      "repetition": 2,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N2-2"
+    },
+    {
+      "id": "S3-c_to_n-N2g-2",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2g",
+      "config": "config/p2.json",
+      "repetition": 2,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N2g-2"
+    },
+    {
+      "id": "S3-baseline_raptor-B-2",
+      "kind": "p2_baseline_raptor",
+      "condition": "S3",
+      "treatment": "B",
+      "config": "config/p2.json",
+      "repetition": 2,
+      "directory": "data/p2-20261015-s3-S3-baseline_raptor-B-2"
+    },
+    {
+      "id": "S3-c_to_n-N0-3",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N0",
+      "config": "config/p2.json",
+      "repetition": 3,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N0-3"
+    },
+    {
+      "id": "S3-c_to_n-N1-3",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N1",
+      "config": "config/p2.json",
+      "repetition": 3,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N1-3"
+    },
+    {
+      "id": "S3-c_to_n-N2-3",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2",
+      "config": "config/p2.json",
+      "repetition": 3,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N2-3"
+    },
+    {
+      "id": "S3-c_to_n-N2g-3",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2g",
+      "config": "config/p2.json",
+      "repetition": 3,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N2g-3"
+    },
+    {
+      "id": "S3-baseline_raptor-B-3",
+      "kind": "p2_baseline_raptor",
+      "condition": "S3",
+      "treatment": "B",
+      "config": "config/p2.json",
+      "repetition": 3,
+      "directory": "data/p2-20261015-s3-S3-baseline_raptor-B-3"
+    },
+    {
+      "id": "S3-c_to_n-N0-4",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N0",
+      "config": "config/p2.json",
+      "repetition": 4,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N0-4"
+    },
+    {
+      "id": "S3-c_to_n-N1-4",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N1",
+      "config": "config/p2.json",
+      "repetition": 4,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N1-4"
+    },
+    {
+      "id": "S3-c_to_n-N2-4",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2",
+      "config": "config/p2.json",
+      "repetition": 4,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N2-4"
+    },
+    {
+      "id": "S3-c_to_n-N2g-4",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2g",
+      "config": "config/p2.json",
+      "repetition": 4,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N2g-4"
+    },
+    {
+      "id": "S3-baseline_raptor-B-4",
+      "kind": "p2_baseline_raptor",
+      "condition": "S3",
+      "treatment": "B",
+      "config": "config/p2.json",
+      "repetition": 4,
+      "directory": "data/p2-20261015-s3-S3-baseline_raptor-B-4"
+    },
+    {
+      "id": "S3-c_to_n-N0-5",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N0",
+      "config": "config/p2.json",
+      "repetition": 5,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N0-5"
+    },
+    {
+      "id": "S3-c_to_n-N1-5",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N1",
+      "config": "config/p2.json",
+      "repetition": 5,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N1-5"
+    },
+    {
+      "id": "S3-c_to_n-N2-5",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2",
+      "config": "config/p2.json",
+      "repetition": 5,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N2-5"
+    },
+    {
+      "id": "S3-c_to_n-N2g-5",
+      "kind": "p2_c_to_n",
+      "condition": "S3",
+      "treatment": "N2g",
+      "config": "config/p2.json",
+      "repetition": 5,
+      "directory": "data/p2-20261015-s3-S3-c_to_n-N2g-5"
+    },
+    {
+      "id": "S3-baseline_raptor-B-5",
+      "kind": "p2_baseline_raptor",
+      "condition": "S3",
+      "treatment": "B",
+      "config": "config/p2.json",
+      "repetition": 5,
+      "directory": "data/p2-20261015-s3-S3-baseline_raptor-B-5"
+    }
+  ]
+}

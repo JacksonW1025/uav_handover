@@ -120,16 +120,19 @@ def main():
     p.add_argument('--groups',help='KIND:CONDITION:TREATMENT:N[@CONFIG],... (standard mode)')
     p.add_argument('--config',default='config/p2.json');p.add_argument('--purpose',required=True)
     p.add_argument('--exploration',action='store_true');p.add_argument('--best-treatment',help='exploration: best step-1 treatment')
+    p.add_argument('--flight-failures-are-results',action='store_true',help='standard mode: a pre-registered flight failure with sound infrastructure is recorded, not a stop')
     args=p.parse_args();out=args.output.resolve();out.mkdir(parents=True,exist_ok=False)
     candidate=identity();write(out/'candidate.json',candidate);write(out/'host.json',host_state())
     doc={'created_at':now(),'host':HOST,'purpose':args.purpose,'config':args.config,'output_chain_gate':GATE,'candidate':'candidate.json'}
     if not args.exploration:
         groups=parse_groups(args.groups,args.config);plan=build_plan(args.prefix,groups)
         doc.update({'mode':'standard','groups':groups,'order':'repetitions interleave the groups',
-            'stop_rule':'Any failed check stops the batch for diagnosis; remaining runs stay NOT_RUN; nothing is re-run in place.',
+            'stop_rule':('Pre-registered flight failures (config p2.exploration.failure_criteria) with all infrastructure checks passing are recorded as results and do not stop the batch; any other failed check stops it. Remaining runs stay NOT_RUN; nothing is re-run in place.'
+                if args.flight_failures_are_results else 'Any failed check stops the batch for diagnosis; remaining runs stay NOT_RUN; nothing is re-run in place.'),
+            'flight_failures_are_results':args.flight_failures_are_results,
             'runs':[{k:r[k] for k in ['id','kind','condition','treatment','config','repetition','directory']} for r in plan]})
         write(out/'plan.json',doc)
-        failed=execute(plan,out,candidate)
+        failed=execute(plan,out,candidate,exploration=args.flight_failures_are_results)
     else:
         if not args.best_treatment:p.error('--best-treatment required for exploration')
         cfg=json.loads((ROOT/args.config).read_text())['p2']['exploration']

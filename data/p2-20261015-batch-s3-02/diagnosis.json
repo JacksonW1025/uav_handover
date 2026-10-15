@@ -1,0 +1,11 @@
+{
+  "batch": "data/p2-20261015-batch-s3-02",
+  "status": "FAIL: stopped at run 1 of 25 (S3-c_to_n-N0-1); 24 NOT_RUN; retained unchanged",
+  "failed_check": "runner DDS reconnection check: XRCE Agent did not exit within 5 s after SIGINT; stopped before arming, no treatment, no flight.",
+  "diagnosis": "Launch error, not an infrastructure or candidate fault: chain-03/chain-04 were started as an asynchronous job of a non-interactive shell (\"( script & )\"). Such jobs start with SIGINT ignored (bash, no job control), and the disposition is inherited by every child, so the runner's SIGINT to the XRCE Agent for the DDS reconnection check had no effect and the 5 s check failed as designed. Earlier batches were launched by the session background mechanism and were unaffected. Reproduced: a directly started Agent exits 3 ms after SIGINT; a process started as \"( cmd & )\" shows SigIgn bit 2 (SIGINT) set.",
+  "diagnosis_revised": "The first diagnosis of batch-s3 (random Agent shutdown event) is superseded by this cause; batch-s3-02 reproduced it immediately.",
+  "actions": [
+    "both batches retained as FAIL records; check not relaxed; nothing re-run in place",
+    "S3 repeated as a new complete batch data/p2-20261015-batch-s3-03, launched through the session background mechanism (SIGINT not ignored); the launch shell signal mask is recorded"
+  ]
+}

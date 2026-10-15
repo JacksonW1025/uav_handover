@@ -30,6 +30,14 @@ def host_state():
         'loadavg':read('/proc/loadavg'),'affinity':HOST.get('cpu_affinity'),
         'remote_desktop_session_running':bool(subprocess.run(['pgrep','-x','ToDesk_Session'],capture_output=True).stdout.strip())}
 
+ABORT_ONLY_CHAIN_ERRORS={'missing overwrite counter'}
+def chain_errors(oc,aborted):
+    """Output-chain gate errors. After a runner safety abort the log ends while RAPTOR still owns the motors, so the
+    last neural interval cannot be bracketed by a later cumulative row; only that bracketing error is attributed to the
+    abort (all age, completeness and consecutive-step checks still apply to the measured steps)."""
+    errors=chain_gate(oc) if oc else ['missing output-chain.json']
+    return [e for e in errors if not (aborted and e in ABORT_ONLY_CHAIN_ERRORS)],[e for e in errors if aborted and e in ABORT_ONLY_CHAIN_ERRORS]
+
 def now():return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).isoformat()
 
 def parse_groups(text,default_config):
@@ -79,7 +87,8 @@ def run_one(row,out):
         trace=json.loads((run/'preparation-trace.json').read_text()) if (run/'preparation-trace.json').exists() else {}
         infra['trace']=row['trace_exit_code']==0 and trace.get('status')=='MEASURED'
         oc=json.loads((run/'output-chain.json').read_text()) if (run/'output-chain.json').exists() else {}
-        row['output_chain_errors']=chain_gate(oc) if oc else ['missing output-chain.json']
+        aborted=bool(row.get('reason') and row['reason'].startswith('safety:'))
+        row['output_chain_errors'],row['output_chain_errors_attributed_to_abort']=chain_errors(oc,aborted)
         infra['output_chain']=row['output_chain_exit_code']==0 and not row['output_chain_errors']
         row['output_chain_max_age_us']=max(((v.get('neural',{}).get('applied_age_us') or {}).get('max') or 0) for v in oc.get('motors',{}).values()) if oc else None
         if 'p1_exit_code' in row:

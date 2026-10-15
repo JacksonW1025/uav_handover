@@ -13,6 +13,7 @@ import numpy as np
 from preparation_audit import flight
 from p0_closure import GATE
 from p1_batch import chain_gate
+from p2_batch import chain_errors
 from p1_audit import row_of
 import p1_metrics,p2_metrics
 ROOT=Path(__file__).resolve().parents[1]
@@ -49,7 +50,8 @@ def main():
         if r['status']=='NOT_RUN' or not run.exists():continue
         a={'id':r['id'],'kind':r['kind'],'condition':r['condition'],'treatment':r['treatment'],**flight(run,r['kind'])}
         oc=json.loads((run/'output-chain.json').read_text()) if (run/'output-chain.json').exists() else {}
-        a['output_chain_gate_errors']=chain_gate(oc) if oc else ['missing']
+        v=json.loads((run/'validation.json').read_text()) if (run/'validation.json').exists() else {}
+        a['output_chain_gate_errors'],a['output_chain_errors_attributed_to_abort']=chain_errors(oc,str(v.get('reason') or '').startswith('safety:'))
         a['output_chain_counts']={'steps':sum(v['neural']['steps'] for v in oc.get('motors',{}).values()),
             'overwritten':sum(v['neural']['commands_overwritten_in_gazebo'] for v in oc.get('motors',{}).values())+4*(oc.get('px4_overwritten_publications',{}).get('neural_bracketed') or 0),
             'max_applied_age_us':max((v['neural'].get('applied_age_us') or {}).get('max') or 0 for v in oc.get('motors',{}).values())} if oc else None

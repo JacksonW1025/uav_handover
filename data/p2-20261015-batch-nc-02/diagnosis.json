@@ -1,0 +1,13 @@
+{
+  "batch": "data/p2-20261015-batch-nc-02",
+  "status": "FAIL: stopped at run 10 of 13 (S3-n_to_c-C0-4); 3 NOT_RUN; retained unchanged",
+  "failed_check": "output-chain gate during the RAPTOR phase before the handover: maximum applied age 16 ms (gate 12 ms) and 4 consecutive over-target steps (gate 2) on all four motors; p99 4 ms; 6 of 3610 steps over target. The flight itself, the handover and the P2 measurement were normal.",
+  "results_before_stop": "C0 x3 accepted, C2 x3 (2 accepted, 1 pre-registered flight failure recorded as result: no joint recovery), classic baseline x3 accepted",
+  "evidence": "host CPU 8-10% with a 3 s burst to 16-17% during the run; desktop applications of the user session (VS Code, ChatGPT app, a WebKit process) were each using about 6-7% CPU and were not confined away from the experiment cores",
+  "diagnosis": "Host scheduling tail event (same class as P1 batch-01), not a code or controller problem.",
+  "actions": [
+    "batch retained as FAIL record; gate not relaxed; nothing re-run in place",
+    "all processes of the user session confined to CPUs 0-3 with taskset (experiment cores 4-13 stay free for runner, Agent, PX4, Gazebo); reversible, resets when the applications restart",
+    "N->C repeated as a new complete batch data/p2-20261015-batch-nc-03 with the same rule (flight failures are results)"
+  ]
+}

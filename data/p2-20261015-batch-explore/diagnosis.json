@@ -1,0 +1,14 @@
+{
+  "batch": "data/p2-20261015-batch-explore",
+  "status": "FAIL: stopped at run 6 (X2.0-c_to_n-N0-1); retained unchanged",
+  "completed": "X1.5: C->N N0 x3 and RAPTOR baseline x2, all accepted, no flight failure",
+  "stopping_run": {
+    "outcome": "pre-registered flight failure: tilt >= 45 deg (runner safety abort \"flight envelope exceeded\") about 0.5 s after RAPTOR took over at 2.0 m/s; no joint recovery",
+    "why_it_stopped": "misclassified as an infrastructure failure: the output-chain overwrite counter brackets each neural interval with a later cumulative row; after the abort the log ended while RAPTOR still owned the motors, so the final interval could not be bracketed (\"missing overwrite counter\"). The measured 119 neural steps per motor had maximum age 8 ms and at most 1 consecutive over-target step. PX4 exit 0, no crash markers, trace MEASURED, P2 metrics MEASURED."
+  },
+  "fix": "tools/p2_batch.py and tools/p2_audit.py attribute only that bracketing error to a runner safety abort; every other output-chain check (age, completeness, consecutive steps, partial traces) still applies. No threshold changed.",
+  "actions": [
+    "batch retained as FAIL record; nothing re-run in place; no splicing",
+    "exploration repeated from 1.5 m/s as a new complete batch data/p2-20261015-batch-explore-02 with the same pre-registered levels, criteria and best treatment (N2)"
+  ]
+}

@@ -65,6 +65,7 @@ def run_one(row,out):
     command=[str(ROOT/'tools/experiment'),row['kind'],'--config',str(ROOT/row['config']),'--output',str(ROOT/row['directory'])]
     if row['condition']:command+=['--condition',row['condition']]
     if row['treatment']:command+=['--treatment',row['treatment']]
+    command+=row.get('extra_args',[])  # P4: pre-registered independent run conditions (seed, heading)
     row['command']=command;row['started_at']=now()
     env=dict(os.environ,HANDOVER_CPU_AFFINITY=HOST['cpu_affinity']) if HOST.get('cpu_affinity') else None
     with (out/(row['id']+'.log')).open('w') as log:code=subprocess.run(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,env=env).returncode

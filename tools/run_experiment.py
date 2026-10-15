@@ -76,6 +76,10 @@ class Experiment:
             self.cfg['p3_condition']=args.condition;self.cfg['p3_condition_spec']=spec
             self.cfg['p3_treatment']=args.treatment;self.cfg['p3_treatment_parameters']=p3['treatments'][args.treatment]
         elif args.condition or args.treatment:raise RuntimeError('--condition/--treatment apply only to P1/P2/P3 flight kinds')
+        # P4 independent run conditions: Gazebo seed and initial heading, pre-registered by the batch and recorded.
+        self.sim_seed=args.sim_seed;self.initial_yaw_deg=args.initial_yaw_deg
+        if self.sim_seed is not None or self.initial_yaw_deg is not None:
+            self.cfg['p4_independence']={'sim_seed':self.sim_seed,'initial_yaw_deg':self.initial_yaw_deg}
         self.variant='classic' if args.kind=='classic_hover' else 'raptor'
         if os.environ.get('HANDOVER_VARIANT')!=self.variant:raise RuntimeError('use tools/experiment to select the correct overlay')
         self.out=(args.output or ROOT/'data'/(dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).strftime('%Y%m%dT%H%M%S')+'-'+args.kind+'-'+uuid.uuid4().hex[:6])).resolve()
@@ -99,7 +103,7 @@ class Experiment:
                       PX4_GZ_MODELS=str(self.source/'Tools/simulation/gz/models'),
                       PX4_GZ_WORLDS=str(self.source/'Tools/simulation/gz/worlds'),
                       GZ_SIM_SERVER_CONFIG_PATH=str(self.source/'Tools/simulation/gz/server.config'),
-                      PX4_GZ_MODEL_POSE='0,0,0,0,0,0',PX4_UXRCE_DDS_NS='',
+                      PX4_GZ_MODEL_POSE='0,0,0,0,0,'+(f'{math.radians(self.initial_yaw_deg):.9f}' if self.initial_yaw_deg is not None else '0'),PX4_UXRCE_DDS_NS='',
                       ROS_DOMAIN_ID=str(self.cfg['ros_domain_id']),PX4_UXRCE_DDS_PORT=str(self.cfg['agent_port']),
                       PX4_PARAM_NAV_DLL_ACT='0',PX4_PARAM_COM_RC_IN_MODE='4',
                       PX4_PARAM_MIS_TAKEOFF_ALT=str(self.cfg['altitude_m']),
@@ -127,7 +131,7 @@ class Experiment:
         self.source_extra_hashes={name:digest(self.source/name) for name in source_extra if name and (self.source/name).is_file()}
         self.metadata={'experiment_type':args.kind,'startup_only':self.startup_only,'capture_raw_sensors':args.capture_raw_sensors,'variant':self.variant,'created_at':dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).isoformat(),
                        'seed':self.cfg['seed'],'seed_scope':'recorded; Gazebo/PX4 do not expose a verified universal seed',
-                       'initial_pose':'0,0,0,0,0,0','source_commit':subprocess.check_output(['git','-C',str(self.source),'rev-parse','HEAD'],text=True).strip(),
+                       'initial_pose':self.env['PX4_GZ_MODEL_POSE'],'sim_seed':self.sim_seed,'initial_yaw_deg':self.initial_yaw_deg,'source_commit':subprocess.check_output(['git','-C',str(self.source),'rev-parse','HEAD'],text=True).strip(),
                        'project_commit':subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD'],text=True).strip(),
                        'experiment_code_sha256':{str(p.relative_to(ROOT)):digest(p) for p in sorted((ROOT/'tools').glob('*.py'))},
                        'config_sha256':digest(self.out/'config.json'),
@@ -314,7 +318,17 @@ class Experiment:
         tau=total-t;return sign*(d-.5*am*tau*tau),sign*am*tau,-sign*am,total
 
     def profile_duration(self):
-        p=Experiment.profile_cfg(self);return Experiment.reposition(self,0.)[3]+p['reference_hold_s']+p['accel_s']+p['cruise_s']
+        p=Experiment.profile_cfg(self);decel=(self.cfg['p1_speed_m_s']-float(p['decel_to_m_s']))/float(p['decel_m_s2']) if p.get('decel_to_m_s') is not None else 0.
+        return Experiment.reposition(self,0.)[3]+p['reference_hold_s']+p['accel_s']+p['cruise_s']+decel
+
+    def planned_path_check(self,origin):
+        # P4: origin + planned path to the event point + braking allowance inside the safety radius margin (before moving).
+        p=Experiment.profile_cfg(self);c=p.get('planned_path_check')
+        if not c:return None
+        axis=[float(x) for x in p['motion_axis_ned']];s=Experiment.p1_profile(self,Experiment.profile_duration(self))[0]
+        end=[origin[i]+axis[i]*s for i in range(3)];radius=max(math.hypot(origin[0],origin[1]),math.hypot(end[0],end[1]))+float(c['braking_allowance_m'])
+        limit=self.cfg['safety_radius_m']-float(c['radius_margin_m'])
+        return {'origin_ned_m':origin,'event_point_ned_m':end,'path_m':s,'radius_with_allowance_m':radius,'limit_m':limit,'inside':radius<=limit}
 
     def p1_profile(self,t):
         # [Reposition,] hold, linear velocity ramp, cruise. Returns path length, speed, acceleration along the motion axis.
@@ -326,16 +340,17 @@ class Experiment:
         if t<hold:return s0,0.,0.
         if t<hold+acc:
             tau=t-hold;return s0+.5*v*tau*tau/acc,v*tau/acc,v/acc
-        return s0+.5*v*acc+v*(t-hold-acc),v,0.
+        vd=p.get('decel_to_m_s')
+        if vd is None or t<hold+acc+p['cruise_s']:return s0+.5*v*acc+v*(t-hold-acc),v,0.
+        # P4 M2: linear deceleration after the cruise down to decel_to_m_s (the event point), then that speed.
+        a=float(p['decel_m_s2']);td=(v-float(vd))/a;r=t-hold-acc-p['cruise_s'];tau=min(r,td)
+        return s0+.5*v*acc+v*p['cruise_s']+v*tau-.5*a*tau*tau+float(vd)*max(0.,r-td),v-a*tau,(-a if r<=td+1e-9 else 0.)
 
     def start_stream(self,origin,yaw,offboard):
         axis=[float(x) for x in self.profile_cfg()['motion_axis_ned']];period=self.profile_cfg()['setpoint_period_s']
         state={'last':0.,'count':0,'origin':origin,'yaw':yaw,'offboard':offboard}
         self.stream_t0=None;self.stream_state=state
-        def publish():
-            now=time.monotonic()
-            if now-state['last']<period:return
-            t=0. if self.stream_t0 is None else now-self.stream_t0
+        def emit(t):
             s,v,a=self.p1_profile(t);stamp=int(time.time()*1e6)
             if offboard:
                 off=self.msgs.OffboardControlMode();off.timestamp=stamp;off.position=True;self.offpub.publish(off)
@@ -343,8 +358,12 @@ class Experiment:
             traj.position=[origin[i]+axis[i]*s for i in range(3)];traj.velocity=[axis[i]*v for i in range(3)]
             traj.acceleration=[axis[i]*a for i in range(3)];traj.yaw=yaw;traj.yawspeed=0.
             self.trajpub.publish(traj)
-            state['last']=now;state['count']+=1;state['last_position']=list(map(float,traj.position));state['last_velocity']=list(map(float,traj.velocity))
-        self.stream=publish
+            state['count']+=1;state['last_position']=list(map(float,traj.position));state['last_velocity']=list(map(float,traj.velocity))
+        def publish():
+            now=time.monotonic()
+            if now-state['last']<period:return
+            emit(0. if self.stream_t0 is None else now-self.stream_t0);state['last']=now
+        self.stream=publish;self.stream_emit=emit
         self.event('p1_reference_started',origin_ned_m=origin,yaw_rad=yaw,offboard=offboard,axis_ned=axis,speed_m_s=self.cfg['p1_speed_m_s'],period_s=period)
 
     def stop_stream(self):
@@ -363,16 +382,30 @@ class Experiment:
             self.hover(self.cfg['neural_s'],'neural')
             origin,yaw,source=self.raptor_target()
         self.event('p1_reference_origin',source=source,origin_ned_m=origin,yaw_rad=yaw)
+        check=self.planned_path_check(origin)
+        if check is not None:
+            self.event('p4_planned_path_check',**check)
+            if not check['inside']:raise RuntimeError(f"planned path would leave the safety radius margin: {check['radius_with_allowance_m']:.2f} m > {check['limit_m']:.2f} m")
         self.start_stream(origin,yaw,classic_out)
         if classic_out:
             self.pump(p['offboard_prestream_s'])
             self.mode(self.msgs.VehicleStatus.NAVIGATION_STATE_OFFBOARD)
         total=self.profile_duration()
+        # P4 RAPTOR baselines: the stream ends `early` s (RAPTOR's setpoint timeout) before the event point, so RAPTOR
+        # captures at the event point; its last setpoint is the profile state `ahead` s after the stop (calibrated so the
+        # capture speed and acceleration match the C->N of the same condition).
+        early=float(p.get('raptor_baseline_stop_early_s') or 0.) if kind=='p1_baseline_raptor' else 0.
+        ahead=float(p.get('raptor_baseline_final_setpoint_ahead_s') or 0.) if early else 0.
         self.stream_t0=time.monotonic()
-        self.event('p1_profile_started',px4_bound_us=self.native_bound_streaming(),duration_s=total)
-        while time.monotonic()-self.stream_t0<total:self.pump(0.01)
+        self.event('p1_profile_started',px4_bound_us=self.native_bound_streaming(),duration_s=total,stop_early_s=early,final_setpoint_ahead_s=ahead)
+        while time.monotonic()-self.stream_t0<total-early:self.pump(0.01)
         # Measured event: native bound while streaming, stop the stream, then request at once.
-        bound=self.native_bound_streaming();self.stop_stream()
+        bound=self.native_bound_streaming()
+        if early:
+            self.stream_emit(total-early+ahead);s,v,a=self.p1_profile(total-early+ahead)
+            self.event('p4_final_setpoint',stop_early_s=early,ahead_s=ahead,profile_time_s=total-early+ahead,since_stream_start_s=time.monotonic()-self.stream_t0,
+                       position_ned_m=self.stream_state['last_position'],velocity_ned_m_s=self.stream_state['last_velocity'],acceleration_along_axis_m_s2=a)
+        self.stop_stream()
         subject={'p1_c_to_n':'C_to_N','p1_n_to_c':'N_to_C','p1_baseline_classic':'classic_brake','p1_baseline_raptor':'raptor_hold'}[kind]
         self.event('p1_trigger',subject=subject,condition=self.cfg['p1_condition'],speed_m_s=self.cfg['p1_speed_m_s'],end_bound_px4_us=bound,treatment=self.cfg.get('p2_treatment'))
         if kind=='p1_c_to_n':
@@ -419,6 +452,12 @@ class Experiment:
         one trapezoid; yaw turns in proportion to the path. Zero for conditions without motion. Pure function of cfg."""
         m=self.cfg['p3_condition_spec'].get('motion')
         if not m:return 0.,0.,0.,0.,0.
+        if m.get('type')=='ramp_cruise':
+            # P4 M3: after start_after_s a linear speed ramp over accel_s to speed_m_s, then cruise (no yaw change).
+            vm,ta=float(m['speed_m_s']),float(m['accel_s']);tau=t-float(m['start_after_s'])
+            if tau<=0:return 0.,0.,0.,0.,0.
+            if tau<ta:return .5*vm*tau*tau/ta,vm*tau/ta,vm/ta,0.,0.
+            return .5*vm*ta+vm*(tau-ta),vm,0.,0.,0.
         d,vm,am=float(m['distance_m']),float(m['speed_m_s']),float(m['accel_m_s2'])
         ta=min(vm/am,(d/am)**.5);vp=am*ta;tc=(d-am*ta*ta)/vp;total=2*ta+tc;tau=t-float(m['start_after_s'])
         if tau<=0:s,v,a=0.,0.,0.
@@ -432,7 +471,9 @@ class Experiment:
     def p3_motion_end(self,origin):
         m=self.cfg['p3_condition_spec'].get('motion')
         if not m:return list(origin)
-        return [origin[i]+float(m['axis_ned'][i])*float(m['distance_m']) for i in range(3)]
+        # ramp_cruise: planned position at the second C->N (deactivation_s after the N->C request).
+        d=Experiment.p3_motion(self,float(self.cfg['p3_condition_spec']['deactivation_s']))[0] if m.get('type')=='ramp_cruise' else float(m['distance_m'])
+        return [origin[i]+float(m['axis_ned'][i])*d for i in range(3)]
 
     def start_p3_stream(self,origin,yaw):
         # One stationary OFFBOARD/RAPTOR-external trajectory_setpoint; during D3 it follows p3_motion from p3_motion_t0.
@@ -516,8 +557,8 @@ class Experiment:
         seq=self.cfg['p3']['sequence'];spec=self.cfg['p3_condition_spec'];offboard=self.msgs.VehicleStatus.NAVIGATION_STATE_OFFBOARD
         if spec.get('motion'):
             end=self.p3_motion_end(origin);limit=self.cfg['safety_radius_m']-self.cfg['p3']['safety_check']['radius_margin_m']
-            radius=max(math.hypot(origin[0],origin[1]),math.hypot(end[0],end[1]))
-            self.event('p3_motion_check',origin_ned_m=origin,end_ned_m=end,max_planned_radius_m=radius,limit_m=limit)
+            radius=max(math.hypot(origin[0],origin[1]),math.hypot(end[0],end[1]))+float(spec['motion'].get('braking_allowance_m',0.))
+            self.event('p3_motion_check',origin_ned_m=origin,end_ned_m=end,max_planned_radius_m=radius,limit_m=limit,braking_allowance_m=spec['motion'].get('braking_allowance_m'))
             if radius>limit:raise RuntimeError(f'D3 motion would leave the safety radius margin: {radius:.2f} m > {limit:.2f} m')
         bound=self.native_bound_streaming()
         self.event('p3_trigger',subject='N_to_C',end_bound_px4_us=bound,condition=self.cfg['p3_condition'],treatment=self.cfg['p3_treatment'])
@@ -678,7 +719,7 @@ class Experiment:
         if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator','research_memory']
         (logging/'logger_topics.txt').write_text(''.join(n+' 0 0\n' for n in names)+(''.join(f'route_observability 0 {i}\n' for i in range(1,10)) if self.variant=='raptor' else ''))
         self.spawn('agent',[str(LAB/'scripts/MicroXRCEAgent'),'udp4','-p',str(self.cfg['agent_port']),'-v','4'])
-        self.spawn('gazebo',['gz','sim','-r','-s','-v','3',str(self.source/'Tools/simulation/gz/worlds/default.sdf')])
+        self.spawn('gazebo',['gz','sim','-r','-s','-v','3']+(['--seed',str(self.sim_seed)] if self.sim_seed is not None else [])+[str(self.source/'Tools/simulation/gz/worlds/default.sdf')])
         if self.args.capture_raw_sensors:
             self.spawn('gz-imu',['gz','topic','-e','-t',f'/world/default/model/x500_{self.instance}/link/base_link/sensor/imu_sensor/imu'])
             self.spawn('gz-pressure',['gz','topic','-e','-t',f'/world/default/model/x500_{self.instance}/link/base_link/sensor/air_pressure_sensor/air_pressure'])
@@ -865,6 +906,8 @@ def main():
     p.add_argument('--capture-raw-sensors',action='store_true',help='Diagnostic only: adds sensor subscribers and may change startup behavior')
     p.add_argument('--startup-only',action='store_true',help='Preparation cold start; readiness only, never arm')
     p.add_argument('--output',type=Path);p.add_argument('--hover-s',type=float)
+    p.add_argument('--sim-seed',type=int,help='P4: Gazebo random seed (gz sim --seed), recorded in config.json and metadata')
+    p.add_argument('--initial-yaw-deg',type=float,help='P4: initial heading of the spawned x500 (PX4_GZ_MODEL_POSE yaw), recorded')
     p.add_argument('--condition',help='P1/P2 pre-handover motion condition (config p1.conditions / p2.conditions)')
     p.add_argument('--treatment',help='P2 treatment (config p2.treatments): N0 N1 N2g N2 N2s Nstar for p2_c_to_n, C0 C2 for p2_n_to_c, B for baselines; P3: N0 N3 N2s N2 for p3_sequence (conditions D1 D2 D3), B for p3_baseline_raptor (condition R)')
     args=p.parse_args();e=Experiment(args);status='FAIL';reason=None

@@ -20,8 +20,9 @@ def inside(value,ref,t):
     lo,hi=min(ref),max(ref);w=max(t,(hi-lo)/2);return {'value':value,'reference_min':lo,'reference_max':hi,'allowed':[lo-w,hi+w],'inside':lo-w<=value<=hi+w}
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('batch',type=Path);a=p.parse_args()
-    batch=a.batch.resolve();spec=json.loads((ROOT/'config/p3.json').read_text())['p3']['equivalence'];tol=spec['metric_tolerance']
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('batch',type=Path)
+    p.add_argument('--config',default='config/p3.json',help='config whose p3.equivalence holds the criteria (P4: config/p4.json, identical criteria)');a=p.parse_args()
+    batch=a.batch.resolve();spec=json.loads((ROOT/a.config).read_text())['p3']['equivalence'];tol=spec['metric_tolerance']
     results=json.loads((batch/'results.json').read_text());out=[];ok=results.get('status')=='PASS' and results.get('complete')
     for r in results['runs']:
         run=ROOT/r['directory'];row={'id':r['id'],'kind':r['kind'],'treatment':r['treatment'],'accepted':bool(r.get('accepted')),'problems':[]}
@@ -42,7 +43,7 @@ def main():
         if row['evidence']['entry']!='VERIFIED' or row['evidence']['teacher_forcing']!='VERIFIED':row['problems'].append('P2 treatment evidence not VERIFIED')
         if row['evidence']['capture']!='activation_reset_hold' or not row['evidence']['capture_state_read_matches']:row['problems'].append('capture not activation_reset_hold with zero velocity')
         row['equivalent']=not row['problems'];ok=ok and row['equivalent'];out.append(row)
-    result={'batch':str(batch.relative_to(ROOT)),'criteria':spec,'runs':out,'equivalent':bool(ok)}
+    result={'batch':str(batch.relative_to(ROOT)),'criteria_config':a.config,'criteria':spec,'runs':out,'equivalent':bool(ok)}
     (batch/'equivalence.json').write_text(json.dumps(result,indent=2,ensure_ascii=False)+'\n');print('equivalent',ok)
     for r in out:print(r['id'],r['equivalent'],r['problems'])
     return 0 if ok else 1

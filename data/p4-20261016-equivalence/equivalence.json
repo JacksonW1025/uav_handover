@@ -1,0 +1,316 @@
+{
+  "batch": "data/p4-20261016-equivalence",
+  "criteria_config": "config/p4.json",
+  "criteria": {
+    "purpose": "New candidate (adds MC_RAPTOR_RINI=6 and the exit-memory store) must reproduce P2 S1 with the P2 kinds and config before P3.",
+    "groups": "p2_c_to_n:S1:N0:2@config/p2.json,p2_c_to_n:S1:N2:2@config/p2.json",
+    "reference_batches": [
+      "data/p2-20261015-batch-s1a",
+      "data/p2-20261015-batch-s1b"
+    ],
+    "metric_tolerance": {
+      "motor_step_at_change": 0.02,
+      "max_altitude_loss_m": 0.01,
+      "recovery_from_change_s": 0.15,
+      "max_tilt_deg": 0.5,
+      "trigger_to_change_ms": 8.0
+    },
+    "metric_rule": "each run inside [min - t, max + t] of the P2 group with the same treatment (N0: s1a+s1b, N2: s1a), t = max(tolerance, half the reference spread)",
+    "required": [
+      "all batch checks accepted",
+      "P2 entry and teacher-forcing evidence VERIFIED, capture activation_reset_hold with zero target velocity",
+      "written GRU norm (N2) inside the P2 range with the same rule (tolerance 0.05)"
+    ]
+  },
+  "runs": [
+    {
+      "id": "S1-c_to_n-N0-1",
+      "kind": "p2_c_to_n",
+      "treatment": "N0",
+      "accepted": true,
+      "problems": [],
+      "reference_runs": 10,
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.21952086687088013,
+          "reference_min": 0.2036304473876953,
+          "reference_max": 0.23841592669487,
+          "allowed": [
+            0.18363044738769532,
+            0.25841592669487
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.0334630012512207,
+          "reference_min": 0.03552508354187012,
+          "reference_max": 0.04472637176513672,
+          "allowed": [
+            0.025525083541870115,
+            0.05472637176513672
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.432,
+          "reference_min": 0.396,
+          "reference_max": 0.812,
+          "allowed": [
+            0.188,
+            1.02
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 1.7195357084274292,
+          "reference_min": 1.2021960020065308,
+          "reference_max": 2.149402379989624,
+          "allowed": [
+            0.7021960020065308,
+            2.649402379989624
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 44.0,
+          "reference_min": 32.0,
+          "reference_max": 44.0,
+          "allowed": [
+            24.0,
+            52.0
+          ],
+          "inside": true
+        }
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold",
+        "capture_state_read_matches": true
+      },
+      "equivalent": true
+    },
+    {
+      "id": "S1-c_to_n-N2-1",
+      "kind": "p2_c_to_n",
+      "treatment": "N2",
+      "accepted": true,
+      "problems": [],
+      "reference_runs": 5,
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.02713179588317871,
+          "reference_min": 0.009346246719360352,
+          "reference_max": 0.030124187469482422,
+          "allowed": [
+            -0.010653753280639649,
+            0.050124187469482426
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.0181272029876709,
+          "reference_min": 0.021362781524658203,
+          "reference_max": 0.026370525360107422,
+          "allowed": [
+            0.011362781524658203,
+            0.036370525360107424
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.16,
+          "reference_min": 0.0,
+          "reference_max": 0.148,
+          "allowed": [
+            -0.15,
+            0.298
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 1.1665074825286865,
+          "reference_min": 0.5326577425003052,
+          "reference_max": 0.8737968802452087,
+          "allowed": [
+            0.032657742500305176,
+            1.3737968802452087
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 32.0,
+          "reference_min": 32.0,
+          "reference_max": 44.0,
+          "allowed": [
+            24.0,
+            52.0
+          ],
+          "inside": true
+        },
+        "gru_norm_written": {
+          "value": 1.7319567008771914,
+          "reference_min": 1.7289044300760716,
+          "reference_max": 1.7316074361731133,
+          "allowed": [
+            1.6789044300760716,
+            1.7816074361731133
+          ],
+          "inside": true
+        }
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold",
+        "capture_state_read_matches": true
+      },
+      "equivalent": true
+    },
+    {
+      "id": "S1-c_to_n-N0-2",
+      "kind": "p2_c_to_n",
+      "treatment": "N0",
+      "accepted": true,
+      "problems": [],
+      "reference_runs": 10,
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.2097291350364685,
+          "reference_min": 0.2036304473876953,
+          "reference_max": 0.23841592669487,
+          "allowed": [
+            0.18363044738769532,
+            0.25841592669487
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.044654130935668945,
+          "reference_min": 0.03552508354187012,
+          "reference_max": 0.04472637176513672,
+          "allowed": [
+            0.025525083541870115,
+            0.05472637176513672
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.628,
+          "reference_min": 0.396,
+          "reference_max": 0.812,
+          "allowed": [
+            0.188,
+            1.02
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 1.2186857461929321,
+          "reference_min": 1.2021960020065308,
+          "reference_max": 2.149402379989624,
+          "allowed": [
+            0.7021960020065308,
+            2.649402379989624
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 32.0,
+          "reference_min": 32.0,
+          "reference_max": 44.0,
+          "allowed": [
+            24.0,
+            52.0
+          ],
+          "inside": true
+        }
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold",
+        "capture_state_read_matches": true
+      },
+      "equivalent": true
+    },
+    {
+      "id": "S1-c_to_n-N2-2",
+      "kind": "p2_c_to_n",
+      "treatment": "N2",
+      "accepted": true,
+      "problems": [],
+      "reference_runs": 5,
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.00999540090560913,
+          "reference_min": 0.009346246719360352,
+          "reference_max": 0.030124187469482422,
+          "allowed": [
+            -0.010653753280639649,
+            0.050124187469482426
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.02026844024658203,
+          "reference_min": 0.021362781524658203,
+          "reference_max": 0.026370525360107422,
+          "allowed": [
+            0.011362781524658203,
+            0.036370525360107424
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.0,
+          "reference_min": 0.0,
+          "reference_max": 0.148,
+          "allowed": [
+            -0.15,
+            0.298
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 0.6504184603691101,
+          "reference_min": 0.5326577425003052,
+          "reference_max": 0.8737968802452087,
+          "allowed": [
+            0.032657742500305176,
+            1.3737968802452087
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 36.0,
+          "reference_min": 32.0,
+          "reference_max": 44.0,
+          "allowed": [
+            24.0,
+            52.0
+          ],
+          "inside": true
+        },
+        "gru_norm_written": {
+          "value": 1.7324581825645575,
+          "reference_min": 1.7289044300760716,
+          "reference_max": 1.7316074361731133,
+          "allowed": [
+            1.6789044300760716,
+            1.7816074361731133
+          ],
+          "inside": true
+        }
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold",
+        "capture_state_read_matches": true
+      },
+      "equivalent": true
+    }
+  ],
+  "equivalent": true
+}

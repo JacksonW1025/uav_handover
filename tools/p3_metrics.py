@@ -131,7 +131,7 @@ def exit_check(cfg,memory,timing,t_r2,t_c2):
     e=cfg['p3']['entry_check'];problems=[];off=e['exit_row_max_offset_ms']*1000
     rows=memory_rows(memory,KIND_EXIT,t_r2,t_c2+off)
     out={'rows_in_window':len(rows),'rows_total':int(np.sum(memory['kind']==KIND_EXIT))}
-    if len(rows)!=1:return {**out,'status':'FAILED','problems':[f'{len(rows)} exit rows at the N->C (expected 1)']}
+    if len(rows)!=1:return {**out,'status':'FAILED','problems':[f'{len(rows)} exit rows at the N->C (expected 1)']},None
     i=int(rows[0]);mt=memory['timestamp'].astype(np.int64);x=memory_vector(memory,i)
     out.update({'px4_us':int(mt[i]),'offset_to_owner_change_ms':(int(mt[i])-t_c2)/1e3,'gru':x[:16],'previous_action':x[16:],'gru_norm':float(np.linalg.norm(x[:16]))})
     if abs(int(mt[i])-t_c2)>off:problems.append('exit row too far from the N->C owner change')

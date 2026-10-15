@@ -1,0 +1,341 @@
+{
+  "created_at": "2026-10-16T04:18:23.271529+08:00",
+  "host": {
+    "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+    "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+    "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+  },
+  "purpose": "P4-01a statistical confirmation (hover): P3 D2 sequence (10 s deactivation), second C->N N0/N3/N2s/N2 x5, RAPTOR continuous-hover baseline x3; first C->N always N0; every run its own Gazebo seed and initial heading",
+  "config": "config/p4.json",
+  "output_chain_gate": {
+    "p99_us": 4000,
+    "max_us": 12000,
+    "longest_over_target_steps": 2,
+    "overwritten_fraction": 0.001,
+    "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+  },
+  "candidate": "candidate.json",
+  "mode": "standard",
+  "groups": [
+    {
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N0",
+      "n": 5
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N3",
+      "n": 5
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2s",
+      "n": 5
+    },
+    {
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2",
+      "n": 5
+    },
+    {
+      "kind": "p3_baseline_raptor",
+      "condition": "R",
+      "treatment": "B",
+      "n": 3
+    }
+  ],
+  "order": "repetitions interleave the groups",
+  "independence": {
+    "master_seed": 20261016,
+    "sim_seed": "Every P4 batch run gets its own Gazebo seed (gz sim --seed): first 31 bits of sha256(batch prefix + run id + master_seed), recorded in plan.json, config.json and the Gazebo command line. Gazebo sensor noise (IMU, barometer, magnetometer) is drawn from this seed; without --seed it is drawn from std::random_device.",
+    "initial_yaw": {
+      "range_deg": [
+        -20.0,
+        20.0
+      ],
+      "conditions": [
+        "D2",
+        "R"
+      ],
+      "rule": "01a runs (conditions D2, R) also spawn the x500 with a small initial heading uniform in range_deg (numpy default_rng(sim_seed)), so the whole flight (takeoff, hover, both C->N) happens at a different heading. 01b keeps heading 0 (motion along +N as in P2 S3).",
+      "heading_at_zero_deg": 96.0,
+      "heading_rule": "Gazebo yaw is counter-clockwise from East (ENU); PX4 heading is clockwise from North (NED) incl. the world magnetic declination. At spawn yaw 0 the PX4 heading is 96.0 deg (P3 batch-01 first C->N 95.99-96.05 deg; P4 dev-01 95.9 deg), so the expected heading before arming is 96.0 - initial_yaw_deg (tolerance 3 deg)."
+    },
+    "hover_point": "Not perturbed: the local frame origin is the spawn point and the Gazebo world is flat and translation invariant, so a horizontal offset of the hover point changes nothing the controllers or the physics see; the hover altitude stays the frozen 3 m (analysis references).",
+    "verification": "Before the batches: (1) startup-only runs with seeds A, A, B compare the at-rest raw gyro noise (sensor_gyro) sample by sample: same seed identical, different seed different; (2) development flights with different seeds/headings give different measured values; (3) every batch run checks that its Gazebo command carried the planned seed and that the heading at takeoff equals the planned heading (tolerance 3 deg).",
+    "default_settings": "The equivalence batch runs without --sim-seed/--initial-yaw-deg (as P3), i.e. the default settings."
+  },
+  "flight_failures": {
+    "criteria": {
+      "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+      "no_joint_recovery_s": 10.0,
+      "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+      "motor_saturation_continuous_s": 0.5,
+      "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+      "ground_altitude_m": 0.2,
+      "ground": "altitude <= 0.2 m inside [trigger, window end]"
+    },
+    "rule": "Pre-registered flight failures (frozen criteria above, all infrastructure checks passing) are results and do not stop the batch, as approved for the P2 N->C batches; any infrastructure or evidence failure stops the batch."
+  },
+  "teacher_forcing_rule": "N2 (RINI=4): the native inference steps immediately before the C->N owner change (inactive, teacher forced, consecutive) must number at least 10; checked per run from research_memory.",
+  "stop_rule": "Pre-registered flight failures with every infrastructure and evidence check passing are results and do not stop the batch; any other failed check stops it. Remaining runs stay NOT_RUN; nothing is re-run in place.",
+  "runs": [
+    {
+      "id": "D2-N0-1",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N0",
+      "config": "config/p4.json",
+      "repetition": 1,
+      "sim_seed": 1677466703,
+      "initial_yaw_deg": -9.494,
+      "directory": "data/p4-20261016-a-D2-N0-1"
+    },
+    {
+      "id": "D2-N3-1",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N3",
+      "config": "config/p4.json",
+      "repetition": 1,
+      "sim_seed": 1537537453,
+      "initial_yaw_deg": 18.634,
+      "directory": "data/p4-20261016-a-D2-N3-1"
+    },
+    {
+      "id": "D2-N2s-1",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2s",
+      "config": "config/p4.json",
+      "repetition": 1,
+      "sim_seed": 1958317194,
+      "initial_yaw_deg": 15.775,
+      "directory": "data/p4-20261016-a-D2-N2s-1"
+    },
+    {
+      "id": "D2-N2-1",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2",
+      "config": "config/p4.json",
+      "repetition": 1,
+      "sim_seed": 2117568477,
+      "initial_yaw_deg": 1.657,
+      "directory": "data/p4-20261016-a-D2-N2-1"
+    },
+    {
+      "id": "R-B-1",
+      "kind": "p3_baseline_raptor",
+      "condition": "R",
+      "treatment": "B",
+      "config": "config/p4.json",
+      "repetition": 1,
+      "sim_seed": 261902036,
+      "initial_yaw_deg": 17.171,
+      "directory": "data/p4-20261016-a-R-B-1"
+    },
+    {
+      "id": "D2-N0-2",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N0",
+      "config": "config/p4.json",
+      "repetition": 2,
+      "sim_seed": 1799387040,
+      "initial_yaw_deg": -13.954,
+      "directory": "data/p4-20261016-a-D2-N0-2"
+    },
+    {
+      "id": "D2-N3-2",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N3",
+      "config": "config/p4.json",
+      "repetition": 2,
+      "sim_seed": 215059593,
+      "initial_yaw_deg": -17.579,
+      "directory": "data/p4-20261016-a-D2-N3-2"
+    },
+    {
+      "id": "D2-N2s-2",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2s",
+      "config": "config/p4.json",
+      "repetition": 2,
+      "sim_seed": 966136250,
+      "initial_yaw_deg": -16.294,
+      "directory": "data/p4-20261016-a-D2-N2s-2"
+    },
+    {
+      "id": "D2-N2-2",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2",
+      "config": "config/p4.json",
+      "repetition": 2,
+      "sim_seed": 168161579,
+      "initial_yaw_deg": 12.926,
+      "directory": "data/p4-20261016-a-D2-N2-2"
+    },
+    {
+      "id": "R-B-2",
+      "kind": "p3_baseline_raptor",
+      "condition": "R",
+      "treatment": "B",
+      "config": "config/p4.json",
+      "repetition": 2,
+      "sim_seed": 770266743,
+      "initial_yaw_deg": -15.237,
+      "directory": "data/p4-20261016-a-R-B-2"
+    },
+    {
+      "id": "D2-N0-3",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N0",
+      "config": "config/p4.json",
+      "repetition": 3,
+      "sim_seed": 1807925053,
+      "initial_yaw_deg": 2.524,
+      "directory": "data/p4-20261016-a-D2-N0-3"
+    },
+    {
+      "id": "D2-N3-3",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N3",
+      "config": "config/p4.json",
+      "repetition": 3,
+      "sim_seed": 1763293216,
+      "initial_yaw_deg": -2.896,
+      "directory": "data/p4-20261016-a-D2-N3-3"
+    },
+    {
+      "id": "D2-N2s-3",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2s",
+      "config": "config/p4.json",
+      "repetition": 3,
+      "sim_seed": 66480031,
+      "initial_yaw_deg": -8.337,
+      "directory": "data/p4-20261016-a-D2-N2s-3"
+    },
+    {
+      "id": "D2-N2-3",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2",
+      "config": "config/p4.json",
+      "repetition": 3,
+      "sim_seed": 1103906625,
+      "initial_yaw_deg": -7.587,
+      "directory": "data/p4-20261016-a-D2-N2-3"
+    },
+    {
+      "id": "R-B-3",
+      "kind": "p3_baseline_raptor",
+      "condition": "R",
+      "treatment": "B",
+      "config": "config/p4.json",
+      "repetition": 3,
+      "sim_seed": 1814833322,
+      "initial_yaw_deg": -3.659,
+      "directory": "data/p4-20261016-a-R-B-3"
+    },
+    {
+      "id": "D2-N0-4",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N0",
+      "config": "config/p4.json",
+      "repetition": 4,
+      "sim_seed": 416058857,
+      "initial_yaw_deg": 2.667,
+      "directory": "data/p4-20261016-a-D2-N0-4"
+    },
+    {
+      "id": "D2-N3-4",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N3",
+      "config": "config/p4.json",
+      "repetition": 4,
+      "sim_seed": 1271502902,
+      "initial_yaw_deg": -16.64,
+      "directory": "data/p4-20261016-a-D2-N3-4"
+    },
+    {
+      "id": "D2-N2s-4",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2s",
+      "config": "config/p4.json",
+      "repetition": 4,
+      "sim_seed": 449963133,
+      "initial_yaw_deg": 0.881,
+      "directory": "data/p4-20261016-a-D2-N2s-4"
+    },
+    {
+      "id": "D2-N2-4",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2",
+      "config": "config/p4.json",
+      "repetition": 4,
+      "sim_seed": 152620209,
+      "initial_yaw_deg": 0.138,
+      "directory": "data/p4-20261016-a-D2-N2-4"
+    },
+    {
+      "id": "D2-N0-5",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N0",
+      "config": "config/p4.json",
+      "repetition": 5,
+      "sim_seed": 1783949030,
+      "initial_yaw_deg": 4.319,
+      "directory": "data/p4-20261016-a-D2-N0-5"
+    },
+    {
+      "id": "D2-N3-5",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N3",
+      "config": "config/p4.json",
+      "repetition": 5,
+      "sim_seed": 1123352558,
+      "initial_yaw_deg": 12.483,
+      "directory": "data/p4-20261016-a-D2-N3-5"
+    },
+    {
+      "id": "D2-N2s-5",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2s",
+      "config": "config/p4.json",
+      "repetition": 5,
+      "sim_seed": 1597618805,
+      "initial_yaw_deg": -8.071,
+      "directory": "data/p4-20261016-a-D2-N2s-5"
+    },
+    {
+      "id": "D2-N2-5",
+      "kind": "p3_sequence",
+      "condition": "D2",
+      "treatment": "N2",
+      "config": "config/p4.json",
+      "repetition": 5,
+      "sim_seed": 1073509191,
+      "initial_yaw_deg": 1.058,
+      "directory": "data/p4-20261016-a-D2-N2-5"
+    }
+  ]
+}

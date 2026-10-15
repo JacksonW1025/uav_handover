@@ -6,7 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A research harness on an NVIDIA Jetson AGX Thor (aarch64, Ubuntu 24.04, ROS 2 Jazzy, Gazebo Harmonic). It studies handover between PX4's classic multicopter controller and the RAPTOR neural controller (C → N → C), and interventions on controller internal state (reset / hold / snapshot+restore / inject). All flight is **headless SITL only**. Project docs and most comments are in Chinese.
 
-Current project status: **P1 complete** as of 2026-10-13 (`docs/THOR_P1_REPORT.md`, frozen batch `data/p1-20261013-batch-02/`; batch-01 is a retained FAIL record). P0 complete as of 2026-10-12 (closure record `data/p0-closure-20261012/acceptance.json`, rationale in the closing section of `docs/THOR_P0_FINAL_REPORT.md`); the 2026-10-10 P0 FAIL audit is kept unchanged as history. Next phase is P2 (state interventions), not started. No real flight. Joint recovery's position reference is the controller's active `trajectory_setpoint` (user-confirmed 2026-10-12); `config/p1.json` uses `active_controller_target`, which additionally uses RAPTOR's logged internal-target captures while RAPTOR owns the actuators (RAPTOR's target is not published on `trajectory_setpoint`); re-verified on all P0 batch-05 runs with unchanged verdicts. The fixed NED reference is reported only as `fixed_reference_comparison`.
+Current project status: **P2 complete** as of 2026-10-15 (`docs/THOR_P2_REPORT.md`, accepted batches `data/p2-20261015-batch-{s1a,s1b,s3-03,nc-03,explore-02}` + `data/p2-20261015-equivalence-02`; stopped batches kept with `diagnosis.json`). P2 adds `MC_RAPTOR_RINI` modes 0–5 (0 original reset, 1 shadow memory, 2 N1, 3 N2g, 4 N2, 5 staged N*), teacher forcing of the inactive shadow inference, `MC_RAPTOR_NCO` (C2 velocity-integrator coordination), the `research_memory` evidence topic and `state raptor stage`; config `config/p2.json`, tools `tools/p2_*.py`. P1 complete 2026-10-13 (`docs/THOR_P1_REPORT.md`), P0 complete 2026-10-12. No real flight. Joint recovery's position reference is the controller's active target (`active_controller_target`: trajectory_setpoint for classic, RAPTOR's logged internal-target captures while RAPTOR owns the actuators); the fixed NED reference is reported only as `fixed_reference_comparison`.
+
+P2 batch operation notes: run `sudo jetson_clocks` after every reboot; `config/p2.json` `p2.host.cpu_affinity` pins PX4/Gazebo/Agent/runner via `HANDOVER_CPU_AFFINITY`; launch batches through the session background mechanism, never as `( cmd & )` in a non-interactive shell (SIGINT is then ignored and the Agent reconnection check fails); keep the editor from watching `data/` during batches.
 
 ## Repository vs. Lab
 
@@ -50,6 +52,16 @@ uav_lab/.local/venv/bin/python tools/p1_report.py data/<batch>             # fig
 
 `tools/experiment` picks the `classic` env for `health`/`classic_hover`, `raptor` for everything else, then dispatches to `tools/health.py`, `tools/analyze.py`, or `tools/run_experiment.py`.
 
+P2 (`config/p2.json`; kinds `p2_c_to_n`, `p2_n_to_c`, `p2_baseline_raptor`, `p2_baseline_classic`, `p2_crash_probe`; `--condition S1|S3|X1.5..X3.0`, `--treatment N0|N1|N2g|N2|N2s|Nstar|C0|C2|B`). Treatments are set as PX4 params before arming and applied by the controller's own thread at the switch:
+
+```bash
+uav_lab/.local/venv/bin/python tools/p2_batch.py data/<batch> --prefix <prefix> --groups "p2_c_to_n:S1:N0:5,p2_baseline_raptor:S1:B:3" --purpose "..."   # [--flight-failures-are-results] | --exploration --best-treatment N2
+uav_lab/.local/venv/bin/python tools/p2_metrics.py data/<run>       # -> p2-metrics.json (entry-write / teacher-forcing / C2 evidence, flight outcome)
+uav_lab/.local/venv/bin/python tools/p2_audit.py data/<batch>       # -> batch-audit.json (RMS vs in-batch baseline, GRU distance, elimination ratios)
+uav_lab/.local/venv/bin/python tools/p2_equivalence.py data/<batch> # RINI=0 equivalence against P1/P0 (criteria in config/p2.json)
+uav_lab/.local/venv/bin/python tools/p2_report.py --s1 ... --s3 ... --nc ... --explore ...   # figures -> docs/figures/p2
+```
+
 Rebuild (what `tools/prepare_lab.sh` does after venv/colcon setup):
 
 ```bash
@@ -61,13 +73,16 @@ uav_lab/.local/venv/bin/python tools/apply_research.py
 Tests:
 
 ```bash
-# Python (25 tests); single test: append ::test_name
-uav_lab/.local/venv/bin/python -m pytest -q tests/test_readiness.py tests/test_recovery.py tests/test_executor_acceptance.py tests/test_output_chain.py tests/test_p0_closure.py tests/test_p1.py
+# Python (32 tests); single test: append ::test_name
+uav_lab/.local/venv/bin/python -m pytest -q tests/test_readiness.py tests/test_recovery.py tests/test_executor_acceptance.py tests/test_output_chain.py tests/test_p0_closure.py tests/test_p1.py tests/test_p2.py
 uav_lab/.local/venv/bin/python -m pytest -q tests/test_recovery.py::test_missing_data_does_not_count_as_continuous
 
 # Header-only C++ units, with sanitizers (as recorded in data/p0-20261010/commands/)
 g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined tests/sample_clock_test.cpp -o uav_lab/.local/sample_clock_test && uav_lab/.local/sample_clock_test
 g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined tests/state_ops_test.cpp -o uav_lab/.local/state_ops_test && uav_lab/.local/state_ops_test
+# P2: action map and mode-entry memory (same flags)
+g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined tests/action_map_test.cpp -o uav_lab/.local/action_map_test && uav_lab/.local/action_map_test
+g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined tests/memory_init_test.cpp -o uav_lab/.local/memory_init_test && uav_lab/.local/memory_init_test
 
 # Source-injection idempotence (touches Lab checkouts)
 python3 tests/check_apply_idempotence.py

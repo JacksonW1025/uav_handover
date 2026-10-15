@@ -1,0 +1,49 @@
+{
+  "created_at": "2026-10-15T14:46:09.992004+08:00",
+  "host": {
+    "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+    "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+    "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+  },
+  "purpose": "P2 step 4 exploration (new batch after data/p2-20261015-batch-explore stopped on an abort-induced output-chain bracketing error): raise speed 1.5 -> 2.0 -> 2.5 -> 3.0 m/s with C->N N0 x3 and RAPTOR own-brake baseline x2 per level; stop escalating at the first level with a pre-registered flight failure; N->C C0 x3 at the highest level; best step-1 treatment (N2) x3 at the failed level. Flight failures are results; infrastructure failures stop.",
+  "config": "config/p2.json",
+  "output_chain_gate": {
+    "p99_us": 4000,
+    "max_us": 12000,
+    "longest_over_target_steps": 2,
+    "overwritten_fraction": 0.001,
+    "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+  },
+  "candidate": "candidate.json",
+  "mode": "exploration",
+  "levels": [
+    "X1.5",
+    "X2.0",
+    "X2.5",
+    "X3.0"
+  ],
+  "per_level": {
+    "p2_c_to_n:N0": 3,
+    "p2_baseline_raptor:B": 2
+  },
+  "at_highest_level": {
+    "p2_n_to_c:C0": 3
+  },
+  "at_failed_level": {
+    "p2_c_to_n:N2": 3
+  },
+  "best_treatment": "N2",
+  "failure_criteria": {
+    "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+    "no_joint_recovery_s": 10.0,
+    "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+    "motor_saturation_continuous_s": 0.5,
+    "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+    "ground_altitude_m": 0.2,
+    "ground": "altitude <= 0.2 m inside [trigger, window end]"
+  },
+  "rule": "Flight failures (criteria above, with all infrastructure checks passing) are results and do not stop the batch; escalation stops after the first level with a flight failure. Infrastructure failures (PX4 exit, crash markers, readiness/DDS, trace or output-chain measurement or gate, metrics) stop the batch as usual.",
+  "escalation": "Levels in order; after a level with any flight failure, or after the last level, run at_highest_level at that level; if that level had a flight failure also run at_failed_level there; then stop.",
+  "highest_level": "X2.0",
+  "failed_level": "X2.0"
+}

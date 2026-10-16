@@ -1,0 +1,279 @@
+{
+  "status": "DEVELOPMENT",
+  "complete": true,
+  "accepted": 0,
+  "flight_failures": 0,
+  "failed": 3,
+  "not_run": 0,
+  "candidate_unchanged": true,
+  "runs": [
+    {
+      "id": "V1.0-T1-1",
+      "kind": "p2_c_to_n",
+      "condition": "V1.0",
+      "treatment": "T1",
+      "config": "config/p4c.json",
+      "repetition": 1,
+      "sim_seed": 1887868185,
+      "initial_yaw_deg": null,
+      "extra_args": [
+        "--sim-seed",
+        "1887868185"
+      ],
+      "directory": "data/p4-20261016-c-dev01-V1.0-T1-1",
+      "status": "PASS",
+      "command": [
+        "/home/car/uav_handover/tools/experiment",
+        "p2_c_to_n",
+        "--config",
+        "/home/car/uav_handover/config/p4c.json",
+        "--output",
+        "/home/car/uav_handover/data/p4-20261016-c-dev01-V1.0-T1-1",
+        "--condition",
+        "V1.0",
+        "--treatment",
+        "T1",
+        "--sim-seed",
+        "1887868185"
+      ],
+      "started_at": "2026-10-16T10:12:43.977854+08:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-16T10:14:17.395143+08:00",
+      "reason": null,
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "trace_exit_code": 0,
+      "output_chain_exit_code": 0,
+      "p2_exit_code": 1,
+      "output_chain_errors": [
+        "0: p99 over gate",
+        "0: max over gate",
+        "0: consecutive over-target steps",
+        "1: p99 over gate",
+        "1: max over gate",
+        "1: consecutive over-target steps",
+        "2: p99 over gate",
+        "2: max over gate",
+        "2: consecutive over-target steps",
+        "3: p99 over gate",
+        "3: max over gate",
+        "3: consecutive over-target steps"
+      ],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_max_age_us": 16000.0,
+      "p2_problems": [
+        "takeover target parameters at trigger {'MC_RAPTOR_RTGT': 1, 'MC_RAPTOR_RTDEC': None} != planned",
+        "teacher-forced previous action differs from classic applied motors"
+      ],
+      "flight_outcome": "SUCCESS",
+      "flight_failure_reasons": [],
+      "checks": {
+        "px4_exit": true,
+        "no_crash_markers": true,
+        "trace": true,
+        "output_chain": false,
+        "p2_measured": false,
+        "execution": true,
+        "subject_measured": true,
+        "p4_measured": false,
+        "p4c_measured": true
+      },
+      "infrastructure_ok": false,
+      "accepted": false,
+      "flight_failure": false,
+      "p4_exit_code": 1,
+      "p4_problems": null,
+      "teacher_forcing_coverage": null,
+      "takeover_state": null,
+      "p4c_exit_code": 0,
+      "p4c_problems": [],
+      "target_check": "VERIFIED"
+    },
+    {
+      "id": "V2.0-T0-1",
+      "kind": "p2_c_to_n",
+      "condition": "V2.0",
+      "treatment": "T0",
+      "config": "config/p4c.json",
+      "repetition": 1,
+      "sim_seed": 853333035,
+      "initial_yaw_deg": null,
+      "extra_args": [
+        "--sim-seed",
+        "853333035"
+      ],
+      "directory": "data/p4-20261016-c-dev01-V2.0-T0-1",
+      "status": "FAIL",
+      "command": [
+        "/home/car/uav_handover/tools/experiment",
+        "p2_c_to_n",
+        "--config",
+        "/home/car/uav_handover/config/p4c.json",
+        "--output",
+        "/home/car/uav_handover/data/p4-20261016-c-dev01-V2.0-T0-1",
+        "--condition",
+        "V2.0",
+        "--treatment",
+        "T0",
+        "--sim-seed",
+        "853333035"
+      ],
+      "started_at": "2026-10-16T10:14:21.422349+08:00",
+      "exit_code": 1,
+      "finished_at": "2026-10-16T10:15:25.032885+08:00",
+      "reason": "safety: flight envelope exceeded",
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "trace_exit_code": 0,
+      "output_chain_exit_code": 0,
+      "p2_exit_code": 1,
+      "output_chain_errors": [
+        "0: p99 over gate",
+        "1: p99 over gate",
+        "2: p99 over gate",
+        "3: p99 over gate"
+      ],
+      "output_chain_errors_attributed_to_abort": [
+        "missing overwrite counter"
+      ],
+      "output_chain_max_age_us": 8000.0,
+      "p2_problems": [
+        "takeover target parameters at trigger {'MC_RAPTOR_RTGT': None, 'MC_RAPTOR_RTDEC': None} != planned",
+        "teacher-forced previous action differs from classic applied motors"
+      ],
+      "flight_outcome": "FAILURE",
+      "flight_failure_reasons": [
+        "safety_envelope:tilt_safety_deg",
+        "runner_safety_abort",
+        "no_joint_recovery"
+      ],
+      "checks": {
+        "px4_exit": true,
+        "no_crash_markers": true,
+        "trace": true,
+        "output_chain": false,
+        "p2_measured": false,
+        "execution": false,
+        "subject_measured": true,
+        "p4_measured": false,
+        "p4c_measured": true
+      },
+      "infrastructure_ok": false,
+      "accepted": false,
+      "flight_failure": false,
+      "p4_exit_code": 1,
+      "p4_problems": null,
+      "teacher_forcing_coverage": null,
+      "takeover_state": null,
+      "p4c_exit_code": 0,
+      "p4c_problems": [],
+      "target_check": "VERIFIED"
+    },
+    {
+      "id": "V3.0-T1-1",
+      "kind": "p2_c_to_n",
+      "condition": "V3.0",
+      "treatment": "T1",
+      "config": "config/p4c.json",
+      "repetition": 1,
+      "sim_seed": 1480939782,
+      "initial_yaw_deg": null,
+      "extra_args": [
+        "--sim-seed",
+        "1480939782"
+      ],
+      "directory": "data/p4-20261016-c-dev01-V3.0-T1-1",
+      "status": "PASS",
+      "command": [
+        "/home/car/uav_handover/tools/experiment",
+        "p2_c_to_n",
+        "--config",
+        "/home/car/uav_handover/config/p4c.json",
+        "--output",
+        "/home/car/uav_handover/data/p4-20261016-c-dev01-V3.0-T1-1",
+        "--condition",
+        "V3.0",
+        "--treatment",
+        "T1",
+        "--sim-seed",
+        "1480939782"
+      ],
+      "started_at": "2026-10-16T10:15:28.025041+08:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-16T10:16:57.196830+08:00",
+      "reason": null,
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "trace_exit_code": 0,
+      "output_chain_exit_code": 0,
+      "p2_exit_code": 1,
+      "output_chain_errors": [
+        "0: p99 over gate",
+        "0: max over gate",
+        "0: consecutive over-target steps",
+        "1: p99 over gate",
+        "1: max over gate",
+        "1: consecutive over-target steps",
+        "2: p99 over gate",
+        "2: max over gate",
+        "2: consecutive over-target steps",
+        "3: p99 over gate",
+        "3: max over gate",
+        "3: consecutive over-target steps"
+      ],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_max_age_us": 16000.0,
+      "p2_problems": [
+        "takeover target parameters at trigger {'MC_RAPTOR_RTGT': 1, 'MC_RAPTOR_RTDEC': None} != planned",
+        "teacher-forced previous action differs from classic applied motors"
+      ],
+      "flight_outcome": "SUCCESS",
+      "flight_failure_reasons": [],
+      "checks": {
+        "px4_exit": true,
+        "no_crash_markers": true,
+        "trace": true,
+        "output_chain": false,
+        "p2_measured": false,
+        "execution": true,
+        "subject_measured": true,
+        "p4_measured": false,
+        "p4c_measured": true
+      },
+      "infrastructure_ok": false,
+      "accepted": false,
+      "flight_failure": false,
+      "p4_exit_code": 1,
+      "p4_problems": null,
+      "teacher_forcing_coverage": null,
+      "takeover_state": null,
+      "p4c_exit_code": 0,
+      "p4c_problems": [],
+      "target_check": "VERIFIED"
+    }
+  ],
+  "failed_checks": {
+    "V1.0-T1-1": [
+      "output_chain",
+      "p2_measured",
+      "p4_measured"
+    ],
+    "V2.0-T0-1": [
+      "output_chain",
+      "p2_measured",
+      "execution",
+      "p4_measured"
+    ],
+    "V3.0-T1-1": [
+      "output_chain",
+      "p2_measured",
+      "p4_measured"
+    ]
+  }
+}

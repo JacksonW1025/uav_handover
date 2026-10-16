@@ -29,7 +29,8 @@ TYPES = ['classic_hover','raptor_hover','handover_c_to_n','handover_n_to_c',
          'p2_c_to_n','p2_n_to_c','p2_baseline_classic','p2_baseline_raptor','p2_crash_probe',
          'p3_sequence','p3_baseline_raptor']
 # P2 reuses the P1 flight sequence; only the treatment parameters and the condition profile differ.
-P2_TREATMENT_KINDS={'p2_c_to_n':['N0','N1','N2g','N2','N2s','Nstar'],'p2_n_to_c':['C0','C2'],'p2_baseline_classic':['B'],'p2_baseline_raptor':['B']}
+# P4-01c: T0/T1 are N2 memory (RINI=4) with the original zero-velocity takeover target or the speed-matched one.
+P2_TREATMENT_KINDS={'p2_c_to_n':['N0','N1','N2g','N2','N2s','Nstar','T0','T1'],'p2_n_to_c':['C0','C2'],'p2_baseline_classic':['B'],'p2_baseline_raptor':['B']}
 # P3: C->N (N0), RAPTOR hover, N->C, classic deactivation, second C->N with a memory treatment; or the RAPTOR baseline.
 P3_TREATMENT_KINDS={'p3_sequence':['N0','N3','N2s','N2'],'p3_baseline_raptor':['B']}
 
@@ -326,9 +327,11 @@ class Experiment:
         p=Experiment.profile_cfg(self);c=p.get('planned_path_check')
         if not c:return None
         axis=[float(x) for x in p['motion_axis_ned']];s=Experiment.p1_profile(self,Experiment.profile_duration(self))[0]
-        end=[origin[i]+axis[i]*s for i in range(3)];radius=max(math.hypot(origin[0],origin[1]),math.hypot(end[0],end[1]))+float(c['braking_allowance_m'])
+        # P4-01c: the braking term is the speed-matched target's stop distance v^2/(2a) on top of the margin.
+        a=c.get('braking_deceleration_m_s2');braking=self.cfg['p1_speed_m_s']**2/(2*float(a)) if a else 0.
+        end=[origin[i]+axis[i]*s for i in range(3)];radius=max(math.hypot(origin[0],origin[1]),math.hypot(end[0],end[1]))+braking+float(c['braking_allowance_m'])
         limit=self.cfg['safety_radius_m']-float(c['radius_margin_m'])
-        return {'origin_ned_m':origin,'event_point_ned_m':end,'path_m':s,'radius_with_allowance_m':radius,'limit_m':limit,'inside':radius<=limit}
+        return {'origin_ned_m':origin,'event_point_ned_m':end,'path_m':s,'braking_distance_m':braking,'radius_with_allowance_m':radius,'limit_m':limit,'inside':radius<=limit}
 
     def p1_profile(self,t):
         # [Reposition,] hold, linear velocity ramp, cruise. Returns path length, speed, acceleration along the motion axis.
@@ -432,12 +435,17 @@ class Experiment:
         name=self.cfg['p2_treatment'];t=self.cfg['p2_treatment_parameters']
         rini,nco=int(t.get('rini',0)),int(t.get('nco',0))
         self.command('param','set','MC_RAPTOR_RINI',str(rini));self.command('param','set','MC_RAPTOR_NCO',str(nco))
+        # P4-01c takeover target: set only by treatments that name it (others keep the defaults RTGT=0, RTDEC=2.0).
+        target='rtgt' in t
+        if target:self.command('param','set','MC_RAPTOR_RTGT',str(int(t['rtgt'])));self.command('param','set','MC_RAPTOR_RTDEC',repr(float(t['rtdec'])))
         shown={}
-        for name_ in ['MC_RAPTOR_RINI','MC_RAPTOR_NCO','MC_RAPTOR_RSH']:
-            text=self.command('param','show',name_);match=re.search(name_+r'\s*\[[^\]]*\]\s*:\s*(-?\d+)',text)
+        for name_ in ['MC_RAPTOR_RINI','MC_RAPTOR_NCO','MC_RAPTOR_RSH']+(['MC_RAPTOR_RTGT','MC_RAPTOR_RTDEC'] if target else []):
+            text=self.command('param','show',name_);match=re.search(name_+r'\s*\[[^\]]*\]\s*:\s*(-?\d+(?:\.\d+)?)',text)
             if not match:raise RuntimeError('parameter readback failed: '+name_+': '+text)
-            shown[name_]=int(match.group(1))
-        if shown!={'MC_RAPTOR_RINI':rini,'MC_RAPTOR_NCO':nco,'MC_RAPTOR_RSH':1}:raise RuntimeError(f'treatment parameters not applied: {shown}')
+            shown[name_]=float(match.group(1)) if name_=='MC_RAPTOR_RTDEC' else int(match.group(1))
+        want={'MC_RAPTOR_RINI':rini,'MC_RAPTOR_NCO':nco,'MC_RAPTOR_RSH':1}
+        if target:want.update({'MC_RAPTOR_RTGT':int(t['rtgt']),'MC_RAPTOR_RTDEC':float(t['rtdec'])})
+        if set(shown)!=set(want) or any(abs(shown[k]-want[k])>1e-4 for k in want):raise RuntimeError(f'treatment parameters not applied: {shown}')
         staged=None
         if rini==5:
             values=[float(v) for v in self.cfg['p2']['nstar_memory']['values']]
@@ -716,7 +724,7 @@ class Experiment:
         shutil.copytree(self.runtime/'etc',self.rootfs/'etc')
         logging=self.rootfs/'etc/logging';logging.mkdir(exist_ok=True)
         names=['sensor_baro','vehicle_air_data','actuator_outputs','sensor_gyro','vehicle_imu','vehicle_imu_status','vehicle_local_position','vehicle_global_position','position_setpoint_triplet','takeoff_status','vehicle_attitude','vehicle_angular_velocity','vehicle_status','vehicle_control_mode','trajectory_setpoint','vehicle_attitude_setpoint','vehicle_rates_setpoint','vehicle_torque_setpoint','vehicle_thrust_setpoint','rate_ctrl_status','actuator_motors','vehicle_command','vehicle_command_ack']
-        if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator','research_memory']
+        if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator','research_memory','research_target']
         (logging/'logger_topics.txt').write_text(''.join(n+' 0 0\n' for n in names)+(''.join(f'route_observability 0 {i}\n' for i in range(1,10)) if self.variant=='raptor' else ''))
         self.spawn('agent',[str(LAB/'scripts/MicroXRCEAgent'),'udp4','-p',str(self.cfg['agent_port']),'-v','4'])
         self.spawn('gazebo',['gz','sim','-r','-s','-v','3']+(['--seed',str(self.sim_seed)] if self.sim_seed is not None else [])+[str(self.source/'Tools/simulation/gz/worlds/default.sdf')])

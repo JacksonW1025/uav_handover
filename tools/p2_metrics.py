@@ -145,7 +145,8 @@ def flight_outcome(cfg,base,motors,local,t_r,t_e,t_c,events):
 
 def analyze(run):
     run=Path(run).resolve();cfg=json.loads((run/'config.json').read_text());meta=json.loads((run/'metadata.json').read_text())
-    exploration=str(cfg.get('p1_condition','')).startswith('X')
+    # P4-01c conditions pre-register flight failures as results like the P2 exploration levels.
+    exploration=str(cfg.get('p1_condition','')).startswith('X') or bool(cfg.get('p2',{}).get('conditions',{}).get(cfg.get('p1_condition'),{}).get('flight_failures_are_results'))
     base=p1_metrics.analyze(run,allow_abort=exploration)
     out={**base,'treatment':cfg.get('p2_treatment'),'treatment_parameters':cfg.get('p2_treatment_parameters'),'exploration':exploration}
     problems=list(base.get('problems',[]))
@@ -158,6 +159,14 @@ def analyze(run):
     out['parameters_at_trigger']=params_at(ulog,t_r);tp=cfg['p2_treatment_parameters']
     want={'MC_RAPTOR_RINI':int(tp.get('rini',0)),'MC_RAPTOR_NCO':int(tp.get('nco',0)),'MC_RAPTOR_RSH':1}
     if out['parameters_at_trigger']!=want:problems.append(f'treatment parameters at trigger {out["parameters_at_trigger"]} != {want}')
+    if 'rtgt' in tp:
+        # P4-01c: takeover-target parameters in force at the trigger (only for treatments that set them).
+        values=dict(ulog.initial_parameters)
+        for stamp,name,value in sorted(ulog.changed_parameters,key=lambda x:x[0]):
+            if stamp<=t_r:values[name]=value
+        out['target_parameters_at_trigger']={k:values.get(k) for k in ['MC_RAPTOR_RTGT','MC_RAPTOR_RTDEC']}
+        got=out['target_parameters_at_trigger']
+        if got['MC_RAPTOR_RTGT']!=int(tp['rtgt']) or got['MC_RAPTOR_RTDEC'] is None or abs(got['MC_RAPTOR_RTDEC']-float(tp['rtdec']))>1e-5:problems.append(f'takeover target parameters at trigger {got} != planned')
     mapping=header_map();memory=topics.get('research_memory')
     if memory is None:problems.append('research_memory missing')
     else:

@@ -1,0 +1,586 @@
+{
+  "batch": "data/p4-20261016-c-equivalence-02",
+  "criteria_config": "config/p4c.json",
+  "criteria": {
+    "purpose": "New candidate (adds MC_RAPTOR_RTGT/RTDEC and research_target) with RTGT=0 must reproduce P2 S1 and P4 01b M1 before P4-01c.",
+    "groups": "p2_c_to_n:S1:N0:2@config/p2.json,p2_c_to_n:S1:N2:2@config/p2.json,p2_c_to_n:M1:N2:2@config/p4.json",
+    "reference": {
+      "S1": [
+        "data/p2-20261015-batch-s1a",
+        "data/p2-20261015-batch-s1b"
+      ],
+      "M1": [
+        "data/p4-20261016-batch-01b"
+      ]
+    },
+    "metric_tolerance": {
+      "motor_step_at_change": 0.02,
+      "max_altitude_loss_m": 0.01,
+      "recovery_from_change_s": 0.15,
+      "max_tilt_deg": 0.5,
+      "trigger_to_change_ms": 8.0
+    },
+    "metric_rule": "each run inside [min - t, max + t] of the reference group with the same kind, condition and treatment, t = max(tolerance, half the reference spread)",
+    "required": [
+      "all batch checks accepted",
+      "P2 entry and teacher-forcing evidence VERIFIED, capture activation_reset_hold with zero target velocity",
+      "written GRU norm (N2) inside the reference range (tolerance 0.05)",
+      "MC_RAPTOR_RTGT = 0 in force, research_target activation capture with mode 0 and zero target velocity, no profile rows"
+    ]
+  },
+  "runs": [
+    {
+      "id": "S1-c_to_n-N0-1",
+      "kind": "p2_c_to_n",
+      "condition": "S1",
+      "treatment": "N0",
+      "accepted": true,
+      "problems": [],
+      "reference_runs": 10,
+      "reference_batches": [
+        "data/p2-20261015-batch-s1a",
+        "data/p2-20261015-batch-s1b"
+      ],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.2091997265815735,
+          "reference_min": 0.2036304473876953,
+          "reference_max": 0.23841592669487,
+          "allowed": [
+            0.18363044738769532,
+            0.25841592669487
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.043108463287353516,
+          "reference_min": 0.03552508354187012,
+          "reference_max": 0.04472637176513672,
+          "allowed": [
+            0.025525083541870115,
+            0.05472637176513672
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.704,
+          "reference_min": 0.396,
+          "reference_max": 0.812,
+          "allowed": [
+            0.188,
+            1.02
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 1.602421760559082,
+          "reference_min": 1.2021960020065308,
+          "reference_max": 2.149402379989624,
+          "allowed": [
+            0.7021960020065308,
+            2.649402379989624
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 36.0,
+          "reference_min": 32.0,
+          "reference_max": 44.0,
+          "allowed": [
+            24.0,
+            52.0
+          ],
+          "inside": true
+        }
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold",
+        "capture_state_read_matches": true
+      },
+      "target_evidence": {
+        "MC_RAPTOR_RTGT": 0,
+        "changed": [],
+        "activation_captures_at_change": 1,
+        "profile_rows": 0,
+        "capture_mode": 0,
+        "capture_target_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ok": true
+      },
+      "equivalent": true
+    },
+    {
+      "id": "S1-c_to_n-N2-1",
+      "kind": "p2_c_to_n",
+      "condition": "S1",
+      "treatment": "N2",
+      "accepted": true,
+      "problems": [],
+      "reference_runs": 5,
+      "reference_batches": [
+        "data/p2-20261015-batch-s1a",
+        "data/p2-20261015-batch-s1b"
+      ],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.013609886169433594,
+          "reference_min": 0.009346246719360352,
+          "reference_max": 0.030124187469482422,
+          "allowed": [
+            -0.010653753280639649,
+            0.050124187469482426
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.023567914962768555,
+          "reference_min": 0.021362781524658203,
+          "reference_max": 0.026370525360107422,
+          "allowed": [
+            0.011362781524658203,
+            0.036370525360107424
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.132,
+          "reference_min": 0.0,
+          "reference_max": 0.148,
+          "allowed": [
+            -0.15,
+            0.298
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 0.9132169485092163,
+          "reference_min": 0.5326577425003052,
+          "reference_max": 0.8737968802452087,
+          "allowed": [
+            0.032657742500305176,
+            1.3737968802452087
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 36.0,
+          "reference_min": 32.0,
+          "reference_max": 44.0,
+          "allowed": [
+            24.0,
+            52.0
+          ],
+          "inside": true
+        },
+        "gru_norm_written": {
+          "value": 1.7286529084597202,
+          "reference_min": 1.7289044300760716,
+          "reference_max": 1.7316074361731133,
+          "allowed": [
+            1.6789044300760716,
+            1.7816074361731133
+          ],
+          "inside": true
+        }
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold",
+        "capture_state_read_matches": true
+      },
+      "target_evidence": {
+        "MC_RAPTOR_RTGT": 0,
+        "changed": [],
+        "activation_captures_at_change": 1,
+        "profile_rows": 0,
+        "capture_mode": 0,
+        "capture_target_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ok": true
+      },
+      "equivalent": true
+    },
+    {
+      "id": "M1-c_to_n-N2-1",
+      "kind": "p2_c_to_n",
+      "condition": "M1",
+      "treatment": "N2",
+      "accepted": true,
+      "problems": [],
+      "reference_runs": 3,
+      "reference_batches": [
+        "data/p4-20261016-batch-01b"
+      ],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.4448454976081848,
+          "reference_min": 0.4487789571285248,
+          "reference_max": 0.4510834813117981,
+          "allowed": [
+            0.42877895712852476,
+            0.4710834813117981
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.15044522285461426,
+          "reference_min": 0.14643192291259766,
+          "reference_max": 0.15136408805847168,
+          "allowed": [
+            0.13643192291259765,
+            0.1613640880584717
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 2.756,
+          "reference_min": 2.696,
+          "reference_max": 2.76,
+          "allowed": [
+            2.5460000000000003,
+            2.9099999999999997
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 32.526939392089844,
+          "reference_min": 32.128658294677734,
+          "reference_max": 33.08562088012695,
+          "allowed": [
+            31.628658294677734,
+            33.58562088012695
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 36.0,
+          "reference_min": 32.0,
+          "reference_max": 36.0,
+          "allowed": [
+            24.0,
+            44.0
+          ],
+          "inside": true
+        },
+        "gru_norm_written": {
+          "value": 1.72632817740938,
+          "reference_min": 1.7206489010070827,
+          "reference_max": 1.7246713135265006,
+          "allowed": [
+            1.6706489010070826,
+            1.7746713135265006
+          ],
+          "inside": true
+        }
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold",
+        "capture_state_read_matches": true
+      },
+      "target_evidence": {
+        "MC_RAPTOR_RTGT": 0,
+        "changed": [],
+        "activation_captures_at_change": 1,
+        "profile_rows": 0,
+        "capture_mode": 0,
+        "capture_target_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ok": true
+      },
+      "equivalent": true
+    },
+    {
+      "id": "S1-c_to_n-N0-2",
+      "kind": "p2_c_to_n",
+      "condition": "S1",
+      "treatment": "N0",
+      "accepted": true,
+      "problems": [],
+      "reference_runs": 10,
+      "reference_batches": [
+        "data/p2-20261015-batch-s1a",
+        "data/p2-20261015-batch-s1b"
+      ],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.20903706550598145,
+          "reference_min": 0.2036304473876953,
+          "reference_max": 0.23841592669487,
+          "allowed": [
+            0.18363044738769532,
+            0.25841592669487
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.036858558654785156,
+          "reference_min": 0.03552508354187012,
+          "reference_max": 0.04472637176513672,
+          "allowed": [
+            0.025525083541870115,
+            0.05472637176513672
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.404,
+          "reference_min": 0.396,
+          "reference_max": 0.812,
+          "allowed": [
+            0.188,
+            1.02
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 1.2946754693984985,
+          "reference_min": 1.2021960020065308,
+          "reference_max": 2.149402379989624,
+          "allowed": [
+            0.7021960020065308,
+            2.649402379989624
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 36.0,
+          "reference_min": 32.0,
+          "reference_max": 44.0,
+          "allowed": [
+            24.0,
+            52.0
+          ],
+          "inside": true
+        }
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold",
+        "capture_state_read_matches": true
+      },
+      "target_evidence": {
+        "MC_RAPTOR_RTGT": 0,
+        "changed": [],
+        "activation_captures_at_change": 1,
+        "profile_rows": 0,
+        "capture_mode": 0,
+        "capture_target_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ok": true
+      },
+      "equivalent": true
+    },
+    {
+      "id": "S1-c_to_n-N2-2",
+      "kind": "p2_c_to_n",
+      "condition": "S1",
+      "treatment": "N2",
+      "accepted": true,
+      "problems": [],
+      "reference_runs": 5,
+      "reference_batches": [
+        "data/p2-20261015-batch-s1a",
+        "data/p2-20261015-batch-s1b"
+      ],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.013346970081329346,
+          "reference_min": 0.009346246719360352,
+          "reference_max": 0.030124187469482422,
+          "allowed": [
+            -0.010653753280639649,
+            0.050124187469482426
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.023627281188964844,
+          "reference_min": 0.021362781524658203,
+          "reference_max": 0.026370525360107422,
+          "allowed": [
+            0.011362781524658203,
+            0.036370525360107424
+          ],
+          "inside": true
+        },
+        "recovery_from_change_s": {
+          "value": 0.188,
+          "reference_min": 0.0,
+          "reference_max": 0.148,
+          "allowed": [
+            -0.15,
+            0.298
+          ],
+          "inside": true
+        },
+        "max_tilt_deg": {
+          "value": 1.218846321105957,
+          "reference_min": 0.5326577425003052,
+          "reference_max": 0.8737968802452087,
+          "allowed": [
+            0.032657742500305176,
+            1.3737968802452087
+          ],
+          "inside": true
+        },
+        "trigger_to_change_ms": {
+          "value": 32.0,
+          "reference_min": 32.0,
+          "reference_max": 44.0,
+          "allowed": [
+            24.0,
+            52.0
+          ],
+          "inside": true
+        },
+        "gru_norm_written": {
+          "value": 1.7294177142873954,
+          "reference_min": 1.7289044300760716,
+          "reference_max": 1.7316074361731133,
+          "allowed": [
+            1.6789044300760716,
+            1.7816074361731133
+          ],
+          "inside": true
+        }
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold",
+        "capture_state_read_matches": true
+      },
+      "target_evidence": {
+        "MC_RAPTOR_RTGT": 0,
+        "changed": [],
+        "activation_captures_at_change": 1,
+        "profile_rows": 0,
+        "capture_mode": 0,
+        "capture_target_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ok": true
+      },
+      "equivalent": true
+    },
+    {
+      "id": "M1-c_to_n-N2-2",
+      "kind": "p2_c_to_n",
+      "condition": "M1",
+      "treatment": "N2",
+      "accepted": true,
+      "problems": [
+        "max_altitude_loss_m outside the reference range",
+        "recovery_from_change_s outside the reference range",
+        "max_tilt_deg outside the reference range"
+      ],
+      "reference_runs": 3,
+      "reference_batches": [
+        "data/p4-20261016-batch-01b"
+      ],
+      "metrics": {
+        "motor_step_at_change": {
+          "value": 0.4365559220314026,
+          "reference_min": 0.4487789571285248,
+          "reference_max": 0.4510834813117981,
+          "allowed": [
+            0.42877895712852476,
+            0.4710834813117981
+          ],
+          "inside": true
+        },
+        "max_altitude_loss_m": {
+          "value": 0.16949868202209473,
+          "reference_min": 0.14643192291259766,
+          "reference_max": 0.15136408805847168,
+          "allowed": [
+            0.13643192291259765,
+            0.1613640880584717
+          ],
+          "inside": false
+        },
+        "recovery_from_change_s": {
+          "value": 3.216,
+          "reference_min": 2.696,
+          "reference_max": 2.76,
+          "allowed": [
+            2.5460000000000003,
+            2.9099999999999997
+          ],
+          "inside": false
+        },
+        "max_tilt_deg": {
+          "value": 33.60357666015625,
+          "reference_min": 32.128658294677734,
+          "reference_max": 33.08562088012695,
+          "allowed": [
+            31.628658294677734,
+            33.58562088012695
+          ],
+          "inside": false
+        },
+        "trigger_to_change_ms": {
+          "value": 32.0,
+          "reference_min": 32.0,
+          "reference_max": 36.0,
+          "allowed": [
+            24.0,
+            44.0
+          ],
+          "inside": true
+        },
+        "gru_norm_written": {
+          "value": 1.7274832961226902,
+          "reference_min": 1.7206489010070827,
+          "reference_max": 1.7246713135265006,
+          "allowed": [
+            1.6706489010070826,
+            1.7746713135265006
+          ],
+          "inside": true
+        }
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold",
+        "capture_state_read_matches": true
+      },
+      "target_evidence": {
+        "MC_RAPTOR_RTGT": 0,
+        "changed": [],
+        "activation_captures_at_change": 1,
+        "profile_rows": 0,
+        "capture_mode": 0,
+        "capture_target_velocity": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "ok": true
+      },
+      "equivalent": false
+    }
+  ],
+  "equivalent": false
+}

@@ -11,10 +11,10 @@ from pathlib import Path
 import numpy as np
 from pyulog import ULog
 from recovery import recovery,_recovery
-from p0_metrics import raptor_captures,controller_target,neural_intervals
+from p0_metrics import raptor_captures,raptor_target_profile,controller_target,neural_intervals
 
 TOPICS=['vehicle_local_position','vehicle_angular_velocity','research_angular_velocity','vehicle_attitude','actuator_motors',
-        'research_actuator','vehicle_status','trajectory_setpoint','research_state_response']
+        'research_actuator','vehicle_status','trajectory_setpoint','research_state_response','research_target']
 SUBJECTS={'p1_c_to_n':'C_to_N','p1_n_to_c':'N_to_C','p1_baseline_classic':'classic_brake','p1_baseline_raptor':'raptor_hold'}
 LOITER=4
 
@@ -36,6 +36,20 @@ def hold_durations(t,mask,start,end):
     t=np.asarray(t,np.int64);nxt=np.r_[t[1:],end]
     a=np.clip(t,start,end);b=np.clip(nxt,start,end)
     return float(np.sum((b-a)[mask])/1e6)
+
+def speed_matched_capture(target,t_c):
+    """P4-01c: research_target activation capture with mode 1 (T1) near the owner change, else None."""
+    if target is None or 'kind' not in target:return None
+    t=np.asarray(target['timestamp'],np.int64)
+    rows=np.flatnonzero((target['kind']==1)&(target['activation']==1)&(target['mode']==1)&(np.abs(t-t_c)<=50000))
+    if not len(rows):return None
+    i=rows[0];return {'px4_us':int(t[i]),'velocity_ned_m_s':[float(target[f'velocity[{k}]'][i]) for k in range(3)]}
+
+def profile_row_at(target,stamp):
+    t=np.asarray(target['timestamp'],np.int64);rows=np.flatnonzero((target['kind']==2)&(t<=stamp))
+    if not len(rows):return None
+    i=rows[-1];return {'px4_us':int(t[i]),'position_ned_m':[float(target[f'position[{k}]'][i]) for k in range(3)],
+        'velocity_ned_m_s':[float(target[f'velocity[{k}]'][i]) for k in range(3)]}
 
 def tilt_deg(q):return np.degrees(np.arccos(np.clip(1-2*(q[:,1]**2+q[:,2]**2),-1,1)))
 
@@ -66,7 +80,9 @@ def analyze(run,allow_abort=False):
     transitions=metrics.get('actuator_owner_transitions',[])
     intervals=neural_intervals(transitions,metrics['ulog_end_us'])
     captures=raptor_captures(messages,intervals)
-    target=controller_target(topics['trajectory_setpoint'],captures)
+    # P4-01c T1: the speed-matched target moves after the capture; its logged per-cycle target is the controller target.
+    profile=raptor_target_profile(topics.get('research_target'),intervals)
+    target=controller_target(topics['trajectory_setpoint'],captures+profile)
     status=topics['vehicle_status']
     # Actual change and the incoming controller's reference capture.
     reference={};t_c=None;mode_us=None
@@ -98,12 +114,22 @@ def analyze(run,allow_abort=False):
         if flow=='p1_c_to_n':
             reference['classification']='activation_reset_hold' if on_change else 'not_at_activation'
             r=topics['research_state_response'];rows=np.flatnonzero((r['timestamp']>=t_c)&(r['target']==1)&(r['operation']==1)&(r['result']==0)&(r['active']==1))
+            speed_matched=speed_matched_capture(topics.get('research_target'),t_c)
+            if speed_matched is not None:
+                reference.update({'mechanism':'RAPTOR internal capture (current position and yaw, current horizontal velocity, then fixed deceleration; P4-01c T1)',
+                    'classification':'activation_speed_matched' if on_change else 'not_at_activation','velocity_ned_m_s':speed_matched['velocity_ned_m_s']})
             if len(rows):
                 i=rows[0];values=[float(r[f'values[{k}]'][i]) for k in range(20,26)]
                 reference['state_read_after_entry']={'px4_us':int(r['timestamp'][i]),'position_ned_m':values[:3],'velocity_ned_m_s':values[3:]}
-                reference['state_read_matches_capture']=bool(cap) and max(abs(a-b) for a,b in zip(values[:3],cap[1]))<1e-4 and max(map(abs,values[3:]))<1e-6
+                if speed_matched is None:reference['state_read_matches_capture']=bool(cap) and max(abs(a-b) for a,b in zip(values[:3],cap[1]))<1e-4 and max(map(abs,values[3:]))<1e-6
+                else:
+                    # T1: the state read returns the target of that cycle, i.e. the logged profile row at the read time.
+                    row=profile_row_at(topics['research_target'],int(r['timestamp'][i]))
+                    reference['state_read_profile_row_px4_us']=row['px4_us'] if row else None
+                    reference['state_read_matches_capture']=bool(cap and row) and max(abs(a-b) for a,b in zip(values,row['position_ned_m']+row['velocity_ned_m_s']))<1e-4
             else:reference['state_read_matches_capture']=False
-            if reference['classification']!='activation_reset_hold' or not reference['state_read_matches_capture']:problems.append('RAPTOR activation capture not confirmed')
+            want='activation_reset_hold' if speed_matched is None else 'activation_speed_matched'
+            if reference['classification']!=want or not reference['state_read_matches_capture']:problems.append('RAPTOR activation capture not confirmed')
         else:
             last=st[st<t_c];reference['classification']='setpoint_timeout_hold'
             reference['last_external_setpoint_to_capture_ms']=(t_c-int(last[-1]))/1e3 if len(last) else None

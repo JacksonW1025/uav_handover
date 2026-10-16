@@ -19,6 +19,18 @@ def raptor_captures(messages,intervals):
             if start-20000<=stamp<end:out.append((max(int(stamp),int(start)),[float(m.group(i)) for i in (1,2,3)]));break
     return out
 
+def raptor_target_profile(target,intervals):
+    """P4-01c T1: after the activation capture RAPTOR's speed-matched target moves (research_target profile rows, one
+    per cycle with mode 1). Inside neural ownership intervals these rows define the controller target, placed like
+    captures (a row logged just before the owner change is placed at the owner change). No rows for T0 or older runs."""
+    if target is None or 'kind' not in target:return []
+    out=[]
+    for i in np.flatnonzero((np.asarray(target['kind'])==2)&(np.asarray(target['mode'])==1)):
+        stamp=int(target['timestamp'][i])
+        for start,end in intervals:
+            if start-20000<=stamp<end:out.append((max(stamp,int(start)),[float(target[f'position[{k}]'][i]) for k in range(3)]));break
+    return out
+
 def controller_target(setpoint,captures):
     """trajectory_setpoint samples merged with RAPTOR captures, ordered in time (capture after a same-time sample)."""
     rows=[(int(t),0,[setpoint[f'position[{k}]'][i] for k in range(3)]) for i,t in enumerate(setpoint['timestamp'])]
@@ -93,7 +105,9 @@ def add_p0(metrics,topics,cfg,events,windows,px4_time,variant,stats,messages=Non
         metrics['controller_target']={'neural_intervals_us':[list(map(int,i)) for i in intervals],
             'raptor_captures':[{'px4_us':t,'position_ned_m':p} for t,p in captures],
             'source':'classic: trajectory_setpoint; RAPTOR ownership: logged internal-target captures'}
-        setpoint=controller_target(setpoint,captures)
+        profile=raptor_target_profile(topics.get('research_target'),intervals)
+        if profile:metrics['controller_target']['raptor_target_profile_rows']=len(profile)
+        setpoint=controller_target(setpoint,captures+profile)
     stages=[]
     if windows:
         stages.append({'start_us':windows[0][1],'owner':2,'origin':'initial_classic_hover'})

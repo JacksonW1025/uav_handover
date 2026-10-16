@@ -1,0 +1,7 @@
+{
+  "batch": "data/p4-20261016-c-dev-02",
+  "mode": "development (ToDesk connected), never evidence",
+  "failed_checks": "output_chain (p99 over the 4 ms gate under ToDesk load, max 12 ms) in all 3 runs; p2 teacher-forcing check in V1.5-T0-1 and V2.0-T1-1: classic research_actuator rows missing from the log (logger drops under ToDesk load, as in P4 dev-02). Target evidence VERIFIED in all 3 runs; MC_RAPTOR_RTGT/RTDEC now in the log header (fix after dev-01).",
+  "in_place_reanalysis": "After the batch, tools/p4c_metrics.py gained max_travel_along_axis_m (T0 overshoots and returns to its capture point, so the settle distance alone hides the travel). p4c-metrics.json of the three dev-02 runs and this batch-audit.json were regenerated in place with that newer analyzer, against the rule for evidence runs; the files written by the batch itself were overwritten. Development data only; no conclusion uses it.",
+  "dev_01": "data/p4-20261016-c-dev-01: first T1 flights; p4_metrics crashed (config/p4c.json lacked p4.baseline_matching, restored) and MC_RAPTOR_RTGT/RTDEC were missing from the ULog header (only param_find-ed at the first capture; now marked used in the Raptor constructor). Kept unchanged."
+}

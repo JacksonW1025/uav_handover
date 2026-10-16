@@ -8,7 +8,8 @@ p4.independence.initial_yaw.conditions, an initial heading (both recorded in pla
 
 Every run is checked right after it finishes: the P2 checks (execution and analyzer verdict, PX4 exit, crash markers,
 preparation trace, per-motor output-chain gate, p2_metrics) or the P3 checks (the same plus p3_metrics and p3_memory),
-then p4_metrics (seed and heading realized, takeover states, teacher-forcing coverage for N2, planned-path check).
+then p4_metrics (seed and heading realized, takeover states, teacher-forcing coverage for N2, planned-path check)
+and, for configs with a p4c section (P4-01c), p4c_metrics (takeover-target evidence and metrics).
 Pre-registered flight failures with sound infrastructure and complete measurement are results (config
 p3.flight_failures); any other failed check stops the batch, the remaining runs stay NOT_RUN and nothing is re-run.
 """
@@ -57,6 +58,15 @@ def run_row(row,out):
         row['p4_problems']=m.get('problems');row['checks']['p4_measured']=r.returncode==0 and m.get('status')=='MEASURED'
         row['teacher_forcing_coverage']=m.get('teacher_forcing_coverage');row['takeover_state']=m.get('takeover_state')
     else:row['checks']['p4_measured']=False
+    # P4-01c: takeover-target evidence and metrics (config with a p4c section); evidence failures stop the batch.
+    if 'p4c' in json.loads((ROOT/row['config']).read_text()):
+        if (run/'p2-metrics.json').exists() and (run/'flight.ulg').exists():
+            r=subprocess.run([PY,str(ROOT/'tools/p4c_metrics.py'),str(run)],capture_output=True,text=True,cwd=ROOT/'tools')
+            (out/f"{row['id']}-p4c.log").write_text(r.stdout+r.stderr);row['p4c_exit_code']=r.returncode
+            m=json.loads((run/'p4c-metrics.json').read_text()) if (run/'p4c-metrics.json').exists() else {}
+            row['p4c_problems']=m.get('problems');row['checks']['p4c_measured']=r.returncode==0 and m.get('status')=='MEASURED'
+            row['target_check']=(m.get('target') or {}).get('status')
+        else:row['checks']['p4c_measured']=False
     infra=[k for k in row['checks'] if k not in ['execution','subject_measured']]
     row['infrastructure_ok']=all(row['checks'][k] for k in infra)
     row['flight_failure']=bool(row['infrastructure_ok'] and row.get('flight_outcome')=='FAILURE')

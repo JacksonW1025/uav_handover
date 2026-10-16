@@ -1,0 +1,109 @@
+{
+  "created_at": "2026-10-16T10:18:19.989443+08:00",
+  "host": {
+    "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+    "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+    "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+  },
+  "purpose": "P4-01c development (ToDesk connected: code-path debugging only, never evidence): parameter logging fix, remaining run types, audit/report tool path",
+  "config": "config/p4c.json",
+  "output_chain_gate": {
+    "p99_us": 4000,
+    "max_us": 12000,
+    "longest_over_target_steps": 2,
+    "overwritten_fraction": 0.001,
+    "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+  },
+  "candidate": "candidate.json",
+  "mode": "development",
+  "groups": [
+    {
+      "kind": "p2_c_to_n",
+      "condition": "V1.0",
+      "treatment": "T0",
+      "n": 1
+    },
+    {
+      "kind": "p2_c_to_n",
+      "condition": "V1.5",
+      "treatment": "T0",
+      "n": 1
+    },
+    {
+      "kind": "p2_c_to_n",
+      "condition": "V2.0",
+      "treatment": "T1",
+      "n": 1
+    }
+  ],
+  "order": "repetitions interleave the groups",
+  "independence": {
+    "master_seed": 20261016,
+    "sim_seed": "Every P4 batch run gets its own Gazebo seed (gz sim --seed): first 31 bits of sha256(batch prefix + run id + master_seed), recorded in plan.json, config.json and the Gazebo command line. Gazebo sensor noise (IMU, barometer, magnetometer) is drawn from this seed; without --seed it is drawn from std::random_device.",
+    "initial_yaw": {
+      "range_deg": [
+        -20.0,
+        20.0
+      ],
+      "conditions": [
+        "D2",
+        "R"
+      ],
+      "rule": "01a runs (conditions D2, R) also spawn the x500 with a small initial heading uniform in range_deg (numpy default_rng(sim_seed)), so the whole flight (takeoff, hover, both C->N) happens at a different heading. 01b keeps heading 0 (motion along +N as in P2 S3). 01c keeps heading 0 (motion along +N as 01b).",
+      "heading_at_zero_deg": 96.0,
+      "heading_rule": "Gazebo yaw is counter-clockwise from East (ENU); PX4 heading is clockwise from North (NED) incl. the world magnetic declination. At spawn yaw 0 the PX4 heading is 96.0 deg (P3 batch-01 first C->N 95.99-96.05 deg; P4 dev-01 95.9 deg), so the expected heading before arming is 96.0 - initial_yaw_deg (tolerance 3 deg)."
+    },
+    "hover_point": "Not perturbed: the local frame origin is the spawn point and the Gazebo world is flat and translation invariant, so a horizontal offset of the hover point changes nothing the controllers or the physics see; the hover altitude stays the frozen 3 m (analysis references).",
+    "verification": "Before the batches: (1) startup-only runs with seeds A, A, B compare the at-rest raw gyro noise (sensor_gyro) sample by sample: same seed identical, different seed different; (2) development flights with different seeds/headings give different measured values; (3) every batch run checks that its Gazebo command carried the planned seed and that the heading at takeoff equals the planned heading (tolerance 3 deg).",
+    "default_settings": "The equivalence batch runs without --sim-seed/--initial-yaw-deg (as P3), i.e. the default settings."
+  },
+  "flight_failures": {
+    "criteria": {
+      "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+      "no_joint_recovery_s": 10.0,
+      "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+      "motor_saturation_continuous_s": 0.5,
+      "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+      "ground_altitude_m": 0.2,
+      "ground": "altitude <= 0.2 m inside [trigger, window end]"
+    },
+    "rule": "Pre-registered flight failures (frozen criteria above, all infrastructure checks passing) are results and do not stop the batch, as approved for the P2 N->C batches; any infrastructure or evidence failure stops the batch."
+  },
+  "teacher_forcing_rule": "N2 (RINI=4): the native inference steps immediately before the C->N owner change (inactive, teacher forced, consecutive) must number at least 10; checked per run from research_memory.",
+  "stop_rule": "Pre-registered flight failures with every infrastructure and evidence check passing are results and do not stop the batch; any other failed check stops it. Remaining runs stay NOT_RUN; nothing is re-run in place.",
+  "runs": [
+    {
+      "id": "V1.0-T0-1",
+      "kind": "p2_c_to_n",
+      "condition": "V1.0",
+      "treatment": "T0",
+      "config": "config/p4c.json",
+      "repetition": 1,
+      "sim_seed": 1735730522,
+      "initial_yaw_deg": null,
+      "directory": "data/p4-20261016-c-dev02-V1.0-T0-1"
+    },
+    {
+      "id": "V1.5-T0-1",
+      "kind": "p2_c_to_n",
+      "condition": "V1.5",
+      "treatment": "T0",
+      "config": "config/p4c.json",
+      "repetition": 1,
+      "sim_seed": 1831521440,
+      "initial_yaw_deg": null,
+      "directory": "data/p4-20261016-c-dev02-V1.5-T0-1"
+    },
+    {
+      "id": "V2.0-T1-1",
+      "kind": "p2_c_to_n",
+      "condition": "V2.0",
+      "treatment": "T1",
+      "config": "config/p4c.json",
+      "repetition": 1,
+      "sim_seed": 866728878,
+      "initial_yaw_deg": null,
+      "directory": "data/p4-20261016-c-dev02-V2.0-T1-1"
+    }
+  ]
+}

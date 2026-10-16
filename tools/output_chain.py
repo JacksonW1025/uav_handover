@@ -46,6 +46,12 @@ def neural_intervals(transitions,end_us):
     if start is not None:out.append((start,end_us))
     return out
 
+def open_interval_end(trace_end_us,ulog_end_us):
+    """End of a neural interval that no owner change closes (only after a runner safety abort). PX4 stops at the abort
+    while Gazebo may still step without commands, so the interval ends where PX4's log ends (P4-01c dev-10 diagnosis).
+    Gate values are unchanged; steps after PX4 stopped are not commands of a running controller."""
+    return min(int(trace_end_us),int(ulog_end_us)) if ulog_end_us else int(trace_end_us)
+
 def step_summary(rows,mask):
     r=rows[mask];applied=r['applied_sample_us'].astype(np.int64);valid=applied>0
     age=r['sim_us'].astype(np.int64)[valid]-applied[valid]
@@ -106,7 +112,7 @@ def analyze(run):
         motor,rows,tail=read_trace(path);motors[motor]=rows;partial[str(motor)]=tail
     metrics=json.loads((run/'metrics.json').read_text()) if (run/'metrics.json').exists() else {}
     topics={d.name:d.data for d in ULog(str(run/'flight.ulg'),['research_output','research_timing']).data_list if d.multi_id==0}
-    end=int(max(r['sim_us'][-1] for r in motors.values()))
+    trace_end=int(max(r['sim_us'][-1] for r in motors.values()));end=open_interval_end(trace_end,metrics.get('ulog_end_us'))
     intervals=neural_intervals(metrics.get('actuator_owner_transitions',[]),end)
     o=topics.get('research_output',{});t=topics.get('research_timing',{})
     skipped=(o['timestamp'].astype(np.int64),o['skipped_publication_total'].astype(np.int64)) if 'skipped_publication_total' in o else None
@@ -115,7 +121,7 @@ def analyze(run):
         m=t['executor_called'].astype(bool)&t['actuator_published'].astype(bool)
         published=(t['timestamp'][m].astype(np.int64),t['timestamp_sample'][m].astype(np.int64))
     out=summarize(motors,intervals,skipped,published)
-    out['partial_tail_bytes']=partial
+    out['partial_tail_bytes']=partial;out['open_interval_end']={'trace_end_us':trace_end,'ulog_end_us':metrics.get('ulog_end_us'),'used_us':end}
     ok=len(motors)==4 and all(v['whole_after_first_command']['steps']>0 for v in out['motors'].values()) and skipped is not None and bool(intervals)
     out['status']='MEASURED' if ok else 'INCOMPLETE'
     return out

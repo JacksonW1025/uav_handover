@@ -639,6 +639,126 @@ void Raptor::research_exit_lifecycle(bool active) {
 void Raptor::updateArmingCheckReply()
 {''')
 
+# P4-01c: RAPTOR takeover target (MC_RAPTOR_RTGT, MC_RAPTOR_RTDEC) on RAPTOR's own thread. Mode 0 keeps the original
+# zero-velocity capture unchanged; mode 1 replaces the zero velocity by the current horizontal velocity in the
+# activation cycle and then decelerates the target at a fixed rate (research/state/TargetProfile.hpp). Every capture
+# and every T1 target is published on research_target. Anchors are upstream lines outside earlier inserted blocks.
+edit('msg/CMakeLists.txt','\tRtlTimeEstimate.msg','\tResearchTarget.msg\n\tRtlTimeEstimate.msg')
+if 'MC_RAPTOR_RTGT:' not in (PX/'src/modules/mc_raptor/module.yaml').read_text():edit('src/modules/mc_raptor/module.yaml','    - group: Multicopter Raptor\n','''    - group: Handover Research
+      definitions:
+        MC_RAPTOR_RTGT:
+            description:
+                short: SITL research RAPTOR takeover target
+                long: 0 original activation capture (current position and yaw, zero velocity); 1 speed-matched target (same capture with the current horizontal velocity, then a fixed deceleration MC_RAPTOR_RTDEC along that direction to zero, position integrated from the target velocity). Only active with MC_RAPTOR_RSH.
+            type: int32
+            min: 0
+            max: 1
+            default: 0
+        MC_RAPTOR_RTDEC:
+            description:
+                short: SITL research deceleration of the speed-matched takeover target
+            type: float
+            unit: m/s^2
+            min: 0.1
+            max: 10.0
+            decimal: 2
+            default: 2.0
+    - group: Multicopter Raptor
+''')
+edit(rap_h,'#include <uORB/topics/trajectory_setpoint.h>','''#ifdef __PX4_POSIX
+#include <uORB/topics/research_target.h>
+#include <lib/handover_research/TargetProfile.hpp>
+#endif
+#include <uORB/topics/trajectory_setpoint.h>''')
+edit(rap_h,'\tbool use_internal_reference = false;','''#ifdef __PX4_POSIX
+    // P4-01c takeover target (SITL research only).
+    void research_target_capture(bool activation);
+    void research_target_step(bool active, bool stale);
+    void research_target_publish(uint8_t kind, uint8_t end_reason);
+    uORB::Publication<research_target_s> _research_target_pub{ORB_ID(research_target)};
+    handover_research::TargetProfile _research_target{};
+    int32_t _research_target_mode{0};
+    float _research_target_decel{0.f}, _research_target_vehicle_position[3]{}, _research_target_vehicle_velocity[3]{};
+    bool _research_target_activation{false};
+    uint8_t _research_target_phase{0};
+    hrt_abstime _research_target_capture_time{0}, _research_target_capture_sample{0}, _research_target_local_sample{0};
+#endif
+\tbool use_internal_reference = false;''')
+edit(rap,'\t\t\t_trajectory_setpoint.yawspeed = 0;\n','''\t\t\t_trajectory_setpoint.yawspeed = 0;
+#ifdef __PX4_POSIX
+\t\t\tresearch_target_capture(!previous_active && next_active);
+#endif
+''')
+edit(rap,'\trl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;\n','''#ifdef __PX4_POSIX
+\tresearch_target_step(next_active, status.trajectory_setpoint_stale);
+#endif
+\trl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;
+''')
+edit(rap,'int Raptor::task_spawn(int argc, char *argv[])\n{','''#ifdef __PX4_POSIX
+// P4-01c: called in the cycle in which RAPTOR captured its target (the original capture has just written the current
+// position and yaw with zero velocity). Mode 1 replaces the zero velocity by the current horizontal velocity in the
+// activation cycle only; research_target_step() then evaluates the profile every cycle while RAPTOR holds that target.
+void Raptor::research_target_capture(bool activation) {
+    static const param_t rsh=param_find("MC_RAPTOR_RSH"),rtgt=param_find("MC_RAPTOR_RTGT"),rtdec=param_find("MC_RAPTOR_RTDEC");
+    int32_t enabled=0,mode=0;float decel=0.f;param_get(rsh,&enabled);
+    if (!enabled) return;
+    param_get(rtgt,&mode);param_get(rtdec,&decel);
+    if (_research_target.active) {_research_target.active=false;research_target_publish(research_target_s::KIND_END,research_target_s::END_RECAPTURE);}
+    _research_target_mode=mode;_research_target_decel=decel;_research_target_activation=activation;
+    _research_target_capture_time=hrt_absolute_time();_research_target_capture_sample=_vehicle_angular_velocity.timestamp_sample;
+    _research_target_local_sample=_vehicle_local_position.timestamp_sample;
+    for (TI i=0;i<3;i++) {_research_target_vehicle_position[i]=position[i];_research_target_vehicle_velocity[i]=linear_velocity[i];}
+    _research_target_phase=handover_research::TARGET_PHASE_HOLD;
+    if (activation && mode==handover_research::TARGET_SPEED_MATCHED) {
+        float p[3]={_trajectory_setpoint.position[0],_trajectory_setpoint.position[1],_trajectory_setpoint.position[2]},v[3];
+        if (_research_target.start(_research_target_capture_sample,p,linear_velocity,decel)) {
+            _research_target_phase=_research_target.evaluate(_research_target_capture_sample,p,v);
+            for (TI i=0;i<3;i++) {_trajectory_setpoint.position[i]=p[i];_trajectory_setpoint.velocity[i]=v[i];}
+            PX4_INFO("Research takeover target T1: speed %.3f m/s, decel %.2f m/s^2",(double)_research_target.speed0,(double)decel);
+        } else {
+            PX4_ERR("Research takeover target T1 NOT started (decel %.3f)",(double)decel);
+        }
+    }
+    research_target_publish(research_target_s::KIND_CAPTURE,0);
+}
+void Raptor::research_target_step(bool active, bool stale) {
+    if (!_research_target.active) return;
+    if (!active || !stale) {
+        _research_target.active=false;
+        research_target_publish(research_target_s::KIND_END,active?research_target_s::END_EXTERNAL_SETPOINT:research_target_s::END_INACTIVE);
+        return;
+    }
+    float p[3],v[3];_research_target_phase=_research_target.evaluate(_vehicle_angular_velocity.timestamp_sample,p,v);
+    for (TI i=0;i<3;i++) {_trajectory_setpoint.position[i]=p[i];_trajectory_setpoint.velocity[i]=v[i];}
+    research_target_publish(research_target_s::KIND_PROFILE,0);
+}
+void Raptor::research_target_publish(uint8_t kind, uint8_t end_reason) {
+    research_target_s m{};
+    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
+    m.kind=kind;m.mode=_research_target_mode;m.activation=_research_target_activation;
+    m.phase=kind==research_target_s::KIND_END?0:_research_target_phase;m.end_reason=end_reason;m.decel=_research_target_decel;
+    m.capture_timestamp=_research_target_capture_time;m.capture_sample=_research_target_capture_sample;m.local_position_sample=_research_target_local_sample;
+    for (TI i=0;i<3;i++) {
+        m.vehicle_position[i]=_research_target_vehicle_position[i];m.vehicle_velocity[i]=_research_target_vehicle_velocity[i];
+        m.position[i]=_trajectory_setpoint.position[i];m.velocity[i]=_trajectory_setpoint.velocity[i];
+    }
+    m.yaw=_trajectory_setpoint.yaw;
+    _research_target_pub.publish(m);
+}
+#endif
+
+int Raptor::task_spawn(int argc, char *argv[])
+{''')
+
+# P4-01c: the takeover-target parameters are marked used at module start, so the log header records their values.
+edit(rap,'\t_actuator_motors_pub.advertise();\n\t_tune_control_pub.advertise();\n','''\t_actuator_motors_pub.advertise();
+\t_tune_control_pub.advertise();
+#ifdef __PX4_POSIX
+\tparam_find("MC_RAPTOR_RTGT");
+\tparam_find("MC_RAPTOR_RTDEC");
+#endif
+''')
+
 print('Applied SITL research instrumentation and POSIX daemon TLS initialization; policy files unchanged.')
 
 from apply_preparation import apply as apply_preparation

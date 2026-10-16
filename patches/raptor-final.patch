@@ -1,8 +1,8 @@
 diff --git a/msg/CMakeLists.txt b/msg/CMakeLists.txt
-index 369ec75..57cdd9b 100644
+index 369ec75..f27826a 100644
 --- a/msg/CMakeLists.txt
 +++ b/msg/CMakeLists.txt
-@@ -194,6 +194,14 @@ set(msg_files
+@@ -194,7 +194,16 @@ set(msg_files
  	RoverSteeringSetpoint.msg
  	RoverThrottleSetpoint.msg
  	Rpm.msg
@@ -15,8 +15,10 @@ index 369ec75..57cdd9b 100644
 +	RouteObservability.msg
 +	ResearchMemory.msg
  	RtlStatus.msg
++	ResearchTarget.msg
  	RtlTimeEstimate.msg
  	SatelliteInfo.msg
+ 	SensorAccel.msg
 diff --git a/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp b/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp
 index 486ddcf..77d6595 100644
 --- a/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp
@@ -793,7 +795,7 @@ index fb467f7..6a997ce 100644
  	/**
  	 * If set, the tilt setpoint is computed by assuming no vertical acceleration
 diff --git a/src/modules/mc_raptor/mc_raptor.cpp b/src/modules/mc_raptor/mc_raptor.cpp
-index df27d92..3c7b1bf 100644
+index df27d92..c998509 100644
 --- a/src/modules/mc_raptor/mc_raptor.cpp
 +++ b/src/modules/mc_raptor/mc_raptor.cpp
 @@ -1,3 +1,7 @@
@@ -903,7 +905,18 @@ index df27d92..3c7b1bf 100644
  
  ModuleBase::Descriptor Raptor::desc{task_spawn, custom_command, print_usage};
  
-@@ -413,6 +509,24 @@ void Raptor::observe(rl_tools::inference::applications::l2f::Observation<EXECUTO
+@@ -36,6 +132,10 @@ Raptor::Raptor(): ModuleParams(nullptr), ScheduledWorkItem(MODULE_NAME, px4::wq_
+ 
+ 	_actuator_motors_pub.advertise();
+ 	_tune_control_pub.advertise();
++#ifdef __PX4_POSIX
++	param_find("MC_RAPTOR_RTGT");
++	param_find("MC_RAPTOR_RTDEC");
++#endif
+ }
+ void Raptor::reset()
+ {
+@@ -413,6 +513,24 @@ void Raptor::observe(rl_tools::inference::applications::l2f::Observation<EXECUTO
  }
  
  
@@ -928,7 +941,7 @@ index df27d92..3c7b1bf 100644
  void Raptor::updateArmingCheckReply()
  {
  	if (flightmode_state == FlightModeState::CONFIGURED) {
-@@ -518,8 +632,11 @@ void Raptor::Run()
+@@ -518,8 +636,11 @@ void Raptor::Run()
  		timestamp_last_vehicle_status_set = true;
  	}
  
@@ -941,7 +954,7 @@ index df27d92..3c7b1bf 100644
  	if (!previous_active && next_active) {
  
  		// Activate setpoint type
-@@ -530,7 +647,23 @@ void Raptor::Run()
+@@ -530,7 +651,23 @@ void Raptor::Run()
  		setpoint_config.should_apply = true;
  		_setpoint_config_pub.publish(setpoint_config);
  
@@ -966,7 +979,7 @@ index df27d92..3c7b1bf 100644
  		PX4_INFO("Resetting Inference Executor (Recurrent State)");
  
  	} else {
-@@ -538,9 +671,16 @@ void Raptor::Run()
+@@ -538,9 +675,16 @@ void Raptor::Run()
  			PX4_INFO("inactive");
  		}
  	}
@@ -983,8 +996,23 @@ index df27d92..3c7b1bf 100644
  
  	if (status.subscription_update_angular_velocity) {
  		timestamp_last_angular_velocity = current_time;
-@@ -809,10 +949,95 @@ void Raptor::Run()
+@@ -779,6 +923,9 @@ void Raptor::Run()
+ 			_trajectory_setpoint.velocity[1] = 0;
+ 			_trajectory_setpoint.velocity[2] = 0;
+ 			_trajectory_setpoint.yawspeed = 0;
++#ifdef __PX4_POSIX
++			research_target_capture(!previous_active && next_active);
++#endif
  
+ 			if (!previous_trajectory_setpoint_stale) {
+ 				PX4_WARN("trajectory_setpoint turned stale at: %f %f %f, yaw: %f %llu / %llu us", (double)position[0], (double)position[1],
+@@ -807,12 +954,100 @@ void Raptor::Run()
+ 
+ 
+ 
++#ifdef __PX4_POSIX
++	research_target_step(next_active, status.trajectory_setpoint_stale);
++#endif
  	rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;
  	rl_tools::inference::applications::l2f::Action<EXECUTOR_SPEC> action;
 +#ifdef __PX4_POSIX
@@ -1079,7 +1107,7 @@ index df27d92..3c7b1bf 100644
  	if (!executor_status.OK) {
  		if (executor_status.TIMESTAMP_INVALID) {
  			PX4_ERR("RLtools executor error: Timestamp invalid");
-@@ -868,7 +1093,13 @@ void Raptor::Run()
+@@ -868,7 +1103,13 @@ void Raptor::Run()
  	for (TI action_i = 0; action_i < actuator_motors_s::NUM_CONTROLS; action_i++) {
  		if (action_i < EXECUTOR_CONFIG::OUTPUT_DIM) {
  			T value = action.action[action_i];
@@ -1094,7 +1122,7 @@ index df27d92..3c7b1bf 100644
  			value = (value + 1) / 2;
  			constexpr T training_min = 0;
  			constexpr T training_max = 1.0;
-@@ -890,7 +1121,25 @@ void Raptor::Run()
+@@ -890,7 +1131,25 @@ void Raptor::Run()
  	}
  
  	if (status.active) {
@@ -1120,7 +1148,67 @@ index df27d92..3c7b1bf 100644
  	}
  
  	perf_end(_loop_perf);
-@@ -994,6 +1243,9 @@ int Raptor::print_status()
+@@ -960,6 +1219,59 @@ void Raptor::Run()
+ 			&& executor_status.step_type == decltype(executor_status.step_type)::NATIVE;
+ }
+ 
++#ifdef __PX4_POSIX
++// P4-01c: called in the cycle in which RAPTOR captured its target (the original capture has just written the current
++// position and yaw with zero velocity). Mode 1 replaces the zero velocity by the current horizontal velocity in the
++// activation cycle only; research_target_step() then evaluates the profile every cycle while RAPTOR holds that target.
++void Raptor::research_target_capture(bool activation) {
++    static const param_t rsh=param_find("MC_RAPTOR_RSH"),rtgt=param_find("MC_RAPTOR_RTGT"),rtdec=param_find("MC_RAPTOR_RTDEC");
++    int32_t enabled=0,mode=0;float decel=0.f;param_get(rsh,&enabled);
++    if (!enabled) return;
++    param_get(rtgt,&mode);param_get(rtdec,&decel);
++    if (_research_target.active) {_research_target.active=false;research_target_publish(research_target_s::KIND_END,research_target_s::END_RECAPTURE);}
++    _research_target_mode=mode;_research_target_decel=decel;_research_target_activation=activation;
++    _research_target_capture_time=hrt_absolute_time();_research_target_capture_sample=_vehicle_angular_velocity.timestamp_sample;
++    _research_target_local_sample=_vehicle_local_position.timestamp_sample;
++    for (TI i=0;i<3;i++) {_research_target_vehicle_position[i]=position[i];_research_target_vehicle_velocity[i]=linear_velocity[i];}
++    _research_target_phase=handover_research::TARGET_PHASE_HOLD;
++    if (activation && mode==handover_research::TARGET_SPEED_MATCHED) {
++        float p[3]={_trajectory_setpoint.position[0],_trajectory_setpoint.position[1],_trajectory_setpoint.position[2]},v[3];
++        if (_research_target.start(_research_target_capture_sample,p,linear_velocity,decel)) {
++            _research_target_phase=_research_target.evaluate(_research_target_capture_sample,p,v);
++            for (TI i=0;i<3;i++) {_trajectory_setpoint.position[i]=p[i];_trajectory_setpoint.velocity[i]=v[i];}
++            PX4_INFO("Research takeover target T1: speed %.3f m/s, decel %.2f m/s^2",(double)_research_target.speed0,(double)decel);
++        } else {
++            PX4_ERR("Research takeover target T1 NOT started (decel %.3f)",(double)decel);
++        }
++    }
++    research_target_publish(research_target_s::KIND_CAPTURE,0);
++}
++void Raptor::research_target_step(bool active, bool stale) {
++    if (!_research_target.active) return;
++    if (!active || !stale) {
++        _research_target.active=false;
++        research_target_publish(research_target_s::KIND_END,active?research_target_s::END_EXTERNAL_SETPOINT:research_target_s::END_INACTIVE);
++        return;
++    }
++    float p[3],v[3];_research_target_phase=_research_target.evaluate(_vehicle_angular_velocity.timestamp_sample,p,v);
++    for (TI i=0;i<3;i++) {_trajectory_setpoint.position[i]=p[i];_trajectory_setpoint.velocity[i]=v[i];}
++    research_target_publish(research_target_s::KIND_PROFILE,0);
++}
++void Raptor::research_target_publish(uint8_t kind, uint8_t end_reason) {
++    research_target_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=kind;m.mode=_research_target_mode;m.activation=_research_target_activation;
++    m.phase=kind==research_target_s::KIND_END?0:_research_target_phase;m.end_reason=end_reason;m.decel=_research_target_decel;
++    m.capture_timestamp=_research_target_capture_time;m.capture_sample=_research_target_capture_sample;m.local_position_sample=_research_target_local_sample;
++    for (TI i=0;i<3;i++) {
++        m.vehicle_position[i]=_research_target_vehicle_position[i];m.vehicle_velocity[i]=_research_target_vehicle_velocity[i];
++        m.position[i]=_trajectory_setpoint.position[i];m.velocity[i]=_trajectory_setpoint.velocity[i];
++    }
++    m.yaw=_trajectory_setpoint.yaw;
++    _research_target_pub.publish(m);
++}
++#endif
++
+ int Raptor::task_spawn(int argc, char *argv[])
+ {
+ 	Raptor *instance = new Raptor();
+@@ -994,6 +1306,9 @@ int Raptor::print_status()
  
  int Raptor::custom_command(int argc, char *argv[])
  {
@@ -1131,7 +1219,7 @@ index df27d92..3c7b1bf 100644
  		if (strcmp(argv[1], "lissajous") == 0) {
  			// Usage: mc_raptor intref lissajous <A> <B> <C> <fa> <fb> <fc> <duration> <ramp>
 diff --git a/src/modules/mc_raptor/mc_raptor.hpp b/src/modules/mc_raptor/mc_raptor.hpp
-index fcd3203..da453d1 100644
+index fcd3203..6a87ee9 100644
 --- a/src/modules/mc_raptor/mc_raptor.hpp
 +++ b/src/modules/mc_raptor/mc_raptor.hpp
 @@ -1,4 +1,7 @@
@@ -1142,7 +1230,7 @@ index fcd3203..da453d1 100644
  
  #include "trajectories/lissajous.hpp"
  
-@@ -18,7 +21,16 @@
+@@ -18,7 +21,20 @@
  #include <uORB/topics/vehicle_odometry.h>
  #include <uORB/topics/vehicle_attitude.h>
  #include <uORB/topics/vehicle_angular_velocity.h>
@@ -1156,10 +1244,14 @@ index fcd3203..da453d1 100644
 +#include <lib/handover_research/ActionMap.hpp>
 +#include <lib/handover_research/MemoryInit.hpp>
 +#endif
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_target.h>
++#include <lib/handover_research/TargetProfile.hpp>
++#endif
  #include <uORB/topics/trajectory_setpoint.h>
  #include <uORB/topics/register_ext_component_request.h>
  #include <uORB/topics/register_ext_component_reply.h>
-@@ -91,6 +103,14 @@ public:
+@@ -91,6 +107,14 @@ public:
  	int print_status() override;
  
  private:
@@ -1174,7 +1266,7 @@ index fcd3203..da453d1 100644
  #ifdef __PX4_POSIX
  	using DEVICE = rlt::devices::DefaultCPU;
  #else
-@@ -117,7 +137,7 @@ private:
+@@ -117,7 +141,7 @@ private:
  
  	void Run() override;
  
@@ -1183,7 +1275,7 @@ index fcd3203..da453d1 100644
  	decltype(register_ext_component_reply_s::arming_check_id) ext_component_arming_check_id;
  
  	enum class FlightModeState : TI {
-@@ -130,7 +150,11 @@ private:
+@@ -130,7 +154,11 @@ private:
  
  	// node state
  	vehicle_local_position_s _vehicle_local_position{};
@@ -1195,7 +1287,7 @@ index fcd3203..da453d1 100644
  	vehicle_attitude_s _vehicle_attitude{};
  	vehicle_status_s _vehicle_status{};
  	trajectory_setpoint_s _trajectory_setpoint{};
-@@ -151,7 +175,11 @@ private:
+@@ -151,7 +179,11 @@ private:
  	uORB::Subscription _trajectory_setpoint_sub{ORB_ID(trajectory_setpoint)};
  	uORB::Subscription _arming_check_request_sub{ORB_ID(arming_check_request)};
  	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
@@ -1207,7 +1299,7 @@ index fcd3203..da453d1 100644
  	uORB::Publication<actuator_motors_s> _actuator_motors_pub{ORB_ID(actuator_motors)};
  	uORB::Publication<raptor_status_s> _raptor_status_pub{ORB_ID(raptor_status)};
  	uORB::Publication<raptor_input_s> _raptor_input_pub{ORB_ID(raptor_input)};
-@@ -231,6 +259,11 @@ private:
+@@ -231,6 +263,11 @@ private:
  #endif
  
  	void reset();
@@ -1219,7 +1311,7 @@ index fcd3203..da453d1 100644
  	void observe(rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> &observation);
  
  	static constexpr bool REMAP_FROM_CRAZYFLIE =
-@@ -263,6 +296,21 @@ private:
+@@ -263,6 +300,34 @@ private:
  	TI trajectory_setpoint_invalid_count = 0;
  
  	float previous_action[EXECUTOR_SPEC::OUTPUT_DIM];
@@ -1238,14 +1330,27 @@ index fcd3203..da453d1 100644
 +    float _research_classic_action[4]{};
 +    uint32_t _research_clipped_total{0}, _research_classic_unavailable_total{0};
 +#endif
++#ifdef __PX4_POSIX
++    // P4-01c takeover target (SITL research only).
++    void research_target_capture(bool activation);
++    void research_target_step(bool active, bool stale);
++    void research_target_publish(uint8_t kind, uint8_t end_reason);
++    uORB::Publication<research_target_s> _research_target_pub{ORB_ID(research_target)};
++    handover_research::TargetProfile _research_target{};
++    int32_t _research_target_mode{0};
++    float _research_target_decel{0.f}, _research_target_vehicle_position[3]{}, _research_target_vehicle_velocity[3]{};
++    bool _research_target_activation{false};
++    uint8_t _research_target_phase{0};
++    hrt_abstime _research_target_capture_time{0}, _research_target_capture_sample{0}, _research_target_local_sample{0};
++#endif
  	bool use_internal_reference = false;
  	bool internal_reference_params_changed = false;
  	T internal_reference_activation_position[3];
 diff --git a/src/modules/mc_raptor/module.yaml b/src/modules/mc_raptor/module.yaml
-index 2b61df8..665f302 100644
+index 2b61df8..a1179ac 100644
 --- a/src/modules/mc_raptor/module.yaml
 +++ b/src/modules/mc_raptor/module.yaml
-@@ -1,5 +1,32 @@
+@@ -1,5 +1,51 @@
  module_name: mc_raptor
  parameters:
 +    - group: Handover Research
@@ -1275,6 +1380,25 @@ index 2b61df8..665f302 100644
 +            min: 0
 +            max: 1
 +            default: 0
++    - group: Handover Research
++      definitions:
++        MC_RAPTOR_RTGT:
++            description:
++                short: SITL research RAPTOR takeover target
++                long: 0 original activation capture (current position and yaw, zero velocity); 1 speed-matched target (same capture with the current horizontal velocity, then a fixed deceleration MC_RAPTOR_RTDEC along that direction to zero, position integrated from the target velocity). Only active with MC_RAPTOR_RSH.
++            type: int32
++            min: 0
++            max: 1
++            default: 0
++        MC_RAPTOR_RTDEC:
++            description:
++                short: SITL research deceleration of the speed-matched takeover target
++            type: float
++            unit: m/s^2
++            min: 0.1
++            max: 10.0
++            decimal: 2
++            default: 2.0
      - group: Multicopter Raptor
        definitions:
          MC_RAPTOR_ENABLE:

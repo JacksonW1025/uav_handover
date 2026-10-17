@@ -55,6 +55,16 @@ int main() {
  // A restart replaces the previous profile completely.
  {TargetProfile t;assert(t.start(t0,p,v,2.f));const float vel[3]={-1.f,0.f,0.f};assert(t.start(t0+1000000,p,vel,4.f));
   t.evaluate(t0+1000000+100000,q,w);assert(near(w[0],-0.6,1e-6) && w[1]==0.f && near(q[0],p[0]-(0.1-0.02),1e-6));}
+ // P5 gating: mode 1 starts the profile only at activation (P4-01c unchanged); mode 2 also at an in-flight capture
+ // while active; never while inactive; mode 0 and out-of-range modes never.
+ for(bool activation:{false,true})for(bool active:{false,true}) {
+  if(activation && !active)continue;  // activation implies active
+  assert(!speed_matched_capture(TARGET_ZERO_VELOCITY,activation,active));
+  assert(speed_matched_capture(TARGET_SPEED_MATCHED,activation,active)==activation);
+  assert(speed_matched_capture(TARGET_SPEED_MATCHED_ALL,activation,active)==active);
+  assert(!speed_matched_capture(3,activation,active) && !speed_matched_capture(-1,activation,active));
+ }
+ assert(!speed_matched_capture(TARGET_SPEED_MATCHED_ALL,false,false) && TARGET_MODE_MAX==2);
  std::puts("target_profile_test passed");
  return 0;
 }

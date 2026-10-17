@@ -644,15 +644,26 @@ void Raptor::updateArmingCheckReply()
 # activation cycle and then decelerates the target at a fixed rate (research/state/TargetProfile.hpp). Every capture
 # and every T1 target is published on research_target. Anchors are upstream lines outside earlier inserted blocks.
 edit('msg/CMakeLists.txt','\tRtlTimeEstimate.msg','\tResearchTarget.msg\n\tRtlTimeEstimate.msg')
+RTGT_P4C='                long: 0 original activation capture (current position and yaw, zero velocity); 1 speed-matched target (same capture with the current horizontal velocity, then a fixed deceleration MC_RAPTOR_RTDEC along that direction to zero, position integrated from the target velocity). Only active with MC_RAPTOR_RSH.\n            type: int32\n            min: 0\n            max: 1\n'
+RTGT_P5='                long: 0 original activation capture (current position and yaw, zero velocity); 1 speed-matched target (same capture with the current horizontal velocity, then a fixed deceleration MC_RAPTOR_RTDEC along that direction to zero, position integrated from the target velocity); 2 the same speed-matched target at activation and at every in-flight setpoint-timeout capture while active. Only active with MC_RAPTOR_RSH.\n            type: int32\n            min: 0\n            max: 2\n'
+TGT_FN_P4C='// P4-01c: called in the cycle in which RAPTOR captured its target (the original capture has just written the current\n// position and yaw with zero velocity). Mode 1 replaces the zero velocity by the current horizontal velocity in the\n// activation cycle only; research_target_step() then evaluates the profile every cycle while RAPTOR holds that target.\nvoid Raptor::research_target_capture(bool activation) {'
+TGT_FN_P5='// P4-01c: called in the cycle in which RAPTOR captured its target (the original capture has just written the current\n// position and yaw with zero velocity). Mode 1 replaces the zero velocity by the current horizontal velocity in the\n// activation cycle only; research_target_step() then evaluates the profile every cycle while RAPTOR holds that target.\n// P5: mode 2 does the same at activation and at every in-flight setpoint-timeout capture while active.\nvoid Raptor::research_target_capture(bool activation, bool active) {'
+# P5: MC_RAPTOR_RTGT=2 (speed-matched target also at in-flight setpoint-timeout captures). The P4-01c edits below carry
+# the P5 text; these migrations upgrade checkouts prepared with the P4-01c text first, so each edit then finds its text.
+migrate('src/modules/mc_raptor/module.yaml',RTGT_P4C,RTGT_P5)
+migrate(rap_h,'    void research_target_capture(bool activation);\n','    void research_target_capture(bool activation, bool active);\n')
+migrate(rap,'\t\t\tresearch_target_capture(!previous_active && next_active);\n','\t\t\tresearch_target_capture(!previous_active && next_active, next_active);\n')
+migrate(rap,TGT_FN_P4C,TGT_FN_P5)
+migrate(rap,'    if (activation && mode==handover_research::TARGET_SPEED_MATCHED) {\n','    if (handover_research::speed_matched_capture(mode,activation,active)) {\n')
 if 'MC_RAPTOR_RTGT:' not in (PX/'src/modules/mc_raptor/module.yaml').read_text():edit('src/modules/mc_raptor/module.yaml','    - group: Multicopter Raptor\n','''    - group: Handover Research
       definitions:
         MC_RAPTOR_RTGT:
             description:
                 short: SITL research RAPTOR takeover target
-                long: 0 original activation capture (current position and yaw, zero velocity); 1 speed-matched target (same capture with the current horizontal velocity, then a fixed deceleration MC_RAPTOR_RTDEC along that direction to zero, position integrated from the target velocity). Only active with MC_RAPTOR_RSH.
+                long: 0 original activation capture (current position and yaw, zero velocity); 1 speed-matched target (same capture with the current horizontal velocity, then a fixed deceleration MC_RAPTOR_RTDEC along that direction to zero, position integrated from the target velocity); 2 the same speed-matched target at activation and at every in-flight setpoint-timeout capture while active. Only active with MC_RAPTOR_RSH.
             type: int32
             min: 0
-            max: 1
+            max: 2
             default: 0
         MC_RAPTOR_RTDEC:
             description:
@@ -672,7 +683,7 @@ edit(rap_h,'#include <uORB/topics/trajectory_setpoint.h>','''#ifdef __PX4_POSIX
 #include <uORB/topics/trajectory_setpoint.h>''')
 edit(rap_h,'\tbool use_internal_reference = false;','''#ifdef __PX4_POSIX
     // P4-01c takeover target (SITL research only).
-    void research_target_capture(bool activation);
+    void research_target_capture(bool activation, bool active);
     void research_target_step(bool active, bool stale);
     void research_target_publish(uint8_t kind, uint8_t end_reason);
     uORB::Publication<research_target_s> _research_target_pub{ORB_ID(research_target)};
@@ -686,7 +697,7 @@ edit(rap_h,'\tbool use_internal_reference = false;','''#ifdef __PX4_POSIX
 \tbool use_internal_reference = false;''')
 edit(rap,'\t\t\t_trajectory_setpoint.yawspeed = 0;\n','''\t\t\t_trajectory_setpoint.yawspeed = 0;
 #ifdef __PX4_POSIX
-\t\t\tresearch_target_capture(!previous_active && next_active);
+\t\t\tresearch_target_capture(!previous_active && next_active, next_active);
 #endif
 ''')
 edit(rap,'\trl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;\n','''#ifdef __PX4_POSIX
@@ -698,7 +709,8 @@ edit(rap,'int Raptor::task_spawn(int argc, char *argv[])\n{','''#ifdef __PX4_POS
 // P4-01c: called in the cycle in which RAPTOR captured its target (the original capture has just written the current
 // position and yaw with zero velocity). Mode 1 replaces the zero velocity by the current horizontal velocity in the
 // activation cycle only; research_target_step() then evaluates the profile every cycle while RAPTOR holds that target.
-void Raptor::research_target_capture(bool activation) {
+// P5: mode 2 does the same at activation and at every in-flight setpoint-timeout capture while active.
+void Raptor::research_target_capture(bool activation, bool active) {
     static const param_t rsh=param_find("MC_RAPTOR_RSH"),rtgt=param_find("MC_RAPTOR_RTGT"),rtdec=param_find("MC_RAPTOR_RTDEC");
     int32_t enabled=0,mode=0;float decel=0.f;param_get(rsh,&enabled);
     if (!enabled) return;
@@ -709,7 +721,7 @@ void Raptor::research_target_capture(bool activation) {
     _research_target_local_sample=_vehicle_local_position.timestamp_sample;
     for (TI i=0;i<3;i++) {_research_target_vehicle_position[i]=position[i];_research_target_vehicle_velocity[i]=linear_velocity[i];}
     _research_target_phase=handover_research::TARGET_PHASE_HOLD;
-    if (activation && mode==handover_research::TARGET_SPEED_MATCHED) {
+    if (handover_research::speed_matched_capture(mode,activation,active)) {
         float p[3]={_trajectory_setpoint.position[0],_trajectory_setpoint.position[1],_trajectory_setpoint.position[2]},v[3];
         if (_research_target.start(_research_target_capture_sample,p,linear_velocity,decel)) {
             _research_target_phase=_research_target.evaluate(_research_target_capture_sample,p,v);

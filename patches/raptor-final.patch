@@ -795,7 +795,7 @@ index fb467f7..6a997ce 100644
  	/**
  	 * If set, the tilt setpoint is computed by assuming no vertical acceleration
 diff --git a/src/modules/mc_raptor/mc_raptor.cpp b/src/modules/mc_raptor/mc_raptor.cpp
-index df27d92..c998509 100644
+index df27d92..679e5a3 100644
 --- a/src/modules/mc_raptor/mc_raptor.cpp
 +++ b/src/modules/mc_raptor/mc_raptor.cpp
 @@ -1,3 +1,7 @@
@@ -1001,7 +1001,7 @@ index df27d92..c998509 100644
  			_trajectory_setpoint.velocity[2] = 0;
  			_trajectory_setpoint.yawspeed = 0;
 +#ifdef __PX4_POSIX
-+			research_target_capture(!previous_active && next_active);
++			research_target_capture(!previous_active && next_active, next_active);
 +#endif
  
  			if (!previous_trajectory_setpoint_stale) {
@@ -1148,7 +1148,7 @@ index df27d92..c998509 100644
  	}
  
  	perf_end(_loop_perf);
-@@ -960,6 +1219,59 @@ void Raptor::Run()
+@@ -960,6 +1219,60 @@ void Raptor::Run()
  			&& executor_status.step_type == decltype(executor_status.step_type)::NATIVE;
  }
  
@@ -1156,7 +1156,8 @@ index df27d92..c998509 100644
 +// P4-01c: called in the cycle in which RAPTOR captured its target (the original capture has just written the current
 +// position and yaw with zero velocity). Mode 1 replaces the zero velocity by the current horizontal velocity in the
 +// activation cycle only; research_target_step() then evaluates the profile every cycle while RAPTOR holds that target.
-+void Raptor::research_target_capture(bool activation) {
++// P5: mode 2 does the same at activation and at every in-flight setpoint-timeout capture while active.
++void Raptor::research_target_capture(bool activation, bool active) {
 +    static const param_t rsh=param_find("MC_RAPTOR_RSH"),rtgt=param_find("MC_RAPTOR_RTGT"),rtdec=param_find("MC_RAPTOR_RTDEC");
 +    int32_t enabled=0,mode=0;float decel=0.f;param_get(rsh,&enabled);
 +    if (!enabled) return;
@@ -1167,7 +1168,7 @@ index df27d92..c998509 100644
 +    _research_target_local_sample=_vehicle_local_position.timestamp_sample;
 +    for (TI i=0;i<3;i++) {_research_target_vehicle_position[i]=position[i];_research_target_vehicle_velocity[i]=linear_velocity[i];}
 +    _research_target_phase=handover_research::TARGET_PHASE_HOLD;
-+    if (activation && mode==handover_research::TARGET_SPEED_MATCHED) {
++    if (handover_research::speed_matched_capture(mode,activation,active)) {
 +        float p[3]={_trajectory_setpoint.position[0],_trajectory_setpoint.position[1],_trajectory_setpoint.position[2]},v[3];
 +        if (_research_target.start(_research_target_capture_sample,p,linear_velocity,decel)) {
 +            _research_target_phase=_research_target.evaluate(_research_target_capture_sample,p,v);
@@ -1208,7 +1209,7 @@ index df27d92..c998509 100644
  int Raptor::task_spawn(int argc, char *argv[])
  {
  	Raptor *instance = new Raptor();
-@@ -994,6 +1306,9 @@ int Raptor::print_status()
+@@ -994,6 +1307,9 @@ int Raptor::print_status()
  
  int Raptor::custom_command(int argc, char *argv[])
  {
@@ -1219,7 +1220,7 @@ index df27d92..c998509 100644
  		if (strcmp(argv[1], "lissajous") == 0) {
  			// Usage: mc_raptor intref lissajous <A> <B> <C> <fa> <fb> <fc> <duration> <ramp>
 diff --git a/src/modules/mc_raptor/mc_raptor.hpp b/src/modules/mc_raptor/mc_raptor.hpp
-index fcd3203..6a87ee9 100644
+index fcd3203..cf5fe9b 100644
 --- a/src/modules/mc_raptor/mc_raptor.hpp
 +++ b/src/modules/mc_raptor/mc_raptor.hpp
 @@ -1,4 +1,7 @@
@@ -1332,7 +1333,7 @@ index fcd3203..6a87ee9 100644
 +#endif
 +#ifdef __PX4_POSIX
 +    // P4-01c takeover target (SITL research only).
-+    void research_target_capture(bool activation);
++    void research_target_capture(bool activation, bool active);
 +    void research_target_step(bool active, bool stale);
 +    void research_target_publish(uint8_t kind, uint8_t end_reason);
 +    uORB::Publication<research_target_s> _research_target_pub{ORB_ID(research_target)};
@@ -1347,7 +1348,7 @@ index fcd3203..6a87ee9 100644
  	bool internal_reference_params_changed = false;
  	T internal_reference_activation_position[3];
 diff --git a/src/modules/mc_raptor/module.yaml b/src/modules/mc_raptor/module.yaml
-index 2b61df8..a1179ac 100644
+index 2b61df8..00f734e 100644
 --- a/src/modules/mc_raptor/module.yaml
 +++ b/src/modules/mc_raptor/module.yaml
 @@ -1,5 +1,51 @@
@@ -1385,10 +1386,10 @@ index 2b61df8..a1179ac 100644
 +        MC_RAPTOR_RTGT:
 +            description:
 +                short: SITL research RAPTOR takeover target
-+                long: 0 original activation capture (current position and yaw, zero velocity); 1 speed-matched target (same capture with the current horizontal velocity, then a fixed deceleration MC_RAPTOR_RTDEC along that direction to zero, position integrated from the target velocity). Only active with MC_RAPTOR_RSH.
++                long: 0 original activation capture (current position and yaw, zero velocity); 1 speed-matched target (same capture with the current horizontal velocity, then a fixed deceleration MC_RAPTOR_RTDEC along that direction to zero, position integrated from the target velocity); 2 the same speed-matched target at activation and at every in-flight setpoint-timeout capture while active. Only active with MC_RAPTOR_RSH.
 +            type: int32
 +            min: 0
-+            max: 1
++            max: 2
 +            default: 0
 +        MC_RAPTOR_RTDEC:
 +            description:

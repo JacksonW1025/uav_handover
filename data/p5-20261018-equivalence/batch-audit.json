@@ -1,0 +1,714 @@
+{
+  "batch": "data/p5-20261018-equivalence",
+  "config": "config/p5.json",
+  "audit_code_sha256": {
+    "p5_audit.py": "8aff241f7b4620ea3fda58b55605f540c180a46be7bd5fa4520b5fb059ec26d5",
+    "p5_metrics.py": "5b360e637b4df300a14f9dabef84156e2cf950713d2e8ad0884b6903595269cc",
+    "p4c_metrics.py": "3f0d497ed6dd27f5cc8639bee7867d401a7be940d6f5ed427e800d7e5ae28a1e",
+    "p4_metrics.py": "e360158b6af487fcad19462903827fa3aa2c331084dc5b04cfb22c5db7bcc8a5",
+    "p2_metrics.py": "ca28771ff1cc329be553695dae156bddc2ca29ce99b34ed1b096bfa69aa8f48a",
+    "p1_metrics.py": "c269f251eafa4adfb6c15adac7fe4288e8fa43c2bd6f1b8b0a3c4562df5cbafb",
+    "p0_metrics.py": "8b28205627831a66f00ffb8dfb7dbe9263f6df371bff267a2d8410d115fa441f",
+    "recovery.py": "98deed44eae315df40469ca3ff5a910ccb5860b1581639759784e902f0960939",
+    "preparation_audit.py": "d6f4815591b88c053da9a22d7e5394e800a853bae09f8b51a1815ee381d68776"
+  },
+  "runner_results": {
+    "status": "PASS",
+    "complete": true,
+    "accepted": 4,
+    "flight_failures": 0,
+    "failed": 0,
+    "not_run": 0,
+    "candidate_unchanged": true
+  },
+  "output_chain": {
+    "gate": {
+      "p99_us": 4000,
+      "max_us": 12000,
+      "longest_over_target_steps": 2,
+      "overwritten_fraction": 0.001,
+      "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+    },
+    "neural_motor_steps": 41888,
+    "overwritten_motor_commands": 0,
+    "overwritten_fraction": 0.0,
+    "fraction_gate_met": true,
+    "per_run_gate_failures": [],
+    "max_applied_age_us": 8000.0
+  },
+  "runs_checked": 4,
+  "all_runs_passed": true,
+  "flight_failures": [],
+  "independence": {
+    "runs": 4,
+    "distinct_seeds": 4
+  },
+  "summary": {
+    "p2_c_to_n:M1:N2": {
+      "runs": 2,
+      "ids": [
+        "M1-N2-1",
+        "M1-N2-2"
+      ],
+      "flight_failures": 0,
+      "failure_reasons": [],
+      "direction_relative_to_target_yaw_deg": [
+        null,
+        null
+      ],
+      "clipping": [
+        null,
+        null
+      ]
+    },
+    "p2_c_to_n:V1.0:T1": {
+      "runs": 2,
+      "ids": [
+        "V1.0-T1-1",
+        "V1.0-T1-2"
+      ],
+      "flight_failures": 0,
+      "failure_reasons": [],
+      "settle_time_s": {
+        "n": 2,
+        "mean": 2.56,
+        "min": 2.14,
+        "max": 2.98,
+        "values": [
+          2.98,
+          2.14
+        ],
+        "sd": 0.5939696961966998,
+        "ci95": [
+          -2.7766059893014785,
+          7.896605989301479
+        ]
+      },
+      "direction_relative_to_target_yaw_deg": [
+        null,
+        null
+      ],
+      "clipping": [
+        null,
+        null
+      ]
+    }
+  },
+  "max_horizontal_radius_m": 5.450875282287598,
+  "runs": [
+    {
+      "id": "M1-N2-1",
+      "kind": "p2_c_to_n",
+      "condition": "M1",
+      "treatment": "N2",
+      "config": "config/p4.json",
+      "sim_seed": 321181300,
+      "initial_yaw_deg": null,
+      "directory": "data/p5-20261018-eq-M1-N2-1",
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "ulog_sha256_matches": true,
+      "GZ_IP": "127.0.0.1",
+      "capture_raw_sensors": false,
+      "process_names": [
+        "agent",
+        "agent-reconnected",
+        "gazebo",
+        "gz-stats",
+        "px4",
+        "tegrastats"
+      ],
+      "validation": "PASS",
+      "analysis": "PASS",
+      "recovery_status": "PASS",
+      "joint_recovery_status_counts": {
+        "SETTLED": 3,
+        "NOT_SETTLED": 0,
+        "INSUFFICIENT_OBSERVATION": 0
+      },
+      "executor_acceptance": "PASS",
+      "executor_warnings_whole_run": 0,
+      "first_recovery_uncertain_stages": 0,
+      "trace": {
+        "status": "MEASURED",
+        "publish_sim_age_max_us": 0.0,
+        "run_sim_age_max_us": 0.0,
+        "bridge_age_bins": {
+          "<=0ms": 20456,
+          "(0,4]ms": 2,
+          "(4,8]ms": 0,
+          "(8,12]ms": 0,
+          "(12,20]ms": 0,
+          "(20,40]ms": 0,
+          "(40,100]ms": 0,
+          ">100ms": 0
+        },
+        "bridge_repeated": 0,
+        "bridge_regressed": 0,
+        "bridge_negative_age": 0,
+        "neural_owner_bridge_age_max_us": 0.0
+      },
+      "output_chain": {
+        "status": "MEASURED",
+        "neural_steps": 2622,
+        "neural_hold_steps": 0,
+        "neural_gazebo_overwritten": 0,
+        "neural_over_target_steps": 0,
+        "neural_applied_age_max_us": 4000.0,
+        "neural_longest_over_target_steps": 0,
+        "px4_overwritten_neural": 0,
+        "motors_disagree_steps": 0,
+        "neural_published_not_applied_logged": 0
+      },
+      "passed": true,
+      "output_chain_gate_errors": [],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_counts": {
+        "steps": 10488,
+        "overwritten": 0,
+        "max_applied_age_us": 4000.0
+      },
+      "takeover_state": {
+        "px4_us": 58328000,
+        "speed_along_axis_m_s": 1.0074701309204102,
+        "horizontal_speed_m_s": 1.0075171161511884,
+        "acceleration_along_axis_m_s2": -0.006395760973516319,
+        "acceleration_window_s": 0.05,
+        "samples": 7
+      },
+      "teacher_forcing_coverage": {
+        "entry_px4_us": 58316000,
+        "consecutive_teacher_forced_native_steps": 3665,
+        "span_s": 29.316
+      },
+      "planned_path": {
+        "event": "p4_planned_path_check",
+        "monotonic_ns": 218157543765835,
+        "wall_time_ns": 1792266434986606519,
+        "origin_ned_m": [
+          0.055,
+          -0.01152,
+          -2.98768
+        ],
+        "event_point_ned_m": [
+          5.055,
+          -0.01152,
+          -2.98768
+        ],
+        "path_m": 5.0,
+        "braking_distance_m": 0.0,
+        "radius_with_allowance_m": 6.055013126629841,
+        "limit_m": 8.0,
+        "inside": true
+      },
+      "max_horizontal_radius_m": 5.288868427276611,
+      "independence": {
+        "planned": {
+          "sim_seed": 321181300,
+          "initial_yaw_deg": null
+        },
+        "gazebo_seed_argument": "321181300",
+        "heading_before_arming_deg": 96.00871258331408,
+        "expected_heading_deg": 96.0,
+        "heading_error_deg": 0.00871258331409308
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold"
+      },
+      "flight_outcome": "SUCCESS",
+      "flight_failure_reasons": [],
+      "recomputed": {
+        "p2": {
+          "reproduced": true,
+          "measured": true,
+          "problems": []
+        },
+        "p4": {
+          "reproduced": true,
+          "measured": true,
+          "problems": []
+        }
+      },
+      "metrics": {
+        "direction": null,
+        "clipping": null,
+        "true_error": null,
+        "settled": null,
+        "settle_time_s": null,
+        "settle_distance_m": null,
+        "settle_distance_along_axis_m": null,
+        "max_travel_along_axis_m": null,
+        "target_check": null
+      },
+      "flight_failure": false
+    },
+    {
+      "id": "V1.0-T1-1",
+      "kind": "p2_c_to_n",
+      "condition": "V1.0",
+      "treatment": "T1",
+      "config": "config/p4c.json",
+      "sim_seed": 559493164,
+      "initial_yaw_deg": null,
+      "directory": "data/p5-20261018-eq-V1.0-T1-1",
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "ulog_sha256_matches": true,
+      "GZ_IP": "127.0.0.1",
+      "capture_raw_sensors": false,
+      "process_names": [
+        "agent",
+        "agent-reconnected",
+        "gazebo",
+        "gz-stats",
+        "px4",
+        "tegrastats"
+      ],
+      "validation": "PASS",
+      "analysis": "PASS",
+      "recovery_status": "PASS",
+      "joint_recovery_status_counts": {
+        "SETTLED": 3,
+        "NOT_SETTLED": 0,
+        "INSUFFICIENT_OBSERVATION": 0
+      },
+      "executor_acceptance": "PASS",
+      "executor_warnings_whole_run": 0,
+      "first_recovery_uncertain_stages": 0,
+      "trace": {
+        "status": "MEASURED",
+        "publish_sim_age_max_us": 0.0,
+        "run_sim_age_max_us": 0.0,
+        "bridge_age_bins": {
+          "<=0ms": 20423,
+          "(0,4]ms": 0,
+          "(4,8]ms": 0,
+          "(8,12]ms": 0,
+          "(12,20]ms": 0,
+          "(20,40]ms": 0,
+          "(40,100]ms": 0,
+          ">100ms": 0
+        },
+        "bridge_repeated": 0,
+        "bridge_regressed": 0,
+        "bridge_negative_age": 0,
+        "neural_owner_bridge_age_max_us": 0.0
+      },
+      "output_chain": {
+        "status": "MEASURED",
+        "neural_steps": 2622,
+        "neural_hold_steps": 0,
+        "neural_gazebo_overwritten": 0,
+        "neural_over_target_steps": 0,
+        "neural_applied_age_max_us": 4000.0,
+        "neural_longest_over_target_steps": 0,
+        "px4_overwritten_neural": 0,
+        "motors_disagree_steps": 0,
+        "neural_published_not_applied_logged": 0
+      },
+      "passed": true,
+      "output_chain_gate_errors": [],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_counts": {
+        "steps": 10488,
+        "overwritten": 0,
+        "max_applied_age_us": 4000.0
+      },
+      "takeover_state": {
+        "px4_us": 58192000,
+        "speed_along_axis_m_s": 1.038145899772644,
+        "horizontal_speed_m_s": 1.0381535970519027,
+        "acceleration_along_axis_m_s2": -0.023404651631911595,
+        "acceleration_window_s": 0.05,
+        "samples": 6
+      },
+      "teacher_forcing_coverage": {
+        "entry_px4_us": 58180000,
+        "consecutive_teacher_forced_native_steps": 3646,
+        "span_s": 29.164
+      },
+      "planned_path": {
+        "event": "p4_planned_path_check",
+        "monotonic_ns": 218250735099246,
+        "wall_time_ns": 1792266528177939967,
+        "origin_ned_m": [
+          0.02041,
+          0.02899,
+          -3.00578
+        ],
+        "event_point_ned_m": [
+          5.02041,
+          0.02899,
+          -3.00578
+        ],
+        "path_m": 5.0,
+        "braking_distance_m": 0.25,
+        "radius_with_allowance_m": 6.270493699647476,
+        "limit_m": 8.0,
+        "inside": true
+      },
+      "max_horizontal_radius_m": 5.412553310394287,
+      "independence": {
+        "planned": {
+          "sim_seed": 559493164,
+          "initial_yaw_deg": null
+        },
+        "gazebo_seed_argument": "559493164",
+        "heading_before_arming_deg": 95.95435542439017,
+        "expected_heading_deg": 96.0,
+        "heading_error_deg": -0.0456445756098276
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_speed_matched",
+        "target": "VERIFIED"
+      },
+      "flight_outcome": "SUCCESS",
+      "flight_failure_reasons": [],
+      "recomputed": {
+        "p2": {
+          "reproduced": true,
+          "measured": true,
+          "problems": []
+        },
+        "p4": {
+          "reproduced": true,
+          "measured": true,
+          "problems": []
+        },
+        "p4c": {
+          "reproduced": true,
+          "measured": true,
+          "problems": []
+        }
+      },
+      "metrics": {
+        "direction": null,
+        "clipping": null,
+        "true_error": null,
+        "settled": true,
+        "settle_time_s": 2.98,
+        "settle_distance_m": 0.2870962316630713,
+        "settle_distance_along_axis_m": 0.2869448661804199,
+        "max_travel_along_axis_m": 0.38557863235473633,
+        "target_check": "VERIFIED"
+      },
+      "flight_failure": false
+    },
+    {
+      "id": "M1-N2-2",
+      "kind": "p2_c_to_n",
+      "condition": "M1",
+      "treatment": "N2",
+      "config": "config/p4.json",
+      "sim_seed": 740168303,
+      "initial_yaw_deg": null,
+      "directory": "data/p5-20261018-eq-M1-N2-2",
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "ulog_sha256_matches": true,
+      "GZ_IP": "127.0.0.1",
+      "capture_raw_sensors": false,
+      "process_names": [
+        "agent",
+        "agent-reconnected",
+        "gazebo",
+        "gz-stats",
+        "px4",
+        "tegrastats"
+      ],
+      "validation": "PASS",
+      "analysis": "PASS",
+      "recovery_status": "PASS",
+      "joint_recovery_status_counts": {
+        "SETTLED": 3,
+        "NOT_SETTLED": 0,
+        "INSUFFICIENT_OBSERVATION": 0
+      },
+      "executor_acceptance": "PASS",
+      "executor_warnings_whole_run": 0,
+      "first_recovery_uncertain_stages": 0,
+      "trace": {
+        "status": "MEASURED",
+        "publish_sim_age_max_us": 0.0,
+        "run_sim_age_max_us": 0.0,
+        "bridge_age_bins": {
+          "<=0ms": 20546,
+          "(0,4]ms": 1,
+          "(4,8]ms": 0,
+          "(8,12]ms": 0,
+          "(12,20]ms": 0,
+          "(20,40]ms": 0,
+          "(40,100]ms": 0,
+          ">100ms": 0
+        },
+        "bridge_repeated": 0,
+        "bridge_regressed": 0,
+        "bridge_negative_age": 0,
+        "neural_owner_bridge_age_max_us": 0.0
+      },
+      "output_chain": {
+        "status": "MEASURED",
+        "neural_steps": 2615,
+        "neural_hold_steps": 1,
+        "neural_gazebo_overwritten": 0,
+        "neural_over_target_steps": 1,
+        "neural_applied_age_max_us": 8000.0,
+        "neural_longest_over_target_steps": 1,
+        "px4_overwritten_neural": 0,
+        "motors_disagree_steps": 0,
+        "neural_published_not_applied_logged": 0
+      },
+      "passed": true,
+      "output_chain_gate_errors": [],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_counts": {
+        "steps": 10460,
+        "overwritten": 0,
+        "max_applied_age_us": 8000.0
+      },
+      "takeover_state": {
+        "px4_us": 58420000,
+        "speed_along_axis_m_s": 1.0316855907440186,
+        "horizontal_speed_m_s": 1.0316997579917004,
+        "acceleration_along_axis_m_s2": -0.03007522566864888,
+        "acceleration_window_s": 0.05,
+        "samples": 6
+      },
+      "teacher_forcing_coverage": {
+        "entry_px4_us": 58404000,
+        "consecutive_teacher_forced_native_steps": 3676,
+        "span_s": 29.408
+      },
+      "planned_path": {
+        "event": "p4_planned_path_check",
+        "monotonic_ns": 218344759169618,
+        "wall_time_ns": 1792266622202010505,
+        "origin_ned_m": [
+          -0.00678,
+          0.01711,
+          -2.95387
+        ],
+        "event_point_ned_m": [
+          4.99322,
+          0.01711,
+          -2.95387
+        ],
+        "path_m": 5.0,
+        "braking_distance_m": 0.0,
+        "radius_with_allowance_m": 5.993249314875034,
+        "limit_m": 8.0,
+        "inside": true
+      },
+      "max_horizontal_radius_m": 5.247636318206787,
+      "independence": {
+        "planned": {
+          "sim_seed": 740168303,
+          "initial_yaw_deg": null
+        },
+        "gazebo_seed_argument": "740168303",
+        "heading_before_arming_deg": 96.06724752307099,
+        "expected_heading_deg": 96.0,
+        "heading_error_deg": 0.06724752307098925
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_reset_hold"
+      },
+      "flight_outcome": "SUCCESS",
+      "flight_failure_reasons": [],
+      "recomputed": {
+        "p2": {
+          "reproduced": true,
+          "measured": true,
+          "problems": []
+        },
+        "p4": {
+          "reproduced": true,
+          "measured": true,
+          "problems": []
+        }
+      },
+      "metrics": {
+        "direction": null,
+        "clipping": null,
+        "true_error": null,
+        "settled": null,
+        "settle_time_s": null,
+        "settle_distance_m": null,
+        "settle_distance_along_axis_m": null,
+        "max_travel_along_axis_m": null,
+        "target_check": null
+      },
+      "flight_failure": false
+    },
+    {
+      "id": "V1.0-T1-2",
+      "kind": "p2_c_to_n",
+      "condition": "V1.0",
+      "treatment": "T1",
+      "config": "config/p4c.json",
+      "sim_seed": 2043314349,
+      "initial_yaw_deg": null,
+      "directory": "data/p5-20261018-eq-V1.0-T1-2",
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "ulog_sha256_matches": true,
+      "GZ_IP": "127.0.0.1",
+      "capture_raw_sensors": false,
+      "process_names": [
+        "agent",
+        "agent-reconnected",
+        "gazebo",
+        "gz-stats",
+        "px4",
+        "tegrastats"
+      ],
+      "validation": "PASS",
+      "analysis": "PASS",
+      "recovery_status": "PASS",
+      "joint_recovery_status_counts": {
+        "SETTLED": 3,
+        "NOT_SETTLED": 0,
+        "INSUFFICIENT_OBSERVATION": 0
+      },
+      "executor_acceptance": "PASS",
+      "executor_warnings_whole_run": 0,
+      "first_recovery_uncertain_stages": 0,
+      "trace": {
+        "status": "MEASURED",
+        "publish_sim_age_max_us": 0.0,
+        "run_sim_age_max_us": 0.0,
+        "bridge_age_bins": {
+          "<=0ms": 20522,
+          "(0,4]ms": 0,
+          "(4,8]ms": 0,
+          "(8,12]ms": 0,
+          "(12,20]ms": 0,
+          "(20,40]ms": 0,
+          "(40,100]ms": 0,
+          ">100ms": 0
+        },
+        "bridge_repeated": 0,
+        "bridge_regressed": 0,
+        "bridge_negative_age": 0,
+        "neural_owner_bridge_age_max_us": 0.0
+      },
+      "output_chain": {
+        "status": "MEASURED",
+        "neural_steps": 2613,
+        "neural_hold_steps": 0,
+        "neural_gazebo_overwritten": 0,
+        "neural_over_target_steps": 0,
+        "neural_applied_age_max_us": 4000.0,
+        "neural_longest_over_target_steps": 0,
+        "px4_overwritten_neural": 0,
+        "motors_disagree_steps": 0,
+        "neural_published_not_applied_logged": 0
+      },
+      "passed": true,
+      "output_chain_gate_errors": [],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_counts": {
+        "steps": 10452,
+        "overwritten": 0,
+        "max_applied_age_us": 4000.0
+      },
+      "takeover_state": {
+        "px4_us": 58344000,
+        "speed_along_axis_m_s": 1.036410927772522,
+        "horizontal_speed_m_s": 1.0364370361806108,
+        "acceleration_along_axis_m_s2": -0.03256969805806875,
+        "acceleration_window_s": 0.05,
+        "samples": 6
+      },
+      "teacher_forcing_coverage": {
+        "entry_px4_us": 58332000,
+        "consecutive_teacher_forced_native_steps": 3667,
+        "span_s": 29.336
+      },
+      "planned_path": {
+        "event": "p4_planned_path_check",
+        "monotonic_ns": 218438483266333,
+        "wall_time_ns": 1792266715926107027,
+        "origin_ned_m": [
+          0.01843,
+          -0.01072,
+          -2.9806
+        ],
+        "event_point_ned_m": [
+          5.01843,
+          -0.01072,
+          -2.9806
+        ],
+        "path_m": 5.0,
+        "braking_distance_m": 0.25,
+        "radius_with_allowance_m": 6.2684414496235785,
+        "limit_m": 8.0,
+        "inside": true
+      },
+      "max_horizontal_radius_m": 5.450875282287598,
+      "independence": {
+        "planned": {
+          "sim_seed": 2043314349,
+          "initial_yaw_deg": null
+        },
+        "gazebo_seed_argument": "2043314349",
+        "heading_before_arming_deg": 96.0066988249807,
+        "expected_heading_deg": 96.0,
+        "heading_error_deg": 0.006698824980702511
+      },
+      "evidence": {
+        "entry": "VERIFIED",
+        "teacher_forcing": "VERIFIED",
+        "capture": "activation_speed_matched",
+        "target": "VERIFIED"
+      },
+      "flight_outcome": "SUCCESS",
+      "flight_failure_reasons": [],
+      "recomputed": {
+        "p2": {
+          "reproduced": true,
+          "measured": true,
+          "problems": []
+        },
+        "p4": {
+          "reproduced": true,
+          "measured": true,
+          "problems": []
+        },
+        "p4c": {
+          "reproduced": true,
+          "measured": true,
+          "problems": []
+        }
+      },
+      "metrics": {
+        "direction": null,
+        "clipping": null,
+        "true_error": null,
+        "settled": true,
+        "settle_time_s": 2.14,
+        "settle_distance_m": 0.27106468119925925,
+        "settle_distance_along_axis_m": 0.26997947692871094,
+        "max_travel_along_axis_m": 0.4095573425292969,
+        "target_check": "VERIFIED"
+      },
+      "flight_failure": false
+    }
+  ],
+  "scope": "One frozen candidate, headless SITL only, x500, each run its own Gazebo seed; 1-2 runs per cell (exploration, no statistical conclusions).",
+  "passed": true
+}

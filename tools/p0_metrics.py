@@ -21,11 +21,12 @@ def raptor_captures(messages,intervals):
 
 def raptor_target_profile(target,intervals):
     """P4-01c T1: after the activation capture RAPTOR's speed-matched target moves (research_target profile rows, one
-    per cycle with mode 1). Inside neural ownership intervals these rows define the controller target, placed like
-    captures (a row logged just before the owner change is placed at the owner change). No rows for T0 or older runs."""
+    per cycle with mode 1; P5 mode 2 also after in-flight timeout captures). Inside neural ownership intervals these rows
+    define the controller target, placed like captures (a row logged just before the owner change is placed at the owner
+    change). No rows for T0 or older runs."""
     if target is None or 'kind' not in target:return []
     out=[]
-    for i in np.flatnonzero((np.asarray(target['kind'])==2)&(np.asarray(target['mode'])==1)):
+    for i in np.flatnonzero((np.asarray(target['kind'])==2)&(np.asarray(target['mode'])>=1)):
         stamp=int(target['timestamp'][i])
         for start,end in intervals:
             if start-20000<=stamp<end:out.append((max(stamp,int(start)),[float(target[f'position[{k}]'][i]) for k in range(3)]));break

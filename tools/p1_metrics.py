@@ -38,10 +38,10 @@ def hold_durations(t,mask,start,end):
     return float(np.sum((b-a)[mask])/1e6)
 
 def speed_matched_capture(target,t_c):
-    """P4-01c: research_target activation capture with mode 1 (T1) near the owner change, else None."""
+    """P4-01c: research_target activation capture with mode 1 (T1; P5: or 2) near the owner change, else None."""
     if target is None or 'kind' not in target:return None
     t=np.asarray(target['timestamp'],np.int64)
-    rows=np.flatnonzero((target['kind']==1)&(target['activation']==1)&(target['mode']==1)&(np.abs(t-t_c)<=50000))
+    rows=np.flatnonzero((target['kind']==1)&(target['activation']==1)&(target['mode']>=1)&(np.abs(t-t_c)<=50000))
     if not len(rows):return None
     i=rows[0];return {'px4_us':int(t[i]),'velocity_ned_m_s':[float(target[f'velocity[{k}]'][i]) for k in range(3)]}
 

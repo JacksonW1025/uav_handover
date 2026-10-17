@@ -77,7 +77,7 @@ def analyze(run):
     win=p4['baseline_matching']['acceleration_window_s']
     out['takeover_state']={n:capture_state(local,tc,axis,win) for n,tc in changes.items() if tc}
     out['motion_axis_ned']=axis
-    if rini==4:
+    if rini==4 and (p3kind or kind=='p2_c_to_n'):
         memory=t.get('research_memory')
         if memory is None or tf_event not in changes:problems.append('teacher-forcing coverage not measurable')
         else:

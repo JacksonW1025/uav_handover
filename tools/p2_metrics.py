@@ -83,12 +83,17 @@ def entry_check(cfg,m,memory,actuator,t_r,t_c,treatment,mapping):
     out['problems']=problems;out['status']='VERIFIED' if not problems else 'FAILED'
     return out
 
-def teacher_check(cfg,memory,actuator,t_c,treatment,mapping):
+def teacher_check(cfg,memory,actuator,t_c,treatment,mapping,kind='p2_c_to_n'):
     e=cfg['p2']['entry_check'];rini=int(cfg['p2_treatment_parameters'].get('rini',0))
     step=memory['kind']==KIND_STEP;tf=memory['teacher_forced'].astype(bool)&step;mt=memory['timestamp'].astype(np.int64)
     out={'teacher_forced_rows_total':int(tf.sum()),'clipped_total':int(memory['clipped_total'][-1]),'classic_unavailable_total':int(memory['classic_unavailable_total'][-1])}
     problems=[]
-    if rini in (3,4):
+    if rini in (3,4) and kind!='p2_c_to_n':
+        # P5 E4 (N->C with N2 memory at the setup entry): RAPTOR is the outgoing controller at the subject change, so
+        # there is no inactive teacher-forced inference before it; only teacher-forced rows while active would be wrong.
+        out['note']='N2 applies to the setup entry in hover; no teacher-forcing requirement before an N->C change'
+        if (tf&(memory['active']==1)).any():problems.append('teacher forcing while RAPTOR is active')
+    elif rini in (3,4):
         w=step&(memory['active']==0)&(mt>=t_c-e['teacher_forcing_check_window_s']*1e6)&(mt<t_c)
         out['inactive_rows_before_change']=int(w.sum());out['teacher_forced_fraction']=float(tf[w].mean()) if w.sum() else None
         if not w.sum() or out['teacher_forced_fraction']<e['teacher_forced_min_fraction']:problems.append('teacher forcing not in force before the change')
@@ -174,7 +179,7 @@ def analyze(run):
         if kind=='p2_c_to_n':
             out['entry']=entry_check(cfg,base,memory,topics['research_actuator'],t_r,t_c,cfg['p2_treatment'],mapping)
             problems+=out['entry']['problems']
-        out['teacher_forcing']=teacher_check(cfg,memory,topics['research_actuator'],t_c,cfg['p2_treatment'],mapping)
+        out['teacher_forcing']=teacher_check(cfg,memory,topics['research_actuator'],t_c,cfg['p2_treatment'],mapping,kind)
         problems+=out['teacher_forcing']['problems']
         out['gru_curves']=gru_curves(memory,topics.get('research_timing'),t_c)
     if meta['experiment_type'] in ['p2_n_to_c']:

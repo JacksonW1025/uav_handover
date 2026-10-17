@@ -8,8 +8,15 @@
 // afterwards the target speed decreases along the captured direction at a fixed deceleration until it is zero, the
 // target position is the exact integral of the target velocity, and the target then stays at the end point.
 // The profile is a closed-form function of the time since the capture, so it does not depend on the cycle length.
+// P5: mode 2 applies the same speed-matched capture to every capture while RAPTOR is active, i.e. also to the capture
+// RAPTOR makes in flight when its external trajectory_setpoint times out (200 ms); modes 0 and 1 are unchanged.
 namespace handover_research {
-enum TargetMode : int32_t {TARGET_ZERO_VELOCITY=0,TARGET_SPEED_MATCHED=1,TARGET_MODE_MAX=1};
+enum TargetMode : int32_t {TARGET_ZERO_VELOCITY=0,TARGET_SPEED_MATCHED=1,TARGET_SPEED_MATCHED_ALL=2,TARGET_MODE_MAX=2};
+// Whether a capture starts the speed-matched profile: mode 1 only in the activation cycle, mode 2 in the activation
+// cycle and at every in-flight capture while RAPTOR is active (never while inactive), mode 0 (and anything else) never.
+inline bool speed_matched_capture(int32_t mode,bool activation,bool active) {
+    return (mode==TARGET_SPEED_MATCHED && activation) || (mode==TARGET_SPEED_MATCHED_ALL && (activation || active));
+}
 enum TargetPhase : uint8_t {TARGET_PHASE_NONE=0,TARGET_PHASE_HOLD=1,TARGET_PHASE_DECELERATING=2,TARGET_PHASE_STOPPED=3};
 struct TargetProfile {
     bool active{false};

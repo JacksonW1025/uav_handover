@@ -1,0 +1,10 @@
+{
+  "created": "2026-10-18",
+  "status": "DEVELOPMENT (not results)",
+  "runs": {
+    "data/p5-20261018-dev01-D0.7-A0-T1": "First p5_gap flight (E2 D0.7 T1, seed 51801) to inspect the log structure. Recorded config predates the final p5.gap_timing keys, so p5_metrics was run only on a scratch copy with the current p5 section (no p5-metrics.json in the run directory). Showed: setpoint silence 0.72 s, in-flight capture 204 ms after the last setpoint with mode 2, T1 profile ended by the resumed setpoint; target jump 0.376 m (exact prediction 0.380 m, 0.5*a*D^2 = 0.49 m).",
+    "data/p5-20261018-dev02-*": "Four flights run directly with tools/experiment (no batch): E1 V1.0-A45 T0, E3 R6-A0 T0, E4 N2.0 C0, E1 V3.0-Y45 T1. R6-A0 T0 lost altitude cumulatively (-0.46/-1.27/-1.97/-2.68/-2.99 m at the cycle ends) and touched the ground in cycle 5 before the runner tilt abort (PX4 exit 0, trace and output chain passed). Their p5-metrics.json were written by intermediate p5_metrics versions (development only).",
+    "data/p5-20261018-dev-03": "End-to-end development batch (p5_batch --development; D1.5-A45 T1, R6-A45 T1, V2.0-A0 T1, N2.0 C0) to test batch, audit and report. Its batch-audit.json is from the intermediate analyzer. Found two analyzer problems, fixed before freezing: (1) raptor_status rows are occasionally absent (RAPTOR skips the publication in a duplicate-gyro-sample cycle), so the reception that ended gap 5 of R6-A45 was missing and the capture appeared 224 ms after the 'last' reception; receptions are now the union of raptor_status reception cycles and logged trajectory_setpoint rows, capture window 200-216 ms (config p5.gap_timing). (2) the unclipped-error reconstruction used the publication-time local-position sample (residual 0.05 m/s); it now uses research_timing.local_position_sample (residual 1e-7)."
+  },
+  "candidate": "The final candidate (frozen after these fixes) is recorded in data/p5-20261018-equivalence/candidate.json; the development runs above used earlier tool versions and are not evidence."
+}

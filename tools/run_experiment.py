@@ -27,12 +27,25 @@ TYPES = ['classic_hover','raptor_hover','handover_c_to_n','handover_n_to_c',
          'handover_c_n_c','repeated_handover','state_reset','state_hold','state_restore','state_injection',
          'p1_c_to_n','p1_n_to_c','p1_baseline_classic','p1_baseline_raptor',
          'p2_c_to_n','p2_n_to_c','p2_baseline_classic','p2_baseline_raptor','p2_crash_probe',
-         'p3_sequence','p3_baseline_raptor']
+         'p3_sequence','p3_baseline_raptor','p5_gap']
 # P2 reuses the P1 flight sequence; only the treatment parameters and the condition profile differ.
 # P4-01c: T0/T1 are N2 memory (RINI=4) with the original zero-velocity takeover target or the speed-matched one.
 P2_TREATMENT_KINDS={'p2_c_to_n':['N0','N1','N2g','N2','N2s','Nstar','T0','T1'],'p2_n_to_c':['C0','C2'],'p2_baseline_classic':['B'],'p2_baseline_raptor':['B']}
 # P3: C->N (N0), RAPTOR hover, N->C, classic deactivation, second C->N with a memory treatment; or the RAPTOR baseline.
 P3_TREATMENT_KINDS={'p3_sequence':['N0','N3','N2s','N2'],'p3_baseline_raptor':['B']}
+# P5: RAPTOR tracks a runner-published line; the stream pauses for D s and resumes on the same line (E2 once, E3 repeated).
+P5_TREATMENT_KINDS={'p5_gap':['T0','T1','T1a1','T1a3']}
+
+def p5_profile(p5,spec):
+    """P5 gap runs: merged reference profile (pure function of the config). Cruise = pre_gap_s + count*D +
+    (count-1)*recover + post_gap_s; the line (ramp, cruise, deceleration to rest) is centred on RAPTOR's hover capture
+    by a start offset of -L/2 along the axis, reached by the reposition trapezoid before the hold."""
+    p={**p5['profile'],**{k:v for k,v in spec.items() if k in p5['profile_overrides']}}
+    g=spec['gaps'];v=float(spec['speed_m_s']);n,D,r=int(g['count']),float(g['duration_s']),float(g['recover_s'])
+    p['cruise_s']=round(float(p['pre_gap_s'])+n*D+(n-1)*r+float(p['post_gap_s']),9)
+    length=.5*v*float(p['accel_s'])+v*p['cruise_s']+v*v/(2*float(p['decel_m_s2']))
+    p['start_offset_m']=-round(length/2,6);p['path_length_m']=length;p['gaps']={'count':n,'duration_s':D,'recover_s':r}
+    return p
 
 def cpu_affinity():
     # Optional host pinning, e.g. HANDOVER_CPU_AFFINITY='px4=8-11;gazebo=12-13;agent=6-7;runner=4-5'.
@@ -76,7 +89,15 @@ class Experiment:
             if args.treatment not in P3_TREATMENT_KINDS[args.kind]:raise RuntimeError(f'{args.kind} needs --treatment in {P3_TREATMENT_KINDS[args.kind]}')
             self.cfg['p3_condition']=args.condition;self.cfg['p3_condition_spec']=spec
             self.cfg['p3_treatment']=args.treatment;self.cfg['p3_treatment_parameters']=p3['treatments'][args.treatment]
-        elif args.condition or args.treatment:raise RuntimeError('--condition/--treatment apply only to P1/P2/P3 flight kinds')
+        elif args.kind in P5_TREATMENT_KINDS:
+            p5=self.cfg.get('p5',{});spec=p5.get('conditions',{}).get(args.condition)
+            if spec is None:raise RuntimeError('p5_gap needs --condition from config p5.conditions')
+            if args.treatment not in P5_TREATMENT_KINDS[args.kind] or args.treatment not in p5['treatments']:raise RuntimeError(f'p5_gap needs --treatment in {P5_TREATMENT_KINDS[args.kind]}')
+            # The P2 treatment and profile keys are reused so apply_treatment, the stream and the analyzers work unchanged.
+            self.pcfg=p5_profile(p5,spec);self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(spec['speed_m_s'])
+            self.cfg['p2_treatment']=args.treatment;self.cfg['p2_treatment_parameters']=p5['treatments'][args.treatment];self.cfg['p2_profile']=self.pcfg
+            self.cfg['p5_condition_spec']=spec
+        elif args.condition or args.treatment:raise RuntimeError('--condition/--treatment apply only to P1/P2/P3/P5 flight kinds')
         # P4 independent run conditions: Gazebo seed and initial heading, pre-registered by the batch and recorded.
         self.sim_seed=args.sim_seed;self.initial_yaw_deg=args.initial_yaw_deg
         if self.sim_seed is not None or self.initial_yaw_deg is not None:
@@ -349,9 +370,9 @@ class Experiment:
         a=float(p['decel_m_s2']);td=(v-float(vd))/a;r=t-hold-acc-p['cruise_s'];tau=min(r,td)
         return s0+.5*v*acc+v*p['cruise_s']+v*tau-.5*a*tau*tau+float(vd)*max(0.,r-td),v-a*tau,(-a if r<=td+1e-9 else 0.)
 
-    def start_stream(self,origin,yaw,offboard):
+    def start_stream(self,origin,yaw,offboard,gaps=()):
         axis=[float(x) for x in self.profile_cfg()['motion_axis_ned']];period=self.profile_cfg()['setpoint_period_s']
-        state={'last':0.,'count':0,'origin':origin,'yaw':yaw,'offboard':offboard}
+        state={'last':0.,'count':0,'origin':origin,'yaw':yaw,'offboard':offboard,'gap':None,'last_t':None,'gaps_log':[]}
         self.stream_t0=None;self.stream_state=state
         def emit(t):
             s,v,a=self.p1_profile(t);stamp=int(time.time()*1e6)
@@ -361,11 +382,22 @@ class Experiment:
             traj.position=[origin[i]+axis[i]*s for i in range(3)];traj.velocity=[axis[i]*v for i in range(3)]
             traj.acceleration=[axis[i]*a for i in range(3)];traj.yaw=yaw;traj.yawspeed=0.
             self.trajpub.publish(traj)
-            state['count']+=1;state['last_position']=list(map(float,traj.position));state['last_velocity']=list(map(float,traj.velocity))
+            state['count']+=1;state['last_position']=list(map(float,traj.position));state['last_velocity']=list(map(float,traj.velocity));state['last_t']=t
         def publish():
-            now=time.monotonic()
+            now=time.monotonic();t=0. if self.stream_t0 is None else now-self.stream_t0
+            # P5 gap injector: no setpoint inside a gap window (profile time keeps running); the first emission after the
+            # gap is immediate and lies on the same time-parameterized line.
+            k=next((i for i,(a,b) in enumerate(gaps) if a<=t<b),None) if self.stream_t0 is not None else None
+            if k is not None:
+                if state['gap']!=k:
+                    state['gap']=k;item={'index':k,'planned_profile_s':list(gaps[k]),'first_skip_profile_s':t,'last_emit_profile_s':state['last_t'],'first_skip_monotonic_ns':time.monotonic_ns()}
+                    state['gaps_log'].append(item);self.event('p5_gap_started',**item)
+                return
+            if state['gap'] is not None:
+                item=state['gaps_log'][-1];item.update({'first_emit_profile_s':t,'first_emit_monotonic_ns':time.monotonic_ns()});state['gap']=None
+                emit(t);state['last']=now;self.event('p5_gap_ended',**item);return
             if now-state['last']<period:return
-            emit(0. if self.stream_t0 is None else now-self.stream_t0);state['last']=now
+            emit(t);state['last']=now
         self.stream=publish;self.stream_emit=emit
         self.event('p1_reference_started',origin_ned_m=origin,yaw_rad=yaw,offboard=offboard,axis_ned=axis,speed_m_s=self.cfg['p1_speed_m_s'],period_s=period)
 
@@ -429,6 +461,48 @@ class Experiment:
             self.mode(4);self.capture_states('classic_after_entry')
             self.hover(p['return_hold_s'],'return_classic',prefix='p1_phase')
         self.checks['p1_sequence']='PASS'
+
+    def p5_gap_windows(self):
+        # Gap k: profile times [cruise start + pre_gap_s + k*(D + recover), + D); cruise start after reposition, hold, ramp.
+        p=self.pcfg;g=p['gaps'];t0=Experiment.reposition(self,0.)[3]+p['reference_hold_s']+p['accel_s']+p['pre_gap_s']
+        return [(t0+k*(g['duration_s']+g['recover_s']),t0+k*(g['duration_s']+g['recover_s'])+g['duration_s']) for k in range(g['count'])]
+
+    def p5_path_check(self,origin):
+        # Start and end of the planned line + margin + interruption drift inside safety_radius_m - radius_margin_m.
+        p=self.pcfg;c=self.cfg['p5']['planned_path_check'];axis=[float(x) for x in p['motion_axis_ned']];v=self.cfg['p1_speed_m_s']
+        s0=float(p['start_offset_m']);s1=Experiment.p1_profile(self,Experiment.profile_duration(self))[0]
+        start=[origin[i]+axis[i]*s0 for i in range(3)];end=[origin[i]+axis[i]*s1 for i in range(3)]
+        last=self.p5_gap_windows()[-1][0];remaining=s1-Experiment.p1_profile(self,last)[0]
+        drift=max(0.,v*float(c['stale_timeout_s'])+v*v/(2*float(c['worst_case_deceleration_m_s2']))-remaining)
+        radius=max(math.hypot(start[0],start[1]),math.hypot(end[0],end[1]))+float(c['braking_allowance_m'])+drift
+        limit=self.cfg['safety_radius_m']-float(c['radius_margin_m'])
+        return {'origin_ned_m':origin,'start_ned_m':start,'end_ned_m':end,'path_m':s1-s0,'remaining_after_last_gap_start_m':remaining,
+                'interruption_drift_m':drift,'radius_with_allowance_m':radius,'limit_m':limit,'inside':radius<=limit}
+
+    def p5_gap_flight(self,mode):
+        p=self.pcfg
+        # Setup C->N at hover (not measured); RAPTOR then holds its activation capture, which is the line's centre.
+        self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='C',to_controller='N',iteration=0,subject=False)
+        self.mode(mode);self.wait_raptor_active();self.capture_states('neural_after_entry')
+        self.hover(self.cfg['neural_s'],'neural')
+        origin,yaw,source=self.raptor_target()
+        self.event('p1_reference_origin',source=source,origin_ned_m=origin,yaw_rad=yaw)
+        check=self.p5_path_check(origin);self.event('p5_planned_path_check',**check)
+        if not check['inside']:raise RuntimeError(f"planned path would leave the safety radius margin: {check['radius_with_allowance_m']:.2f} m > {check['limit_m']:.2f} m")
+        windows=self.p5_gap_windows();total=self.profile_duration()+p['end_hold_s']
+        self.event('p5_gap_plan',windows_profile_s=windows,gaps=p['gaps'],profile_duration_s=total,cruise_s=p['cruise_s'],start_offset_m=p['start_offset_m'])
+        self.start_stream(origin,yaw,False,gaps=windows)
+        self.stream_t0=time.monotonic()
+        self.event('p1_profile_started',px4_bound_us=self.native_bound_streaming(),duration_s=total)
+        while time.monotonic()-self.stream_t0<total:self.pump(0.01)
+        bound=self.native_bound_streaming();log=self.stream_state['gaps_log'];self.stop_stream()
+        self.event('p5_stream_ended',end_bound_px4_us=bound,gaps=log,planned_gaps=len(windows))
+        if len(log)!=len(windows) or any('first_emit_profile_s' not in g for g in log):raise RuntimeError('planned stream gaps not all executed')
+        self.hover(p['post_stream_s'],'post_stream',prefix='p1_phase')
+        self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='N',to_controller='C',iteration=1,subject=False)
+        self.mode(4);self.capture_states('classic_after_entry')
+        self.hover(p['return_hold_s'],'return_classic',prefix='p1_phase')
+        self.checks['p5_sequence']='PASS'
 
     def apply_treatment(self):
         # P2: controller-side parameters are set once before arming; RAPTOR applies them in its own thread.
@@ -811,7 +885,7 @@ class Experiment:
         self.wait(lambda:self.latest['vehicle_local_position'].xy_valid and self.latest['vehicle_local_position'].z_valid,45,'valid local position')
         self.pump(4)
         if self.variant=='raptor':self.state_contract()
-        if self.args.kind in P2_TREATMENT_KINDS:self.apply_treatment()
+        if self.args.kind in P2_TREATMENT_KINDS or self.args.kind in P5_TREATMENT_KINDS:self.apply_treatment()
         if self.args.kind in P3_TREATMENT_KINDS:self.p3_parameters(0,'before_arming')
         self.ros_command(400,param1=1)
         self.safe=True
@@ -823,6 +897,7 @@ class Experiment:
             self.crash_probe();return
         if self.args.kind.startswith(('p1_','p2_')):self.p1_flight(mode)
         elif self.args.kind.startswith('p3_'):self.p3_flight(mode)
+        elif self.args.kind=='p5_gap':self.p5_gap_flight(mode)
         elif self.variant=='raptor':
             count=self.cfg['repetitions'] if self.args.kind=='repeated_handover' else 1
             for iteration in range(count):
@@ -917,7 +992,7 @@ def main():
     p.add_argument('--sim-seed',type=int,help='P4: Gazebo random seed (gz sim --seed), recorded in config.json and metadata')
     p.add_argument('--initial-yaw-deg',type=float,help='P4: initial heading of the spawned x500 (PX4_GZ_MODEL_POSE yaw), recorded')
     p.add_argument('--condition',help='P1/P2 pre-handover motion condition (config p1.conditions / p2.conditions)')
-    p.add_argument('--treatment',help='P2 treatment (config p2.treatments): N0 N1 N2g N2 N2s Nstar for p2_c_to_n, C0 C2 for p2_n_to_c, B for baselines; P3: N0 N3 N2s N2 for p3_sequence (conditions D1 D2 D3), B for p3_baseline_raptor (condition R)')
+    p.add_argument('--treatment',help='P2 treatment (config p2.treatments): N0 N1 N2g N2 N2s Nstar for p2_c_to_n, C0 C2 for p2_n_to_c, B for baselines; P3: N0 N3 N2s N2 for p3_sequence (conditions D1 D2 D3), B for p3_baseline_raptor (condition R); P5: T0 T1 T1a1 T1a3 for p5_gap (config p5.conditions)')
     args=p.parse_args();e=Experiment(args);status='FAIL';reason=None
     try:
         e.execute();status='PASS'

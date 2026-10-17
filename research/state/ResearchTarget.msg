@@ -9,7 +9,7 @@ uint8 END_EXTERNAL_SETPOINT = 1
 uint8 END_RECAPTURE = 2
 uint8 END_INACTIVE = 3
 uint8 kind
-int32 mode                   # MC_RAPTOR_RTGT at the capture (0 zero-velocity capture, 1 speed-matched; rows only while MC_RAPTOR_RSH is on)
+int32 mode                   # MC_RAPTOR_RTGT at the capture (0 zero-velocity capture, 1 speed-matched at activation, 2 speed-matched at activation and in-flight timeout; rows only while MC_RAPTOR_RSH is on)
 bool activation              # capture in the activation cycle
 uint8 phase                  # 1 hold (zero-velocity capture), 2 decelerating, 3 stopped at the end point; 0 on KIND_END
 uint8 end_reason

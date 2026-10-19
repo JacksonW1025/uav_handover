@@ -19,6 +19,7 @@ import traceback
 import uuid
 import resource
 from readiness import Readiness
+import p6_conditions
 import psutil
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +28,7 @@ TYPES = ['classic_hover','raptor_hover','handover_c_to_n','handover_n_to_c',
          'handover_c_n_c','repeated_handover','state_reset','state_hold','state_restore','state_injection',
          'p1_c_to_n','p1_n_to_c','p1_baseline_classic','p1_baseline_raptor',
          'p2_c_to_n','p2_n_to_c','p2_baseline_classic','p2_baseline_raptor','p2_crash_probe',
-         'p3_sequence','p3_baseline_raptor','p5_gap']
+         'p3_sequence','p3_baseline_raptor','p5_gap','p6_ident']
 # P2 reuses the P1 flight sequence; only the treatment parameters and the condition profile differ.
 # P4-01c: T0/T1 are N2 memory (RINI=4) with the original zero-velocity takeover target or the speed-matched one.
 P2_TREATMENT_KINDS={'p2_c_to_n':['N0','N1','N2g','N2','N2s','Nstar','T0','T1'],'p2_n_to_c':['C0','C2'],'p2_baseline_classic':['B'],'p2_baseline_raptor':['B']}
@@ -35,16 +36,31 @@ P2_TREATMENT_KINDS={'p2_c_to_n':['N0','N1','N2g','N2','N2s','Nstar','T0','T1'],'
 P3_TREATMENT_KINDS={'p3_sequence':['N0','N3','N2s','N2'],'p3_baseline_raptor':['B']}
 # P5: RAPTOR tracks a runner-published line; the stream pauses for D s and resumes on the same line (E2 once, E3 repeated).
 P5_TREATMENT_KINDS={'p5_gap':['T0','T1','T1a1','T1a3']}
+# P6: two more T1 decelerations for p5_gap (config/p6.json p5.treatments) and the identification flights (RAPTOR follows a
+# runner-published step / chase / brake / capture profile through its external setpoint input).
+P6_GAP_TREATMENTS=['T1a0.75','T1a1.5']
+P6_TREATMENT_KINDS={'p6_ident':['T0']}
 
 def p5_profile(p5,spec):
     """P5 gap runs: merged reference profile (pure function of the config). Cruise = pre_gap_s + count*D +
     (count-1)*recover + post_gap_s; the line (ramp, cruise, deceleration to rest) is centred on RAPTOR's hover capture
     by a start offset of -L/2 along the axis, reached by the reposition trapezoid before the hold."""
     p={**p5['profile'],**{k:v for k,v in spec.items() if k in p5['profile_overrides']}}
+    if 'windows_s' in spec['gaps']:return p6_windows_profile(spec,p)
     g=spec['gaps'];v=float(spec['speed_m_s']);n,D,r=int(g['count']),float(g['duration_s']),float(g['recover_s'])
     p['cruise_s']=round(float(p['pre_gap_s'])+n*D+(n-1)*r+float(p['post_gap_s']),9)
     length=.5*v*float(p['accel_s'])+v*p['cruise_s']+v*v/(2*float(p['decel_m_s2']))
     p['start_offset_m']=-round(length/2,6);p['path_length_m']=length;p['gaps']={'count':n,'duration_s':D,'recover_s':r}
+    return p
+
+def p6_windows_profile(spec,p):
+    """P6 C2: explicit interruption windows [start, end) in s after the first interruption start (unequal lengths and
+    recoveries). Cruise = pre_gap_s + end of the last window + post_gap_s; the line is centred as in p5_profile."""
+    w=[[float(a),float(b)] for a,b in spec['gaps']['windows_s']];v=float(spec['speed_m_s'])
+    if w[0][0]!=0. or any(b<=a for a,b in w) or any(w[k+1][0]<=w[k][1] for k in range(len(w)-1)):raise RuntimeError('invalid interruption windows')
+    p['cruise_s']=round(float(p['pre_gap_s'])+w[-1][1]+float(p['post_gap_s']),9)
+    length=.5*v*float(p['accel_s'])+v*p['cruise_s']+v*v/(2*float(p['decel_m_s2']))
+    p['start_offset_m']=-round(length/2,6);p['path_length_m']=length;p['gaps']={'windows_s':w,'count':len(w)}
     return p
 
 def cpu_affinity():
@@ -91,12 +107,25 @@ class Experiment:
             self.cfg['p3_treatment']=args.treatment;self.cfg['p3_treatment_parameters']=p3['treatments'][args.treatment]
         elif args.kind in P5_TREATMENT_KINDS:
             p5=self.cfg.get('p5',{});spec=p5.get('conditions',{}).get(args.condition)
+            # P6: B/C conditions are generated from the pre-registered rule (config p5.condition_rule) by name.
+            if spec is None and args.condition:spec=p6_conditions.gap_spec(self.cfg,args.condition)
             if spec is None:raise RuntimeError('p5_gap needs --condition from config p5.conditions')
-            if args.treatment not in P5_TREATMENT_KINDS[args.kind] or args.treatment not in p5['treatments']:raise RuntimeError(f'p5_gap needs --treatment in {P5_TREATMENT_KINDS[args.kind]}')
+            if spec.get('cancelled'):raise RuntimeError('condition cancelled by the pre-registered safety budget: '+args.condition)
+            if args.treatment not in P5_TREATMENT_KINDS[args.kind]+P6_GAP_TREATMENTS or args.treatment not in p5['treatments']:raise RuntimeError(f'p5_gap needs --treatment in {P5_TREATMENT_KINDS[args.kind]+P6_GAP_TREATMENTS}')
             # The P2 treatment and profile keys are reused so apply_treatment, the stream and the analyzers work unchanged.
             self.pcfg=p5_profile(p5,spec);self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(spec['speed_m_s'])
             self.cfg['p2_treatment']=args.treatment;self.cfg['p2_treatment_parameters']=p5['treatments'][args.treatment];self.cfg['p2_profile']=self.pcfg
             self.cfg['p5_condition_spec']=spec
+        elif args.kind in P6_TREATMENT_KINDS:
+            p6=self.cfg.get('p6',{}).get('ident',{})
+            if args.condition not in p6.get('conditions',{}):raise RuntimeError('p6_ident needs --condition from config p6.ident.conditions')
+            if args.treatment not in P6_TREATMENT_KINDS[args.kind] or args.treatment not in p6['treatments']:raise RuntimeError(f'p6_ident needs --treatment in {P6_TREATMENT_KINDS[args.kind]}')
+            self.pcfg=p6_conditions.ident_cfg(self.cfg,args.condition);self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(self.pcfg.get('speed_m_s',0.))
+            self.cfg['p2_treatment']=args.treatment;self.cfg['p2_treatment_parameters']=p6['treatments'][args.treatment];self.cfg['p2_profile']=self.pcfg
+            self.cfg['p6_condition_spec']=p6['conditions'][args.condition]
+            # Identification flights measure the saturated region: for this kind only the runner tilt abort is raised and an
+            # altitude-loss abort is added (all other envelope limits unchanged).
+            self.cfg['safety_tilt_deg']=float(p6['safety_tilt_deg']);self.cfg['p6_altitude_loss_abort_m']=float(p6['altitude_loss_abort_m'])
         elif args.condition or args.treatment:raise RuntimeError('--condition/--treatment apply only to P1/P2/P3/P5 flight kinds')
         # P4 independent run conditions: Gazebo seed and initial heading, pre-registered by the batch and recorded.
         self.sim_seed=args.sim_seed;self.initial_yaw_deg=args.initial_yaw_deg
@@ -112,6 +141,7 @@ class Experiment:
         self.procs=[];self.files=[];self.latest={};self.received={};self.acks=[];self.expected_stopped=set()
         self.node=None;self.rclpy=None;self.safe=False;self.checks={};self.last_sample=0
         self.stream=None;self.stream_t0=None;self.stream_state=None;self.listener_durations=[];self.p3_motion_t0=None
+        self.alt_floor=None;self.p6_switch_s=None
         self.samples=(self.out/'telemetry.jsonl').open('w')
         self.resources=(self.out/'resources.jsonl').open('w');self.last_resource=0
         self.rootfs=self.out/'rootfs'
@@ -257,6 +287,7 @@ class Experiment:
                         if not all(math.isfinite(x) for x in sample['position']+sample['velocity']+q):raise RuntimeError('safety: nonfinite telemetry')
                         if math.hypot(local.x,local.y)>self.cfg['safety_radius_m'] or -local.z>self.cfg['safety_altitude_m'] or local.z>1 or tilt>self.cfg['safety_tilt_deg']:raise RuntimeError('safety: flight envelope exceeded')
                         if odom and max(abs(float(x)) for x in odom.angular_velocity)>self.cfg['safety_angular_rate_rad_s']:raise RuntimeError('safety: angular rate exceeded')
+                        if self.alt_floor is not None and -local.z<self.alt_floor:raise RuntimeError('safety: altitude loss exceeded')
 
     def wait(self,predicate,timeout,description):
         end=time.monotonic()+timeout
@@ -370,12 +401,13 @@ class Experiment:
         a=float(p['decel_m_s2']);td=(v-float(vd))/a;r=t-hold-acc-p['cruise_s'];tau=min(r,td)
         return s0+.5*v*acc+v*p['cruise_s']+v*tau-.5*a*tau*tau+float(vd)*max(0.,r-td),v-a*tau,(-a if r<=td+1e-9 else 0.)
 
-    def start_stream(self,origin,yaw,offboard,gaps=()):
+    def start_stream(self,origin,yaw,offboard,gaps=(),profile=None):
+        prof=profile or self.p1_profile
         axis=[float(x) for x in self.profile_cfg()['motion_axis_ned']];period=self.profile_cfg()['setpoint_period_s']
         state={'last':0.,'count':0,'origin':origin,'yaw':yaw,'offboard':offboard,'gap':None,'last_t':None,'gaps_log':[]}
         self.stream_t0=None;self.stream_state=state
         def emit(t):
-            s,v,a=self.p1_profile(t);stamp=int(time.time()*1e6)
+            s,v,a=prof(t);stamp=int(time.time()*1e6)
             if offboard:
                 off=self.msgs.OffboardControlMode();off.timestamp=stamp;off.position=True;self.offpub.publish(off)
             traj=self.msgs.TrajectorySetpoint();traj.timestamp=stamp
@@ -465,6 +497,7 @@ class Experiment:
     def p5_gap_windows(self):
         # Gap k: profile times [cruise start + pre_gap_s + k*(D + recover), + D); cruise start after reposition, hold, ramp.
         p=self.pcfg;g=p['gaps'];t0=Experiment.reposition(self,0.)[3]+p['reference_hold_s']+p['accel_s']+p['pre_gap_s']
+        if 'windows_s' in g:return [(t0+a,t0+b) for a,b in g['windows_s']]  # P6 C2 explicit windows
         return [(t0+k*(g['duration_s']+g['recover_s']),t0+k*(g['duration_s']+g['recover_s'])+g['duration_s']) for k in range(g['count'])]
 
     def p5_path_check(self,origin):
@@ -503,6 +536,74 @@ class Experiment:
         self.mode(4);self.capture_states('classic_after_entry')
         self.hover(p['return_hold_s'],'return_classic',prefix='p1_phase')
         self.checks['p5_sequence']='PASS'
+
+    # ---- P6: identification flights ----------------------------------------------------------------------------------
+    def p6_family_start(self):
+        return Experiment.reposition(self,0.)[3]+float(self.pcfg['reference_hold_s'])
+
+    def p6_profile(self,t):
+        # Reposition to the start offset, reference hold, then the family motion (p6_conditions.ident_motion).
+        s0,v0,a0,tr=Experiment.reposition(self,t)
+        if t<tr:return s0,v0,a0
+        tau=t-tr-float(self.pcfg['reference_hold_s'])
+        if tau<0:return s0,0.,0.
+        s,v,a=p6_conditions.ident_motion(self.pcfg,tau,self.p6_switch_s);return s0+s,v,a
+
+    def p6_total(self):
+        return self.p6_family_start()+p6_conditions.ident_motion_duration(self.pcfg,self.p6_switch_s)+float(self.pcfg['end_hold_s'])
+
+    def p6_chase_check(self,origin,axis):
+        # chase: the target decelerates once the vehicle has caught up (along-axis distance to the target <= catch_up_m on
+        # the latest DDS local position) or at max_chase_s after it appeared, whichever comes first.
+        p=self.pcfg
+        if p['family']!='chase' or self.p6_switch_s is not None or self.stream_t0 is None:return
+        tau=time.monotonic()-self.stream_t0-self.p6_family_start()
+        if tau<0:return
+        local=self.latest['vehicle_local_position'];s_target=self.p6_profile(time.monotonic()-self.stream_t0)[0]
+        s_vehicle=sum((float(x)-origin[i])*axis[i] for i,x in enumerate([local.x,local.y,local.z]))
+        lag=s_target-s_vehicle
+        if lag<=float(p['catch_up_m']) or tau>=float(p['max_chase_s']):
+            self.p6_switch_s=min(tau,float(p['max_chase_s']))
+            self.event('p6_chase_switch',family_time_s=self.p6_switch_s,reason='caught_up' if lag<=float(p['catch_up_m']) else 'max_chase_s',
+                       along_axis_lag_m=lag,local_position_px4_us=int(local.timestamp))
+
+    def p6_path_check(self,origin):
+        p=self.pcfg;c=self.cfg['p6']['ident']['planned_path_check'];axis=[float(x) for x in p['motion_axis_ned']]
+        s0=float(p['start_offset_m']);s1=s0+float(p['path_length_m'])
+        start=[origin[i]+axis[i]*s0 for i in range(3)];end=[origin[i]+axis[i]*s1 for i in range(3)]
+        radius=max(math.hypot(start[0],start[1]),math.hypot(end[0],end[1]))+float(c['braking_allowance_m'])
+        limit=self.cfg['safety_radius_m']-float(c['radius_margin_m'])
+        return {'origin_ned_m':origin,'start_ned_m':start,'end_ned_m':end,'path_m':s1-s0,'radius_with_allowance_m':radius,'limit_m':limit,'inside':radius<=limit}
+
+    def p6_ident_flight(self,mode):
+        p=self.pcfg
+        # Setup C->N at hover (not measured); RAPTOR holds its activation capture, the centre of the planned path.
+        self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='C',to_controller='N',iteration=0,subject=False)
+        self.mode(mode);self.wait_raptor_active();self.capture_states('neural_after_entry')
+        self.hover(self.cfg['neural_s'],'neural')
+        origin,yaw,source=self.raptor_target()
+        self.event('p1_reference_origin',source=source,origin_ned_m=origin,yaw_rad=yaw)
+        check=self.p6_path_check(origin);self.event('p6_planned_path_check',**check)
+        if not check['inside']:raise RuntimeError(f"planned path would leave the safety radius margin: {check['radius_with_allowance_m']:.2f} m > {check['limit_m']:.2f} m")
+        gap=p6_conditions.ident_gap(p);fs=self.p6_family_start();windows=[(fs+gap[0],fs+gap[1])] if gap else []
+        axis=[float(x) for x in p['motion_axis_ned']]
+        self.event('p6_ident_plan',family=p['family'],family_start_profile_s=fs,windows_profile_s=windows,planned_total_s=self.p6_total(),start_offset_m=p['start_offset_m'],path_length_m=p['path_length_m'])
+        self.p6_switch_s=None
+        self.alt_floor=-float(self.latest['vehicle_local_position'].z)-float(self.cfg['p6_altitude_loss_abort_m'])
+        self.event('p6_altitude_abort_floor',altitude_m=self.alt_floor,loss_m=self.cfg['p6_altitude_loss_abort_m'],tilt_abort_deg=self.cfg['safety_tilt_deg'])
+        self.start_stream(origin,yaw,False,gaps=windows,profile=self.p6_profile)
+        self.stream_t0=time.monotonic()
+        self.event('p1_profile_started',px4_bound_us=self.native_bound_streaming(),duration_s=self.p6_total())
+        while time.monotonic()-self.stream_t0<self.p6_total():self.pump(0.01);self.p6_chase_check(origin,axis)
+        bound=self.native_bound_streaming();log=self.stream_state['gaps_log'];self.stop_stream()
+        self.event('p6_stream_ended',end_bound_px4_us=bound,gaps=log,planned_gaps=len(windows),chase_switch_family_s=self.p6_switch_s,profile_s=time.monotonic()-self.stream_t0)
+        if len(log)!=len(windows) or any('first_emit_profile_s' not in g for g in log):raise RuntimeError('planned stream gaps not all executed')
+        self.alt_floor=None
+        self.hover(p['post_stream_s'],'post_stream',prefix='p1_phase')
+        self.event('handover_requested',end_bound_px4_us=self.native_phase_end_bound(),from_controller='N',to_controller='C',iteration=1,subject=False)
+        self.mode(4);self.capture_states('classic_after_entry')
+        self.hover(p['return_hold_s'],'return_classic',prefix='p1_phase')
+        self.checks['p6_ident_sequence']='PASS'
 
     def apply_treatment(self):
         # P2: controller-side parameters are set once before arming; RAPTOR applies them in its own thread.
@@ -885,7 +986,7 @@ class Experiment:
         self.wait(lambda:self.latest['vehicle_local_position'].xy_valid and self.latest['vehicle_local_position'].z_valid,45,'valid local position')
         self.pump(4)
         if self.variant=='raptor':self.state_contract()
-        if self.args.kind in P2_TREATMENT_KINDS or self.args.kind in P5_TREATMENT_KINDS:self.apply_treatment()
+        if self.args.kind in P2_TREATMENT_KINDS or self.args.kind in P5_TREATMENT_KINDS or self.args.kind in P6_TREATMENT_KINDS:self.apply_treatment()
         if self.args.kind in P3_TREATMENT_KINDS:self.p3_parameters(0,'before_arming')
         self.ros_command(400,param1=1)
         self.safe=True
@@ -898,6 +999,7 @@ class Experiment:
         if self.args.kind.startswith(('p1_','p2_')):self.p1_flight(mode)
         elif self.args.kind.startswith('p3_'):self.p3_flight(mode)
         elif self.args.kind=='p5_gap':self.p5_gap_flight(mode)
+        elif self.args.kind=='p6_ident':self.p6_ident_flight(mode)
         elif self.variant=='raptor':
             count=self.cfg['repetitions'] if self.args.kind=='repeated_handover' else 1
             for iteration in range(count):
@@ -992,7 +1094,7 @@ def main():
     p.add_argument('--sim-seed',type=int,help='P4: Gazebo random seed (gz sim --seed), recorded in config.json and metadata')
     p.add_argument('--initial-yaw-deg',type=float,help='P4: initial heading of the spawned x500 (PX4_GZ_MODEL_POSE yaw), recorded')
     p.add_argument('--condition',help='P1/P2 pre-handover motion condition (config p1.conditions / p2.conditions)')
-    p.add_argument('--treatment',help='P2 treatment (config p2.treatments): N0 N1 N2g N2 N2s Nstar for p2_c_to_n, C0 C2 for p2_n_to_c, B for baselines; P3: N0 N3 N2s N2 for p3_sequence (conditions D1 D2 D3), B for p3_baseline_raptor (condition R); P5: T0 T1 T1a1 T1a3 for p5_gap (config p5.conditions)')
+    p.add_argument('--treatment',help='P2 treatment (config p2.treatments): N0 N1 N2g N2 N2s Nstar for p2_c_to_n, C0 C2 for p2_n_to_c, B for baselines; P3: N0 N3 N2s N2 for p3_sequence (conditions D1 D2 D3), B for p3_baseline_raptor (condition R); P5: T0 T1 T1a1 T1a3 for p5_gap (config p5.conditions); P6: also T1a0.75 T1a1.5 for p5_gap (generated conditions), T0 for p6_ident (config p6.ident.conditions)')
     args=p.parse_args();e=Experiment(args);status='FAIL';reason=None
     try:
         e.execute();status='PASS'

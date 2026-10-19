@@ -1,5 +1,7 @@
 # Experiment Status
 
+P6 进行中（2026-10-19，在 SITL 上检验可行核方法；只飞行和导出，不拟合模型、不判三区）：开发 [dev-01](data/p6-20261019-dev-01/)（8 轮，说明见 [dev-notes](data/p6-20261019-dev-notes.json)）；候选等价性 [equivalence](data/p6-20261019-equivalence/) 4/4（P5 D0.7-A0 T1 与 D1.0-A0 T1a3 各 2 次，成败相同，最大倾角差 +0.06…+2.02°）；A 辨识飞行 [batch-a](data/p6-20261019-batch-a/) 18/18 通过审计（6 轮 chase 越过 45° 标为 ident_exceeded_45，无中止），导出在 [export/](export/)。预登记取消：B1 v2.5 D1.7 T1a1.5、C2 M3（两方向），放不进 8 m 安全半径。
+
 实验状态：**P5 补充先导完成（RAPTOR 目标接口，2026-10-18）**；P4（含 P4-01c）、P3、P2、P1、P0 已完成，P4-01c 与 P5 的等价性结论以用户接受参考集选择为条件（见下）；2026-10-10 历史总审计 FAIL 原样保留。未开展实飞。
 
 更新时间：2026-10-18（Asia/Shanghai）。P5 结论（详见 [P5 报告](docs/THOR_P5_REPORT.md)；探查性质，每格 1–2 次，不做统计结论；记忆一律 N2，每轮独立种子）：

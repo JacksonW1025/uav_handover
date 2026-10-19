@@ -1,0 +1,216 @@
+{
+ "run": "p6-20261019-a-step-m2.0-A45-T0-1",
+ "run_directory": "data/p6-20261019-a-step-m2.0-A45-T0-1",
+ "batch": "data/p6-20261019-batch-a",
+ "stage": "a",
+ "kind": "p6_ident",
+ "condition": "step-m2.0-A45",
+ "treatment": "T0",
+ "treatment_parameters": {
+  "rini": 4,
+  "rtgt": 0,
+  "rtdec": 2.0,
+  "description": "N2 memory; original RAPTOR target handling (RTGT=0): the capture family has a zero-velocity in-flight timeout capture"
+ },
+ "sim_seed": 1908736881,
+ "planned_speed_m_s": 0.0,
+ "motion_axis_ned": [
+  0.70710678,
+  0.70710678,
+  0.0
+ ],
+ "condition_spec": {
+  "family": "step",
+  "axis": "A45",
+  "step_m": 2.0
+ },
+ "profile": {
+  "reference_hold_s": 3.0,
+  "setpoint_period_s": 0.02,
+  "reposition": {
+   "speed_m_s": 1.0,
+   "accel_m_s2": 0.5
+  },
+  "end_hold_s": 6.0,
+  "post_stream_s": 3.0,
+  "return_hold_s": 5.0,
+  "note": "Profile time: reposition from RAPTOR's hover capture to the start offset (centre of the planned worst-case path at the hover capture), reference hold 3 s, family motion, end hold (step 6 s, others 4 s) of stationary setpoints; the stream then ends, RAPTOR captures at rest for post_stream_s, the classic AUTO_LOITER takes over and lands.",
+  "family": "step",
+  "axis": "A45",
+  "step_m": 2.0,
+  "motion_axis_ned": [
+   0.70710678,
+   0.70710678,
+   0.0
+  ],
+  "path_length_m": 2.0,
+  "start_offset_m": -1.0
+ },
+ "direction": {
+  "planned_axis_ned": [
+   0.70710678,
+   0.70710678,
+   0.0
+  ],
+  "speed_along_axis_at_origin_m_s": 0.028299389103313918,
+  "realized_deg_mean_moving": 48.525425055680024
+ },
+ "batch_status": {
+  "status": "PASS",
+  "accepted": true,
+  "flight_failure": false,
+  "infrastructure_ok": true
+ },
+ "outcome": "IDENT_OK",
+ "flight_failure_reasons": null,
+ "ident_exceeded_45": false,
+ "aborted": false,
+ "abort_reason": null,
+ "max_tilt_deg": 25.66161911048835,
+ "max_tilt_at_s": 0.243866,
+ "first_at_or_above_45_s": null,
+ "max_altitude_loss_m": 0.11242485046386719,
+ "max_angular_rate_rad_s": 2.694478750228882,
+ "motor_saturation_any_s": 0.008,
+ "time_origin": {
+  "px4_us": 59364134,
+  "definition": "family start: first logged setpoint leaving the reference hold (step / target appears / acceleration start)"
+ },
+ "events": [
+  {
+   "event": "family_start",
+   "px4_us": 59364134,
+   "t_s": 0.0,
+   "state_before": {
+    "t_s": -0.000134,
+    "target_mode": "external",
+    "ep_u": -0.017633356303550007,
+    "ev_u": 0.028299389103313918,
+    "ep_w": 0.001804601609662772,
+    "ev_w": 0.02113674096951566,
+    "a_u": -0.006929625782034389,
+    "a_w": -0.016863671545152375,
+    "ep_u_clip": -0.017633357265009017,
+    "ev_u_clip": 0.028299391976448846,
+    "ep_w_clip": 0.0018046026823041517,
+    "ev_w_clip": 0.021136739318140658,
+    "tilt_deg": 0.1182211694934999,
+    "alt_loss_m": 0.0,
+    "v_u": 0.028299389103313918
+   },
+   "state_at_or_after": {
+    "t_s": 0.003866,
+    "target_mode": "external",
+    "ep_u": -2.0176333608657933,
+    "ev_u": 0.028299389103313918,
+    "ep_w": 0.001804643756511118,
+    "ev_w": 0.02113674096951566,
+    "a_u": -0.006929625782034389,
+    "a_w": -0.016863671545152375,
+    "ep_u_clip": -0.7029441098414131,
+    "ev_u_clip": 0.028299391976448846,
+    "ep_w_clip": -0.07661316310681772,
+    "ev_w_clip": 0.021136739318140658,
+    "tilt_deg": 0.12066755904429391,
+    "alt_loss_m": 0.0,
+    "v_u": 0.028299389103313918
+   }
+  },
+  {
+   "event": "stream_end",
+   "px4_us": 65368000,
+   "t_s": 6.003866,
+   "state_before": {
+    "t_s": 5.999866,
+    "target_mode": "external",
+    "ep_u": 0.015098813425751926,
+    "ev_u": -0.024518631417951957,
+    "ep_w": 0.014321962715302707,
+    "ev_w": -0.017238108427234146,
+    "a_u": -0.014852441389016882,
+    "a_w": 0.043587082642533706,
+    "ep_u_clip": 0.015098815878009155,
+    "ev_u_clip": -0.02451863407416392,
+    "ep_w_clip": 0.014321963081395276,
+    "ev_w_clip": -0.01723810773186182,
+    "tilt_deg": 0.31266314481390683,
+    "alt_loss_m": 0.002504587173461914,
+    "v_u": -0.024518631417951957
+   },
+   "state_at_or_after": {
+    "t_s": 6.003866,
+    "target_mode": "external",
+    "ep_u": 0.015098813425751926,
+    "ev_u": -0.024518631417951957,
+    "ep_w": 0.014321962715302707,
+    "ev_w": -0.017238108427234146,
+    "a_u": -0.014852441389016882,
+    "a_w": 0.043587082642533706,
+    "ep_u_clip": 0.015098815878009155,
+    "ev_u_clip": -0.02451863407416392,
+    "ep_w_clip": 0.014321963081395276,
+    "ev_w_clip": -0.01723810773186182,
+    "tilt_deg": 0.31487812645751434,
+    "alt_loss_m": 0.002504587173461914,
+    "v_u": -0.024518631417951957
+   }
+  }
+ ],
+ "reconstruction": {
+  "position_max_abs": 7.717064559598086e-08,
+  "velocity_max_abs": 1.5567891087364671e-07,
+  "components_over_1e-4": 0,
+  "components_checked": 30028,
+  "rows": 5118,
+  "rows_unmatched": 0,
+  "rows_with_clipping": 371
+ },
+ "trace": {
+  "file": "trace.csv.gz",
+  "rows": 5118,
+  "rows_full_rate": 5118,
+  "downsampled": false,
+  "bytes": 277062,
+  "downsampling_rule": null,
+  "columns": [
+   "t_s",
+   "px4_us",
+   "ep_u",
+   "ep_w",
+   "ev_u",
+   "ev_w",
+   "ep_u_clip",
+   "ep_w_clip",
+   "ev_u_clip",
+   "ev_w_clip",
+   "ep_f_clip",
+   "ep_l_clip",
+   "ev_f_clip",
+   "ev_l_clip",
+   "ep_f",
+   "ep_l",
+   "ev_f",
+   "ev_l",
+   "ep_z",
+   "ev_z",
+   "a_u",
+   "a_w",
+   "a_z",
+   "v_u",
+   "v_w",
+   "tilt_deg",
+   "alt_loss_m",
+   "target_yaw_rad",
+   "target_mode",
+   "gap_active",
+   "recon_ok"
+  ]
+ },
+ "sources": {
+  "unclipped_error": "vehicle_local_position sample used by RAPTOR (research_timing.local_position_sample) minus RAPTOR target (external setpoint read / research_target row)",
+  "clipped_error": "research_memory.policy_input [0:2] position, [12:14] velocity (target-yaw FLU frame)",
+  "acceleration": "vehicle_local_position ax, ay, az of the same sample (EKF2)",
+  "tilt": "vehicle_attitude",
+  "metrics": "p6-metrics.json"
+ }
+}

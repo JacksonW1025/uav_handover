@@ -1,0 +1,12 @@
+{
+  "created": "2026-10-19",
+  "status": "DEVELOPMENT (not results)",
+  "runs": {
+    "data/p6-20261019-dev-01": "Development batch (p6_batch --stage dev --development, 8 runs) on every new code path: p6_ident step-m4.0, chase-x2.0-V2.0 (no catch-up within 3 s: deceleration at the max_chase_s fallback; 52.4 deg, IDENT_EXCEEDED_45, not aborted), brake-V2.5-b0.5, capture-v1.0 (one zero-velocity in-flight capture 204 ms after the last setpoint); generated B conditions v2.0-D2.4 T1a0.75 and v2.5-D1.4 T1a1.5 (shrunk pre_gap_s 0.95 / post_gap_s 2.0), C2 M2-A45 T1 (explicit windows) and v2.0-D0.4-A45 T0. Every run: PX4 exit 0, trace and output-chain gate passed, max applied-command age 4 ms, p6_metrics MEASURED; 4 flight failures (runner tilt abort) are development observations only. p6_export reconstruction residual <= 2.2e-7 on all 8 runs (0 components > 1e-4)."
+  },
+  "fixes_before_freezing": [
+    "p6_export: the state 'at or after' a resume was taken at the first cycle at or after the logged setpoint arrival, which is still on the old (capture / T1) target because RAPTOR reads the setpoint in its next cycle; now the first cycle on the resumed external setpoint.",
+    "tools/p6_audit.py, p6_equivalence.py, p6_report.py added after dev-01 (analysis only)."
+  ],
+  "candidate": "The final candidate (data/p6-20261019-equivalence/candidate.json) differs from the dev-01 candidate only in tools/p6_audit.py, p6_equivalence.py, p6_export.py, p6_report.py (analysis only); runner, conditions, metrics, batch tool, config, Lab sources, binaries and policy are identical, so dev-01 also serves as the latency check of the flight code (all runs 4 ms)."
+}

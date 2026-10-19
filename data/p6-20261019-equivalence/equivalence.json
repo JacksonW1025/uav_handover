@@ -1,0 +1,67 @@
+{
+  "batch": "data/p6-20261019-equivalence",
+  "criteria": {
+    "groups": "p5_gap:D0.7-A0:T1:2@config/p5.json,p5_gap:D1.0-A0:T1a3:2@config/p5.json",
+    "reference": {
+      "D0.7-A0:T1": "data/p5-20261018-e2-D0.7-A0-T1-1",
+      "D1.0-A0:T1a3": "data/p5-20261018-e2-D1.0-A0-T1a3-1"
+    },
+    "max_tilt_tolerance_deg": 2.5,
+    "rule": "New candidate (P6 runner: p6_ident, explicit windows, generated conditions; PX4 unchanged): P5 conditions with config/p5.json and the frozen P5 analyzer, 2 runs each with new seeds. Equivalent when every run completes with sound infrastructure and evidence (p5_metrics MEASURED), its flight outcome equals the P5 batch-e2 run of the same condition (D0.7 T1 SUCCESS, D1.0 T1a3 FAILURE) and |max tilt - P5| <= 2.5 deg (P5: 36.6 / 47.5 deg; whole-window max tilt of p5-metrics.json). Otherwise stop and write diagnosis.json."
+  },
+  "runs": [
+    {
+      "id": "D0.7-A0-T1-1",
+      "condition": "D0.7-A0",
+      "treatment": "T1",
+      "reference_run": "data/p5-20261018-e2-D0.7-A0-T1-1",
+      "problems": [],
+      "outcome": "SUCCESS",
+      "reference_outcome": "SUCCESS",
+      "max_tilt_deg": 37.5694098278473,
+      "reference_max_tilt_deg": 36.61659714101571,
+      "max_tilt_difference_deg": 0.9528126868315923,
+      "equivalent": true
+    },
+    {
+      "id": "D1.0-A0-T1a3-1",
+      "condition": "D1.0-A0",
+      "treatment": "T1a3",
+      "reference_run": "data/p5-20261018-e2-D1.0-A0-T1a3-1",
+      "problems": [],
+      "outcome": "FAILURE",
+      "reference_outcome": "FAILURE",
+      "max_tilt_deg": 49.5637255465014,
+      "reference_max_tilt_deg": 47.5470134802557,
+      "max_tilt_difference_deg": 2.0167120662457023,
+      "equivalent": true
+    },
+    {
+      "id": "D0.7-A0-T1-2",
+      "condition": "D0.7-A0",
+      "treatment": "T1",
+      "reference_run": "data/p5-20261018-e2-D0.7-A0-T1-1",
+      "problems": [],
+      "outcome": "SUCCESS",
+      "reference_outcome": "SUCCESS",
+      "max_tilt_deg": 36.6780792751767,
+      "reference_max_tilt_deg": 36.61659714101571,
+      "max_tilt_difference_deg": 0.06148213416098969,
+      "equivalent": true
+    },
+    {
+      "id": "D1.0-A0-T1a3-2",
+      "condition": "D1.0-A0",
+      "treatment": "T1a3",
+      "reference_run": "data/p5-20261018-e2-D1.0-A0-T1a3-1",
+      "problems": [],
+      "outcome": "FAILURE",
+      "reference_outcome": "FAILURE",
+      "max_tilt_deg": 48.22952783822785,
+      "reference_max_tilt_deg": 47.5470134802557,
+      "max_tilt_difference_deg": 0.6825143579721527,
+      "equivalent": true
+    }
+  ],
+  "equivalent": true
+}

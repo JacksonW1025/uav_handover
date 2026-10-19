@@ -72,7 +72,9 @@ def main():
         if r['kind']!='p5_gap':continue
         m=p6_conditions.GAP_NAME.match(r['condition'])
         key=f"{r['treatment']}@{m['v']}@{m['axis']}" if m else f"{r['treatment']}@{r['condition']}"
-        families.setdefault(key,[]).append({'D_s':float(m['D']) if m else None,'id':r['id'],'outcome':r['outcome'],'max_tilt_deg':r['metrics']['max_tilt_deg'],
+        og=r['metrics'].get('open_gap') or {};tilt_open=r['metrics']['max_tilt_deg'] is None and og.get('open_gap')
+        families.setdefault(key,[]).append({'D_s':float(m['D']) if m else None,'id':r['id'],'outcome':r['outcome'],
+            'max_tilt_deg':og.get('max_tilt_deg_until_raptor_end') if tilt_open else r['metrics']['max_tilt_deg'],'max_tilt_from_open_gap':bool(tilt_open),
             'first_at_or_above_45_s':r['metrics']['first_at_or_above_45_s'],'max_altitude_loss_m':r['metrics']['max_altitude_loss_m'],'sim_seed':r['sim_seed'],
             'jumps_m':[g['jump_along_axis_m'] for g in r['metrics']['gaps']],'velocity_jumps_m_s':[g['velocity_jump_along_axis_m_s'] for g in r['metrics']['gaps']]})
     fam_summary={}

@@ -35,10 +35,10 @@ def family_rows(audits):
     return fam
 
 def table_b(fam,refine=None):
-    rows=['| 族（处理@速度@方向） | D s：结果 / 最大倾角 °（阶段） | 最后成功 D | 首个失败 D | 状态 |','|---|---|---|---|---|']
+    rows=['S 成功，F 失败；* 中断中被中止，倾角取到 RAPTOR 结束（P5 open-gap 测量）；括号为 B1 以外的阶段。','','| 族（处理@速度@方向） | D s：结果 / 最大倾角 °（阶段） | 最后成功 D | 首个失败 D | 状态 |','|---|---|---|---|---|']
     for k in sorted(fam,key=lambda k:(k.split('@')[0],k)):
         rs=sorted(fam[k],key=lambda r:(r['D_s'] or 0,r['stage'],r['id']))
-        cells=' · '.join(f"{pc.fmt(r['D_s'])}: {'S' if r['outcome']=='SUCCESS' else 'F'}/{f2(r['max_tilt_deg'],1)}{'' if r['stage']=='B1' else '('+r['stage']+')'}" for r in rs if r['D_s'] is not None)
+        cells=' · '.join(f"{pc.fmt(r['D_s'])}: {'S' if r['outcome']=='SUCCESS' else 'F'}/{f2(r['max_tilt_deg'],1)}{'*' if r.get('max_tilt_from_open_gap') else ''}{'' if r['stage']=='B1' else '('+r['stage']+')'}" for r in rs if r['D_s'] is not None)
         from p6_batch import bracket
         pts=sorted((r['D_s'],'S' if r['outcome']=='SUCCESS' else 'F') for r in rs if r['stage'] in ['B1','B2','C'] and r['D_s'] is not None)
         _,st,ls,ff=bracket(pts) if pts else (None,'—',None,None)
@@ -57,7 +57,7 @@ def fig_a(a):
     fig.tight_layout();fig.savefig(FIG/'p6-fig1-a-ident.png',dpi=130);plt.close(fig)
 
 def fig_b(fam):
-    keys=sorted(fam,key=lambda k:(k.split('@')[0],k));fig,ax=plt.subplots(figsize=(11,0.45*len(keys)+1.5))
+    keys=sorted([k for k in fam if any(r['D_s'] is not None for r in fam[k])],key=lambda k:(k.split('@')[0],k));fig,ax=plt.subplots(figsize=(11,0.45*len(keys)+1.5))
     mk={'B1':'o','B2':'s','B3':'^','C':'D'}
     for i,k in enumerate(keys):
         for r in fam[k]:

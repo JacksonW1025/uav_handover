@@ -66,9 +66,12 @@ def reconstruct(T):
             if stat[c] and latest>cur:cur=latest;src=('sp',cur)
         elif latest>cur:
             # No raptor_status row for this cycle: the setpoint counts as read here unless the next status row reads it.
-            k=int(np.searchsorted(sts,c,side='right'))
+            # A status row >= 10 ms after the arrival (setpoints are stamped up to a few ms before they can be read) that
+            # did not read it means it is an old setpoint that RAPTOR never took (e.g. the pre-arming DDS check).
+            k=int(np.searchsorted(sts,c,side='right'));kp=k-1
             read_later=k<len(sts) and flag[k] and int(np.searchsorted(spt,sts[k],side='right'))-1==latest
-            if not read_later:cur=latest;src=('sp',cur)
+            missed=kp>=0 and sts[kp]>=spt[latest]+10000
+            if not read_later and not missed:cur=latest;src=('sp',cur)
         if c in trow:src=('tg',trow[c])
         assign[c]=src
     n=len(s);P=np.full((n,3),np.nan);V=np.full((n,3),np.nan);Y=np.full(n,np.nan);mode=np.array(['none']*n,dtype=object)

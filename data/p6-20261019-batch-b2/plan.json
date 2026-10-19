@@ -1,0 +1,290 @@
+{
+  "created_at": "2026-10-19T23:31:51.781977+08:00",
+  "stage": "b2",
+  "host": {
+    "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+    "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+    "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+  },
+  "purpose": "P6 B2: pre-registered bisection of each B1 family's single success->failure bracket to <= 0.05 s, at most 3 runs per family",
+  "config": "config/p6.json",
+  "output_chain_gate": {
+    "p99_us": 4000,
+    "max_us": 12000,
+    "longest_over_target_steps": 2,
+    "overwritten_fraction": 0.001,
+    "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+  },
+  "candidate": "candidate.json",
+  "mode": "standard",
+  "groups": null,
+  "order": "adaptive: families in config order, bisection runs appended as decided",
+  "rule": {
+    "rule": "After B1 is complete, per family (treatment x speed): order its runs by D; if the outcomes contain exactly one success->failure change and no failure followed by a success (S..SF..F, at least one of each), fly the midpoint of the last success and the first failure (D rounded to 4 decimals), then bisect on that outcome until the bracket is <= 0.05 s (+1e-9), at most 3 added runs per family. Families without a change, or non-monotone (a failure followed by a success), are not refined and are recorded as such. Families are processed in the order of b.families x speeds; outcome = the pre-registered P5 flight outcome (p5.failure_criteria).",
+    "max_runs_per_family": 3,
+    "bracket_s": 0.05,
+    "max_runs": 33
+  },
+  "sources": [
+    "data/p6-20261019-batch-b1"
+  ],
+  "independence": {
+    "master_seed": 20261019,
+    "sim_seed": "Every P4 batch run gets its own Gazebo seed (gz sim --seed): first 31 bits of sha256(batch prefix + run id + master_seed), recorded in plan.json, config.json and the Gazebo command line. Gazebo sensor noise (IMU, barometer, magnetometer) is drawn from this seed; without --seed it is drawn from std::random_device.",
+    "initial_yaw": {
+      "range_deg": [
+        -20.0,
+        20.0
+      ],
+      "conditions": [],
+      "rule": "P6 draws no random heading: every run spawns at yaw 0 (PX4 heading 96.0 deg).",
+      "heading_at_zero_deg": 96.0,
+      "heading_rule": "Gazebo yaw is counter-clockwise from East (ENU); PX4 heading is clockwise from North (NED) incl. the world magnetic declination. At spawn yaw 0 the PX4 heading is 96.0 deg (P3 batch-01 first C->N 95.99-96.05 deg; P4 dev-01 95.9 deg), so the expected heading before arming is 96.0 - initial_yaw_deg (tolerance 3 deg)."
+    },
+    "hover_point": "Not perturbed: the local frame origin is the spawn point and the Gazebo world is flat and translation invariant, so a horizontal offset of the hover point changes nothing the controllers or the physics see; the hover altitude stays the frozen 3 m (analysis references).",
+    "verification": "Before the batches: (1) startup-only runs with seeds A, A, B compare the at-rest raw gyro noise (sensor_gyro) sample by sample: same seed identical, different seed different; (2) development flights with different seeds/headings give different measured values; (3) every batch run checks that its Gazebo command carried the planned seed and that the heading at takeoff equals the planned heading (tolerance 3 deg).",
+    "default_settings": "Every P6 batch run (incl. the equivalence) gets its own Gazebo seed."
+  },
+  "flight_failures": {
+    "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+    "no_joint_recovery_s": 10.0,
+    "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+    "motor_saturation_continuous_s": 0.5,
+    "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+    "ground_altitude_m": 0.2,
+    "ground": "altitude <= 0.2 m inside [trigger, window end]",
+    "window": "[first gap start, end of the post_stream phase] (truncated at an abort); no_joint_recovery is judged from RAPTOR's capture after the final stream stop at rest (frozen P0 thresholds) instead of an owner change"
+  },
+  "ident_outcomes": {
+    "classes": {
+      "IDENT_OK": "max tilt < 45 deg and no runner abort",
+      "IDENT_EXCEEDED_45": "max tilt >= 45 deg (log, every sample) without a runner abort: recorded, labelled ident_exceeded_45; not a failure and not test data",
+      "IDENT_ABORTED": "runner safety abort (tilt > 65 deg on 10 Hz telemetry, altitude loss > 1.0 m, or another envelope limit); the recorded part is exported"
+    },
+    "note": "none of the classes stops the batch; only infrastructure or evidence failures do"
+  },
+  "stop_rule": "Pre-registered flight failures and identification outcomes with every infrastructure and evidence check passing are results and do not stop the batch; any other failed check stops it. Remaining runs stay NOT_RUN; nothing is re-run in place.",
+  "runs": [
+    {
+      "id": "v1.5-D0.575-A0-T0-1",
+      "kind": "p5_gap",
+      "condition": "v1.5-D0.575-A0",
+      "treatment": "T0",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 1233145624,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v1.5-D0.575-A0-T0-1"
+    },
+    {
+      "id": "v1.5-D0.6125-A0-T0-1",
+      "kind": "p5_gap",
+      "condition": "v1.5-D0.6125-A0",
+      "treatment": "T0",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 1631903136,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v1.5-D0.6125-A0-T0-1"
+    },
+    {
+      "id": "v2.0-D0.45-A0-T0-1",
+      "kind": "p5_gap",
+      "condition": "v2.0-D0.45-A0",
+      "treatment": "T0",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 1772203564,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.0-D0.45-A0-T0-1"
+    },
+    {
+      "id": "v2.5-D0.45-A0-T0-1",
+      "kind": "p5_gap",
+      "condition": "v2.5-D0.45-A0",
+      "treatment": "T0",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 714823747,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.5-D0.45-A0-T0-1"
+    },
+    {
+      "id": "v1.5-D0.65-A0-T1a3-1",
+      "kind": "p5_gap",
+      "condition": "v1.5-D0.65-A0",
+      "treatment": "T1a3",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 387532091,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v1.5-D0.65-A0-T1a3-1"
+    },
+    {
+      "id": "v2.0-D0.65-A0-T1a3-1",
+      "kind": "p5_gap",
+      "condition": "v2.0-D0.65-A0",
+      "treatment": "T1a3",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 560526017,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.0-D0.65-A0-T1a3-1"
+    },
+    {
+      "id": "v2.5-D0.775-A0-T1a3-1",
+      "kind": "p5_gap",
+      "condition": "v2.5-D0.775-A0",
+      "treatment": "T1a3",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 518403498,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.5-D0.775-A0-T1a3-1"
+    },
+    {
+      "id": "v2.5-D0.7375-A0-T1a3-1",
+      "kind": "p5_gap",
+      "condition": "v2.5-D0.7375-A0",
+      "treatment": "T1a3",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 806000321,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.5-D0.7375-A0-T1a3-1"
+    },
+    {
+      "id": "v1.5-D1.1-A0-T1a1.5-1",
+      "kind": "p5_gap",
+      "condition": "v1.5-D1.1-A0",
+      "treatment": "T1a1.5",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 1850191075,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v1.5-D1.1-A0-T1a1.5-1"
+    },
+    {
+      "id": "v1.5-D1.05-A0-T1a1.5-1",
+      "kind": "p5_gap",
+      "condition": "v1.5-D1.05-A0",
+      "treatment": "T1a1.5",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 99318775,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v1.5-D1.05-A0-T1a1.5-1"
+    },
+    {
+      "id": "v2.0-D1.1-A0-T1a1.5-1",
+      "kind": "p5_gap",
+      "condition": "v2.0-D1.1-A0",
+      "treatment": "T1a1.5",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 534158560,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.0-D1.1-A0-T1a1.5-1"
+    },
+    {
+      "id": "v2.0-D1.05-A0-T1a1.5-1",
+      "kind": "p5_gap",
+      "condition": "v2.0-D1.05-A0",
+      "treatment": "T1a1.5",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 1587031961,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.0-D1.05-A0-T1a1.5-1"
+    },
+    {
+      "id": "v2.5-D1.1-A0-T1a1.5-1",
+      "kind": "p5_gap",
+      "condition": "v2.5-D1.1-A0",
+      "treatment": "T1a1.5",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 328764213,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.5-D1.1-A0-T1a1.5-1"
+    },
+    {
+      "id": "v2.5-D1.05-A0-T1a1.5-1",
+      "kind": "p5_gap",
+      "condition": "v2.5-D1.05-A0",
+      "treatment": "T1a1.5",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 490878126,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.5-D1.05-A0-T1a1.5-1"
+    },
+    {
+      "id": "v1.5-D1.8-A0-T1a0.75-1",
+      "kind": "p5_gap",
+      "condition": "v1.5-D1.8-A0",
+      "treatment": "T1a0.75",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 1594154707,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v1.5-D1.8-A0-T1a0.75-1"
+    },
+    {
+      "id": "v1.5-D1.9-A0-T1a0.75-1",
+      "kind": "p5_gap",
+      "condition": "v1.5-D1.9-A0",
+      "treatment": "T1a0.75",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 1888586218,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v1.5-D1.9-A0-T1a0.75-1"
+    },
+    {
+      "id": "v1.5-D1.85-A0-T1a0.75-1",
+      "kind": "p5_gap",
+      "condition": "v1.5-D1.85-A0",
+      "treatment": "T1a0.75",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 789443951,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v1.5-D1.85-A0-T1a0.75-1"
+    },
+    {
+      "id": "v2.0-D1.8-A0-T1a0.75-1",
+      "kind": "p5_gap",
+      "condition": "v2.0-D1.8-A0",
+      "treatment": "T1a0.75",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 1689237500,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.0-D1.8-A0-T1a0.75-1"
+    },
+    {
+      "id": "v2.0-D1.9-A0-T1a0.75-1",
+      "kind": "p5_gap",
+      "condition": "v2.0-D1.9-A0",
+      "treatment": "T1a0.75",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 1201258344,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.0-D1.9-A0-T1a0.75-1"
+    },
+    {
+      "id": "v2.0-D1.95-A0-T1a0.75-1",
+      "kind": "p5_gap",
+      "condition": "v2.0-D1.95-A0",
+      "treatment": "T1a0.75",
+      "config": "config/p6.json",
+      "repetition": 1,
+      "sim_seed": 1849629424,
+      "initial_yaw_deg": null,
+      "directory": "data/p6-20261019-b2-v2.0-D1.95-A0-T1a0.75-1"
+    }
+  ],
+  "refinement": "refinement.json"
+}

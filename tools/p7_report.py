@@ -29,16 +29,16 @@ def table_a(A):
     gs=None;rows=[]
     for key,v in A['tables']['A'].items():
         gs=[r['g_s'] for r in v['by_interval']];ref=v['single_reference']
-        cells=[('取消' if r.get('cancelled') else '未飞') if not r['flown'] else cell(r['outcome'],r['max_tilt_deg'],r['max_tilt_from_open_gap'],r.get('task_outcome'))+('' if r['gaps_completed']==4 else f" ({r['gaps_completed']}/4)") for r in v['by_interval']]
-        rows.append(f"| {key} | {cell(ref['outcome'],ref['max_tilt_deg']) if ref else '—'} | "+' | '.join(cells)+' |')
+        cells=[('取消' if r.get('cancelled') else '未飞') if not r['flown'] else cell(r['outcome'],r['max_tilt_deg'],r['max_tilt_from_open_gap'],r.get('task_outcome'))+f" / {f2(r['max_altitude_loss_m'])} m"+('' if r['gaps_completed']==4 else f" ({r['gaps_completed']}/4)") for r in v['by_interval']]
+        rows.append(f"| {key} | {cell(ref['outcome'],ref['max_tilt_deg'])+' / '+f2(ref.get('max_altitude_loss_m'))+' m' if ref else '—'} | "+' | '.join(cells)+' |')
     head='| 组（捕获 方向 D） | 单次参照 | '+' | '.join(f'g = {pc.fmt(g)} s' for g in gs)+' |'
-    return '\n'.join(['S 成功，F 失败（冻结判据），数字为最大倾角 °（从第一次中断起）；* 中断中被中止，倾角取到 RAPTOR 结束；† 按任务判据（倾角 ≥ 45° 或高度损失 > 1 m）结果不同；(k/4) 被中止前完成的中断次数。','',head,'|'+'---|'*(len(gs)+2)]+rows)
+    return '\n'.join(['S 成功，F 失败（冻结判据），数字为最大倾角 ° / 最大高度损失 m（从第一次中断起到 post_stream 结束）；* 中断中被中止，倾角取到 RAPTOR 结束；† 按任务判据（倾角 ≥ 45° 或高度损失 > 1 m）结果不同；(k/4) 被中止前完成的中断次数。','',head,'|'+'---|'*(len(gs)+2)]+rows)
 
 def table_b(B):
-    rows=['| 序列 | 次数 | 中断 D s | 间隔 g s | 总中断 s | 跨度 s | 结果 | 最大倾角 ° | 每段最大倾角 ° | 每次恢复跳变 m |','|---|---|---|---|---|---|---|---|---|---|']
+    rows=['| 序列 | 次数 | 中断 D s | 间隔 g s | 总中断 s | 跨度 s | 结果 | 最大倾角 ° | 高度损失 m | 每段最大倾角 ° | 每次恢复跳变 m |','|---|---|---|---|---|---|---|---|---|---|---|']
     for n,r in sorted(B['tables']['B'].items()):
         rows.append(f"| {n} | {r['count']} | {'/'.join(pc.fmt(x) for x in r['durations_s'])} | {'/'.join(pc.fmt(x) for x in r['intervals_s'])} | {pc.fmt(r['total_interruption_s'])} | {pc.fmt(r['span_s'])} | "
-                    f"{'S' if r['outcome']=='SUCCESS' else 'F'}{'†' if r.get('task_outcome') not in [None,r['outcome']] else ''} | {f2(r['max_tilt_deg'],1)}{'*' if r['max_tilt_from_open_gap'] else ''} | {', '.join(f2(x,1) for x in r['per_interruption_max_tilt_deg'])} | {', '.join(f2(x) for x in r['setpoint_jumps_m'])} |")
+                    f"{'S' if r['outcome']=='SUCCESS' else 'F'}{'†' if r.get('task_outcome') not in [None,r['outcome']] else ''} | {f2(r['max_tilt_deg'],1)}{'*' if r['max_tilt_from_open_gap'] else ''} | {f2(r['max_altitude_loss_m'])} | {', '.join(f2(x,1) for x in r['per_interruption_max_tilt_deg'])} | {', '.join(f2(x) for x in r['setpoint_jumps_m'])} |")
     return '\n'.join(rows)
 
 def table_c(C):
@@ -51,16 +51,19 @@ def table_c(C):
     return '\n'.join(rows)
 
 def fig_a(A):
-    fig,ax=plt.subplots(figsize=(8,4.2))
-    for i,(key,v) in enumerate(A['tables']['A'].items()):
-        pts=[(r['g_s'],r['max_tilt_deg'],r['outcome']) for r in v['by_interval'] if r['flown']];c=SERIES[i]
-        if pts:ax.plot([p[0] for p in pts],[p[1] for p in pts],color=c,lw=1.5,label=key)
-        for g,t,o in pts:ax.scatter(g,t,marker='o' if o=='SUCCESS' else 'X',s=36,color=c,edgecolors='#fcfcfb',linewidths=1.5,zorder=3)
-        ref=v['single_reference']
-        if ref:ax.scatter(0.62,ref['max_tilt_deg'],marker='o' if ref['outcome']=='SUCCESS' else 'X',s=36,color=c,edgecolors='#fcfcfb',linewidths=1.5,zorder=3)
-    ax.axhline(45,color=MUTED,ls='--',lw=1);ax.text(0.005,45.4,'45° failure limit',color=MUTED,fontsize=7)
-    ax.set_xticks([0.05,0.1,0.15,0.25,0.5,0.62]);ax.set_xticklabels(['0.05','0.10','0.15','0.25','0.50','single'])
-    ax.set_xlabel('stream interval g between the 4 interruptions [s]   (o success, X failure)');ax.set_ylabel('max tilt [deg]');ax.legend(fontsize=7,frameon=False,ncol=2)
+    fig,axs=plt.subplots(1,2,figsize=(12,4.2))
+    for j,(field,lim,lab) in enumerate([('max_tilt_deg',45,'max tilt [deg]'),('max_altitude_loss_m',1.0,'max altitude loss [m]')]):
+        ax=axs[j]
+        for i,(key,v) in enumerate(A['tables']['A'].items()):
+            pts=[(r['g_s'],r[field],r['outcome']) for r in v['by_interval'] if r['flown']];c=SERIES[i]
+            if pts:ax.plot([p[0] for p in pts],[p[1] for p in pts],color=c,lw=1.5,label=key)
+            for g,t,o in pts:ax.scatter(g,t,marker='o' if o=='SUCCESS' else 'X',s=36,color=c,edgecolors='#fcfcfb',linewidths=1.5,zorder=3)
+            ref=v['single_reference']
+            if ref and ref.get(field) is not None:ax.scatter(0.62,ref[field],marker='o' if ref['outcome']=='SUCCESS' else 'X',s=36,color=c,edgecolors='#fcfcfb',linewidths=1.5,zorder=3)
+        ax.axhline(lim,color=MUTED,ls='--',lw=1);ax.text(0.005,lim*1.01,f'task limit {lim:g}',color=MUTED,fontsize=7)
+        ax.set_xticks([0.05,0.1,0.15,0.25,0.5,0.62]);ax.set_xticklabels(['0.05','0.10','0.15','0.25','0.50','single'])
+        ax.set_xlabel('stream interval g between the 4 interruptions [s]   (o success, X failure; frozen criterion)');ax.set_ylabel(lab)
+    axs[0].legend(fontsize=7,frameon=False,ncol=2)
     fig.tight_layout();fig.savefig(FIG/'p7-fig1-a-interval-scan.png',dpi=140);plt.close(fig)
 
 def fig_b(B):

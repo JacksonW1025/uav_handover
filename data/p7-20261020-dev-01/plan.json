@@ -1,0 +1,167 @@
+{
+  "created_at": "2026-10-20T16:09:58.798376+08:00",
+  "stage": "dev",
+  "host": {
+    "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+    "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+    "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+  },
+  "purpose": "P7 development: every new code path (q4 sequences T0 A45 / T1a3 A0, random sequence r01, MC_RAPTOR_RREC 2 single v2.0/v2.5 and multi-event M2-A45); latency check (applied age <= 8 ms). Never results.",
+  "config": "config/p7.json",
+  "output_chain_gate": {
+    "p99_us": 4000,
+    "max_us": 12000,
+    "longest_over_target_steps": 2,
+    "overwritten_fraction": 0.001,
+    "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+  },
+  "candidate": "candidate.json",
+  "mode": "development",
+  "groups": [
+    {
+      "kind": "p5_gap",
+      "condition": "q4-D0.3-g0.05-A45",
+      "treatment": "T0",
+      "n": 1,
+      "config": "config/p7.json"
+    },
+    {
+      "kind": "p5_gap",
+      "condition": "q4-D0.6-g0.15-A0",
+      "treatment": "T1a3",
+      "n": 1,
+      "config": "config/p7.json"
+    },
+    {
+      "kind": "p5_gap",
+      "condition": "r01-A0",
+      "treatment": "T1a3",
+      "n": 1,
+      "config": "config/p7.json"
+    },
+    {
+      "kind": "p5_gap",
+      "condition": "h-v2.0-D1.0-A0",
+      "treatment": "T1a3r2",
+      "n": 1,
+      "config": "config/p7.json"
+    },
+    {
+      "kind": "p5_gap",
+      "condition": "h-M2-A45",
+      "treatment": "T1a3r2",
+      "n": 1,
+      "config": "config/p7.json"
+    },
+    {
+      "kind": "p5_gap",
+      "condition": "h-v2.5-D1.4-A0",
+      "treatment": "T1a3r2",
+      "n": 1,
+      "config": "config/p7.json"
+    }
+  ],
+  "order": "as listed (repetitions interleave the groups)",
+  "independence": {
+    "master_seed": 20261020,
+    "sim_seed": "Every P4 batch run gets its own Gazebo seed (gz sim --seed): first 31 bits of sha256(batch prefix + run id + master_seed), recorded in plan.json, config.json and the Gazebo command line. Gazebo sensor noise (IMU, barometer, magnetometer) is drawn from this seed; without --seed it is drawn from std::random_device.",
+    "initial_yaw": {
+      "range_deg": [
+        -20.0,
+        20.0
+      ],
+      "conditions": [],
+      "rule": "P7 draws no random heading: every run spawns at yaw 0 (PX4 heading 96.0 deg).",
+      "heading_at_zero_deg": 96.0,
+      "heading_rule": "Gazebo yaw is counter-clockwise from East (ENU); PX4 heading is clockwise from North (NED) incl. the world magnetic declination. At spawn yaw 0 the PX4 heading is 96.0 deg (P3 batch-01 first C->N 95.99-96.05 deg; P4 dev-01 95.9 deg), so the expected heading before arming is 96.0 - initial_yaw_deg (tolerance 3 deg)."
+    },
+    "hover_point": "Not perturbed: the local frame origin is the spawn point and the Gazebo world is flat and translation invariant, so a horizontal offset of the hover point changes nothing the controllers or the physics see; the hover altitude stays the frozen 3 m (analysis references).",
+    "verification": "Before the batches: (1) startup-only runs with seeds A, A, B compare the at-rest raw gyro noise (sensor_gyro) sample by sample: same seed identical, different seed different; (2) development flights with different seeds/headings give different measured values; (3) every batch run checks that its Gazebo command carried the planned seed and that the heading at takeoff equals the planned heading (tolerance 3 deg).",
+    "default_settings": "Every P7 batch run (incl. the equivalence) gets its own Gazebo seed."
+  },
+  "flight_failures": {
+    "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+    "no_joint_recovery_s": 10.0,
+    "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+    "motor_saturation_continuous_s": 0.5,
+    "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+    "ground_altitude_m": 0.2,
+    "ground": "altitude <= 0.2 m inside [trigger, window end]",
+    "window": "[first gap start, end of the post_stream phase] (truncated at an abort); no_joint_recovery is judged from RAPTOR's capture after the final stream stop at rest (frozen P0 thresholds) instead of an owner change"
+  },
+  "cancelled": [
+    "q4-D0.45-g0.5-A0:T1a3",
+    "q4-D0.6-g0.5-A0:T1a3",
+    "q4-D0.45-g0.5-A45:T1a3",
+    "h-v2.5-D2.0-A0:T1a3r2"
+  ],
+  "stop_rule": "Pre-registered flight failures with every infrastructure and evidence check passing are results and do not stop the batch; any other failed check stops it. Remaining runs stay NOT_RUN; nothing is re-run in place.",
+  "runs": [
+    {
+      "id": "q4-D0.3-g0.05-A45-T0-1",
+      "kind": "p5_gap",
+      "condition": "q4-D0.3-g0.05-A45",
+      "treatment": "T0",
+      "config": "config/p7.json",
+      "repetition": 1,
+      "sim_seed": 2098651276,
+      "initial_yaw_deg": null,
+      "directory": "data/p7-20261020-dev-q4-D0.3-g0.05-A45-T0-1"
+    },
+    {
+      "id": "q4-D0.6-g0.15-A0-T1a3-1",
+      "kind": "p5_gap",
+      "condition": "q4-D0.6-g0.15-A0",
+      "treatment": "T1a3",
+      "config": "config/p7.json",
+      "repetition": 1,
+      "sim_seed": 1591108845,
+      "initial_yaw_deg": null,
+      "directory": "data/p7-20261020-dev-q4-D0.6-g0.15-A0-T1a3-1"
+    },
+    {
+      "id": "r01-A0-T1a3-1",
+      "kind": "p5_gap",
+      "condition": "r01-A0",
+      "treatment": "T1a3",
+      "config": "config/p7.json",
+      "repetition": 1,
+      "sim_seed": 238864618,
+      "initial_yaw_deg": null,
+      "directory": "data/p7-20261020-dev-r01-A0-T1a3-1"
+    },
+    {
+      "id": "h-v2.0-D1.0-A0-T1a3r2-1",
+      "kind": "p5_gap",
+      "condition": "h-v2.0-D1.0-A0",
+      "treatment": "T1a3r2",
+      "config": "config/p7.json",
+      "repetition": 1,
+      "sim_seed": 430426321,
+      "initial_yaw_deg": null,
+      "directory": "data/p7-20261020-dev-h-v2.0-D1.0-A0-T1a3r2-1"
+    },
+    {
+      "id": "h-M2-A45-T1a3r2-1",
+      "kind": "p5_gap",
+      "condition": "h-M2-A45",
+      "treatment": "T1a3r2",
+      "config": "config/p7.json",
+      "repetition": 1,
+      "sim_seed": 1403859527,
+      "initial_yaw_deg": null,
+      "directory": "data/p7-20261020-dev-h-M2-A45-T1a3r2-1"
+    },
+    {
+      "id": "h-v2.5-D1.4-A0-T1a3r2-1",
+      "kind": "p5_gap",
+      "condition": "h-v2.5-D1.4-A0",
+      "treatment": "T1a3r2",
+      "config": "config/p7.json",
+      "repetition": 1,
+      "sim_seed": 610035136,
+      "initial_yaw_deg": null,
+      "directory": "data/p7-20261020-dev-h-v2.5-D1.4-A0-T1a3r2-1"
+    }
+  ]
+}

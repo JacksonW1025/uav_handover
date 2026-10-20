@@ -56,7 +56,7 @@ def tables(runs,cfg):
                     'gaps_completed':len(r['metrics']['gaps']),'per_interruption_max_tilt_deg':[x['max_tilt_deg'] for x in r['metrics']['gaps']],
                     'setpoint_jumps_m':[x['jump_along_axis_m'] for x in r['metrics']['gaps']],'captured_speeds_m_s':[x['captured_speed_m_s'] for x in r['metrics']['gaps']]})
             ref=single.get((g['treatment'],g['axis'],float(D)))
-            out['A'][key]={'single_reference':None if ref is None else {'id':ref['id'],'condition':ref['condition'],'outcome':ref['outcome'],'max_tilt_deg':tilt_of(ref)[0]},'by_interval':rows}
+            out['A'][key]={'single_reference':None if ref is None else {'id':ref['id'],'condition':ref['condition'],'outcome':ref['outcome'],'max_tilt_deg':tilt_of(ref)[0],'max_altitude_loss_m':ref['metrics']['max_altitude_loss_m']},'by_interval':rows}
     for r in runs:
         pat,_,axis=r['condition'].rpartition('-')
         if pat in (p7['b'].get('sequences') or {}):

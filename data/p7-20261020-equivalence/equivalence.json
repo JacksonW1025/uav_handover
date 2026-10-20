@@ -1,0 +1,122 @@
+{
+  "batch": "data/p7-20261020-equivalence",
+  "criteria": {
+    "groups": "p5_gap:v2.0-D0.4-A0:T0:2@config/p6.json,p5_gap:v2.0-D0.7-A0:T1a3:2@config/p6.json",
+    "reference": {
+      "v2.0-D0.4-A0:T0": "data/p6-20261019-b1-v2.0-D0.4-A0-T0-1",
+      "v2.0-D0.7-A0:T1a3": "data/p6-20261019-b1-v2.0-D0.7-A0-T1a3-1"
+    },
+    "max_tilt_tolerance_deg": 2.5,
+    "rule": "New candidate (MC_RAPTOR_RREC added, default 0): the P6 B1 cells T0 v2.0 D0.4 and T1a3 v2.0 D0.7, 2 runs each with config/p6.json and the frozen p6_metrics, new seeds. Equivalent when every run completes with sound infrastructure and evidence, its flight outcome equals the P6 B1 run (D0.4 T0 SUCCESS 40.1 deg, D0.7 T1a3 FAILURE 46.4 deg) and |max tilt - B1| <= 2.5 deg, and RREC = 0 is behaviourally identical to P6: no research_recovery row, MC_RAPTOR_RREC = 0 in the log, and every policy_input reconstructed with the P6 target rules (tools/p6_export.reconstruct) with 0 components > 1e-4. Otherwise NOT EQUIVALENT: write diagnosis.json. Pre-registered handling: P6 B3 showed that the T1a3 D0.7 cell flips between seeds (F 46.4, S 44.9, F 45.1); if the only differences are the outcome of that cell with its max tilt inside the P6 range +- 2.5 deg, the formal batches still run (the user is away) and the P7 results are conditional on the user accepting it; any other difference stops P7 for diagnosis."
+  },
+  "runs": [
+    {
+      "id": "v2.0-D0.4-A0-T0-1",
+      "condition": "v2.0-D0.4-A0",
+      "treatment": "T0",
+      "reference_run": "data/p6-20261019-b1-v2.0-D0.4-A0-T0-1",
+      "problems": [],
+      "outcome": "SUCCESS",
+      "reference_outcome": "SUCCESS",
+      "max_tilt_deg": 38.77795653034215,
+      "reference_max_tilt_deg": 40.089660325167365,
+      "max_tilt_difference_deg": -1.3117037948252133,
+      "rrec0_identity": {
+        "MC_RAPTOR_RREC": 0.0,
+        "research_recovery_rows": 0,
+        "p6_reconstruction": {
+          "position_max_abs": 3.167182910379651e-08,
+          "velocity_max_abs": 9.175842419217872e-08,
+          "components_over_1e-4": 0,
+          "components_checked": 45063,
+          "rows": 7587,
+          "rows_unmatched": 0,
+          "rows_with_clipping": 282
+        }
+      },
+      "equivalent": true
+    },
+    {
+      "id": "v2.0-D0.7-A0-T1a3-1",
+      "condition": "v2.0-D0.7-A0",
+      "treatment": "T1a3",
+      "reference_run": "data/p6-20261019-b1-v2.0-D0.7-A0-T1a3-1",
+      "problems": [
+        "flight outcome differs from P6 B1"
+      ],
+      "outcome": "SUCCESS",
+      "reference_outcome": "FAILURE",
+      "max_tilt_deg": 44.36039688730502,
+      "reference_max_tilt_deg": 46.35978882061092,
+      "max_tilt_difference_deg": -1.9993919333059011,
+      "rrec0_identity": {
+        "MC_RAPTOR_RREC": 0.0,
+        "research_recovery_rows": 0,
+        "p6_reconstruction": {
+          "position_max_abs": 7.404828933355034e-08,
+          "velocity_max_abs": 1.3169321075312546e-07,
+          "components_over_1e-4": 0,
+          "components_checked": 46112,
+          "rows": 7734,
+          "rows_unmatched": 0,
+          "rows_with_clipping": 226
+        }
+      },
+      "equivalent": false
+    },
+    {
+      "id": "v2.0-D0.4-A0-T0-2",
+      "condition": "v2.0-D0.4-A0",
+      "treatment": "T0",
+      "reference_run": "data/p6-20261019-b1-v2.0-D0.4-A0-T0-1",
+      "problems": [],
+      "outcome": "SUCCESS",
+      "reference_outcome": "SUCCESS",
+      "max_tilt_deg": 40.73937872614202,
+      "reference_max_tilt_deg": 40.089660325167365,
+      "max_tilt_difference_deg": 0.6497184009746562,
+      "rrec0_identity": {
+        "MC_RAPTOR_RREC": 0.0,
+        "research_recovery_rows": 0,
+        "p6_reconstruction": {
+          "position_max_abs": 2.836338724998555e-08,
+          "velocity_max_abs": 3.4936353365822015e-08,
+          "components_over_1e-4": 0,
+          "components_checked": 44997,
+          "rows": 7587,
+          "rows_unmatched": 0,
+          "rows_with_clipping": 303
+        }
+      },
+      "equivalent": true
+    },
+    {
+      "id": "v2.0-D0.7-A0-T1a3-2",
+      "condition": "v2.0-D0.7-A0",
+      "treatment": "T1a3",
+      "reference_run": "data/p6-20261019-b1-v2.0-D0.7-A0-T1a3-1",
+      "problems": [],
+      "outcome": "FAILURE",
+      "reference_outcome": "FAILURE",
+      "max_tilt_deg": 45.06498773531823,
+      "reference_max_tilt_deg": 46.35978882061092,
+      "max_tilt_difference_deg": -1.29480108529269,
+      "rrec0_identity": {
+        "MC_RAPTOR_RREC": 0.0,
+        "research_recovery_rows": 0,
+        "p6_reconstruction": {
+          "position_max_abs": 5.621657775400912e-08,
+          "velocity_max_abs": 9.450269355948393e-08,
+          "components_over_1e-4": 0,
+          "components_checked": 46128,
+          "rows": 7737,
+          "rows_unmatched": 0,
+          "rows_with_clipping": 228
+        }
+      },
+      "equivalent": true
+    }
+  ],
+  "equivalent": false,
+  "decision": "CONTINUE_CONDITIONAL: only the outcome of the boundary cell T1a3 v2.0 D0.7 differs (P6 B1+B3 of this cell: F 46.4, S 44.9, F 45.1 deg); the formal P7 batches run and their results are conditional on the user accepting this equivalence"
+}

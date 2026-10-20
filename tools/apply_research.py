@@ -700,8 +700,12 @@ edit(rap,'\t\t\t_trajectory_setpoint.yawspeed = 0;\n','''\t\t\t_trajectory_setpo
 \t\t\tresearch_target_capture(!previous_active && next_active, next_active);
 #endif
 ''')
+# P7: the rate-limited recovery transition runs right after the takeover-target step (migration for checkouts prepared
+# with the P4-01c/P5 block first).
+migrate(rap,'\tresearch_target_step(next_active, status.trajectory_setpoint_stale);\n#endif\n','\tresearch_target_step(next_active, status.trajectory_setpoint_stale);\n\tresearch_recovery_transition(next_active, status.trajectory_setpoint_stale, !previous_active && next_active);\n#endif\n')
 edit(rap,'\trl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;\n','''#ifdef __PX4_POSIX
 \tresearch_target_step(next_active, status.trajectory_setpoint_stale);
+\tresearch_recovery_transition(next_active, status.trajectory_setpoint_stale, !previous_active && next_active);
 #endif
 \trl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;
 ''')
@@ -763,13 +767,139 @@ int Raptor::task_spawn(int argc, char *argv[])
 {''')
 
 # P4-01c: the takeover-target parameters are marked used at module start, so the log header records their values.
+# P7 adds MC_RAPTOR_RREC (migration for checkouts prepared with the P4-01c block first).
+migrate(rap,'\tparam_find("MC_RAPTOR_RTDEC");\n#endif\n','\tparam_find("MC_RAPTOR_RTDEC");\n\tparam_find("MC_RAPTOR_RREC");\n#endif\n')
 edit(rap,'\t_actuator_motors_pub.advertise();\n\t_tune_control_pub.advertise();\n','''\t_actuator_motors_pub.advertise();
 \t_tune_control_pub.advertise();
 #ifdef __PX4_POSIX
 \tparam_find("MC_RAPTOR_RTGT");
 \tparam_find("MC_RAPTOR_RTDEC");
+\tparam_find("MC_RAPTOR_RREC");
 #endif
 ''')
+
+# P7: rate-limited recovery (MC_RAPTOR_RREC, m/s^2; default 0 = the original one-step jump back to the setpoint). With
+# RREC > 0, when the external setpoint is fresh again after an in-flight setpoint-timeout capture while RAPTOR is active,
+# a virtual target starts at the vehicle's horizontal position and velocity and approaches the setpoint
+# (research/state/RecoveryTarget.hpp); the network observes it until both differences are below 0.02, then the setpoint
+# again. A new timeout during the recovery ends it and the original capture rules apply. The observation is swapped in
+# for the duration of observe() only, so every other reader still sees the external setpoint. Evidence on
+# research_recovery. Anchors are upstream lines outside earlier inserted blocks.
+edit('msg/CMakeLists.txt','\tRadioStatus.msg','\tRadioStatus.msg\n\tResearchRecovery.msg')
+if 'MC_RAPTOR_RREC:' not in (PX/'src/modules/mc_raptor/module.yaml').read_text():edit('src/modules/mc_raptor/module.yaml','    - group: Multicopter Raptor\n','''    - group: Handover Research Recovery
+      definitions:
+        MC_RAPTOR_RREC:
+            description:
+                short: SITL research rate-limited recovery after a setpoint timeout
+                long: 0 original behaviour (the target jumps back to the external setpoint when it is fresh again). Greater than 0, after an in-flight setpoint-timeout capture the network observes a virtual target that starts at the vehicle's horizontal position and velocity and approaches the setpoint with acc = w^2 dp + 2 w dv (w 1.5), limited to this horizontal acceleration, until both differences are below 0.02. Only active with MC_RAPTOR_RSH.
+            type: float
+            unit: m/s^2
+            min: 0.0
+            max: 10.0
+            decimal: 2
+            default: 0.0
+    - group: Multicopter Raptor
+''')
+edit(rap_h,'#include <uORB/topics/register_ext_component_request.h>','''#ifdef __PX4_POSIX
+#include <uORB/topics/research_recovery.h>
+#include <lib/handover_research/RecoveryTarget.hpp>
+#endif
+#include <uORB/topics/register_ext_component_request.h>''')
+edit(rap_h,'\tvoid observe(rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> &observation);\n','''\tvoid observe(rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> &observation);
+#ifdef __PX4_POSIX
+    // P7 rate-limited recovery (SITL research only).
+    void research_recovery_transition(bool active, bool stale, bool activation);
+    bool research_recovery_apply(float saved[4]);
+    void research_recovery_restore(const float saved[4]);
+    void research_recovery_publish(uint8_t kind, uint8_t end_reason);
+    struct ResearchRecoveryView {
+        Raptor &raptor;
+        float saved[4]{};
+        bool on;
+        explicit ResearchRecoveryView(Raptor &r) : raptor(r), on(r.research_recovery_apply(saved)) {}
+        ~ResearchRecoveryView() {if (on) raptor.research_recovery_restore(saved);}
+    };
+    uORB::Publication<research_recovery_s> _research_recovery_pub{ORB_ID(research_recovery)};
+    handover_research::RecoveryTarget _research_recovery{};
+    handover_research::RecoveryStep _research_recovery_last{};
+    bool _research_recovery_previous_stale{false}, _research_recovery_armed{false};
+    float _research_recovery_vehicle_position[3]{}, _research_recovery_vehicle_velocity[3]{};
+#endif
+''')
+edit(rap,'\t// converting from FRD to FLU\n','''#ifdef __PX4_POSIX
+\t// P7: while the rate-limited recovery is active the network observes the virtual target (horizontal position and
+\t// velocity) instead of the external setpoint; the setpoint is restored when observe() returns.
+\tconst ResearchRecoveryView research_recovery_view(*this);
+#endif
+\t// converting from FRD to FLU
+''')
+edit(rap,'int Raptor::print_status()\n{','''#ifdef __PX4_POSIX
+// P7: called every cycle after the takeover-target step. Arms at an in-flight setpoint-timeout capture while active (not
+// at the activation capture), starts the virtual target in the cycle the setpoint is fresh again (MC_RAPTOR_RREC > 0),
+// ends it at a new timeout or when RAPTOR becomes inactive.
+void Raptor::research_recovery_transition(bool active, bool stale, bool activation) {
+    const bool was_stale=_research_recovery_previous_stale;
+    _research_recovery_previous_stale=stale;
+    if (!active) {
+        _research_recovery_armed=false;
+        if (_research_recovery.active) {_research_recovery.active=false;research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_INACTIVE);}
+        return;
+    }
+    if (stale) {
+        if (activation) _research_recovery_armed=false;
+        else if (!was_stale) _research_recovery_armed=true;
+        if (_research_recovery.active) {_research_recovery.active=false;research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_STALE);}
+        return;
+    }
+    if (!was_stale || !_research_recovery_armed) return;
+    _research_recovery_armed=false;
+    static const param_t rsh=param_find("MC_RAPTOR_RSH"),rrec=param_find("MC_RAPTOR_RREC");
+    int32_t enabled=0;float rate=0.f;param_get(rsh,&enabled);param_get(rrec,&rate);
+    if (!enabled || !(rate>0.f)) return;
+    const float p[3]={position[0],position[1],position[2]},v[3]={linear_velocity[0],linear_velocity[1],linear_velocity[2]};
+    if (!_research_recovery.start(_vehicle_angular_velocity.timestamp_sample,p,v,rate)) {PX4_ERR("Research recovery NOT started (rate %.3f)",(double)rate);return;}
+    for (TI i=0;i<3;i++) {_research_recovery_vehicle_position[i]=p[i];_research_recovery_vehicle_velocity[i]=v[i];}
+    _research_recovery_last=handover_research::RecoveryStep{};
+    research_recovery_publish(research_recovery_s::KIND_START,0);
+    PX4_INFO("Research recovery: virtual target, rate %.2f m/s^2",(double)rate);
+}
+// Inside observe(): one step of the virtual target against the external setpoint in force; the network then observes it.
+bool Raptor::research_recovery_apply(float saved[4]) {
+    if (!_research_recovery.active) return false;
+    const float sp_p[2]={_trajectory_setpoint.position[0],_trajectory_setpoint.position[1]};
+    const float sp_v[2]={_trajectory_setpoint.velocity[0],_trajectory_setpoint.velocity[1]};
+    _research_recovery_last=_research_recovery.step(_vehicle_angular_velocity.timestamp_sample,sp_p,sp_v);
+    if (!_research_recovery.active) {research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_CONVERGED);return false;}
+    research_recovery_publish(research_recovery_s::KIND_STEP,0);
+    for (TI i=0;i<2;i++) {
+        saved[i]=sp_p[i];saved[2+i]=sp_v[i];
+        _trajectory_setpoint.position[i]=float(_research_recovery.p[i]);_trajectory_setpoint.velocity[i]=float(_research_recovery.v[i]);
+    }
+    return true;
+}
+void Raptor::research_recovery_restore(const float saved[4]) {
+    for (TI i=0;i<2;i++) {_trajectory_setpoint.position[i]=saved[i];_trajectory_setpoint.velocity[i]=saved[2+i];}
+}
+void Raptor::research_recovery_publish(uint8_t kind, uint8_t end_reason) {
+    research_recovery_s m{};
+    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
+    m.kind=kind;m.end_reason=end_reason;m.rate=float(_research_recovery.rate);m.omega=float(handover_research::RecoveryTarget::OMEGA);
+    const handover_research::RecoveryStep &s=_research_recovery_last;
+    m.dt=float(s.dt);m.limited=s.limited;m.acc[0]=float(s.acc[0]);m.acc[1]=float(s.acc[1]);m.acc_unlimited_norm=float(s.acc_unlimited);
+    m.position_difference=float(s.position_difference);m.velocity_difference=float(s.velocity_difference);m.start_sample=_research_recovery.start_us;
+    const bool step=kind==research_recovery_s::KIND_STEP;
+    for (TI i=0;i<3;i++) {
+        m.setpoint_position[i]=_trajectory_setpoint.position[i];m.setpoint_velocity[i]=_trajectory_setpoint.velocity[i];
+        m.target_position[i]=i<2 && (step || kind==research_recovery_s::KIND_START)?float(_research_recovery.p[i]):_trajectory_setpoint.position[i];
+        m.target_velocity[i]=i<2 && (step || kind==research_recovery_s::KIND_START)?float(_research_recovery.v[i]):_trajectory_setpoint.velocity[i];
+        m.vehicle_position[i]=_research_recovery_vehicle_position[i];m.vehicle_velocity[i]=_research_recovery_vehicle_velocity[i];
+    }
+    _research_recovery_pub.publish(m);
+}
+#endif
+
+int Raptor::print_status()
+{''')
 
 print('Applied SITL research instrumentation and POSIX daemon TLS initialization; policy files unchanged.')
 

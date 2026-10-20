@@ -40,6 +40,8 @@ P5_TREATMENT_KINDS={'p5_gap':['T0','T1','T1a1','T1a3']}
 # runner-published step / chase / brake / capture profile through its external setpoint input).
 P6_GAP_TREATMENTS=['T1a0.75','T1a1.5']
 P6_TREATMENT_KINDS={'p6_ident':['T0']}
+# P7: rate-limited recovery treatment for p5_gap (config/p7.json p5.treatments: T1a3 capture with MC_RAPTOR_RREC 2.0).
+P7_GAP_TREATMENTS=['T1a3r2']
 
 def p5_profile(p5,spec):
     """P5 gap runs: merged reference profile (pure function of the config). Cruise = pre_gap_s + count*D +
@@ -111,7 +113,7 @@ class Experiment:
             if spec is None and args.condition:spec=p6_conditions.gap_spec(self.cfg,args.condition)
             if spec is None:raise RuntimeError('p5_gap needs --condition from config p5.conditions')
             if spec.get('cancelled'):raise RuntimeError('condition cancelled by the pre-registered safety budget: '+args.condition)
-            if args.treatment not in P5_TREATMENT_KINDS[args.kind]+P6_GAP_TREATMENTS or args.treatment not in p5['treatments']:raise RuntimeError(f'p5_gap needs --treatment in {P5_TREATMENT_KINDS[args.kind]+P6_GAP_TREATMENTS}')
+            if args.treatment not in P5_TREATMENT_KINDS[args.kind]+P6_GAP_TREATMENTS+P7_GAP_TREATMENTS or args.treatment not in p5['treatments']:raise RuntimeError(f'p5_gap needs --treatment in {P5_TREATMENT_KINDS[args.kind]+P6_GAP_TREATMENTS+P7_GAP_TREATMENTS}')
             # The P2 treatment and profile keys are reused so apply_treatment, the stream and the analyzers work unchanged.
             self.pcfg=p5_profile(p5,spec);self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(spec['speed_m_s'])
             self.cfg['p2_treatment']=args.treatment;self.cfg['p2_treatment_parameters']=p5['treatments'][args.treatment];self.cfg['p2_profile']=self.pcfg
@@ -613,13 +615,17 @@ class Experiment:
         # P4-01c takeover target: set only by treatments that name it (others keep the defaults RTGT=0, RTDEC=2.0).
         target='rtgt' in t
         if target:self.command('param','set','MC_RAPTOR_RTGT',str(int(t['rtgt'])));self.command('param','set','MC_RAPTOR_RTDEC',repr(float(t['rtdec'])))
+        # P7 rate-limited recovery: set only by treatments that name it (others keep the default RREC=0).
+        recovery='rrec' in t
+        if recovery:self.command('param','set','MC_RAPTOR_RREC',repr(float(t['rrec'])))
         shown={}
-        for name_ in ['MC_RAPTOR_RINI','MC_RAPTOR_NCO','MC_RAPTOR_RSH']+(['MC_RAPTOR_RTGT','MC_RAPTOR_RTDEC'] if target else []):
+        for name_ in ['MC_RAPTOR_RINI','MC_RAPTOR_NCO','MC_RAPTOR_RSH']+(['MC_RAPTOR_RTGT','MC_RAPTOR_RTDEC'] if target else [])+(['MC_RAPTOR_RREC'] if recovery else []):
             text=self.command('param','show',name_);match=re.search(name_+r'\s*\[[^\]]*\]\s*:\s*(-?\d+(?:\.\d+)?)',text)
             if not match:raise RuntimeError('parameter readback failed: '+name_+': '+text)
-            shown[name_]=float(match.group(1)) if name_=='MC_RAPTOR_RTDEC' else int(match.group(1))
+            shown[name_]=float(match.group(1)) if name_ in ['MC_RAPTOR_RTDEC','MC_RAPTOR_RREC'] else int(match.group(1))
         want={'MC_RAPTOR_RINI':rini,'MC_RAPTOR_NCO':nco,'MC_RAPTOR_RSH':1}
         if target:want.update({'MC_RAPTOR_RTGT':int(t['rtgt']),'MC_RAPTOR_RTDEC':float(t['rtdec'])})
+        if recovery:want['MC_RAPTOR_RREC']=float(t['rrec'])
         if set(shown)!=set(want) or any(abs(shown[k]-want[k])>1e-4 for k in want):raise RuntimeError(f'treatment parameters not applied: {shown}')
         staged=None
         if rini==5:
@@ -899,7 +905,7 @@ class Experiment:
         shutil.copytree(self.runtime/'etc',self.rootfs/'etc')
         logging=self.rootfs/'etc/logging';logging.mkdir(exist_ok=True)
         names=['sensor_baro','vehicle_air_data','actuator_outputs','sensor_gyro','vehicle_imu','vehicle_imu_status','vehicle_local_position','vehicle_global_position','position_setpoint_triplet','takeoff_status','vehicle_attitude','vehicle_angular_velocity','vehicle_status','vehicle_control_mode','trajectory_setpoint','vehicle_attitude_setpoint','vehicle_rates_setpoint','vehicle_torque_setpoint','vehicle_thrust_setpoint','rate_ctrl_status','actuator_motors','vehicle_command','vehicle_command_ack']
-        if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator','research_memory','research_target']
+        if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator','research_memory','research_target','research_recovery']
         (logging/'logger_topics.txt').write_text(''.join(n+' 0 0\n' for n in names)+(''.join(f'route_observability 0 {i}\n' for i in range(1,10)) if self.variant=='raptor' else ''))
         self.spawn('agent',[str(LAB/'scripts/MicroXRCEAgent'),'udp4','-p',str(self.cfg['agent_port']),'-v','4'])
         self.spawn('gazebo',['gz','sim','-r','-s','-v','3']+(['--seed',str(self.sim_seed)] if self.sim_seed is not None else [])+[str(self.source/'Tools/simulation/gz/worlds/default.sdf')])

@@ -1,0 +1,13 @@
+{
+  "created": "2026-10-20",
+  "status": "DEVELOPMENT (not results)",
+  "runs": {
+    "data/p7-20261020-dev-01": "Development batch (p7_batch --stage dev --development, 6 runs) on the pre-registration commit 4fd31d7a: q4-D0.3-g0.05-A45 T0 (success), q4-D0.6-g0.15-A0 T1a3 (flight failure: 46.3 deg after the 4th interruption, altitude loss 1.53 m), r01-A0 T1a3 (success), and MC_RAPTOR_RREC = 2: h-v2.0-D1.0-A0, h-M2-A45, h-v2.5-D1.4-A0 (all success). Max applied-command age 4 ms (h-v2.5-D1.4: 8 ms). Finding: the research_recovery rows of the FIRST recovery of every RREC run were missing (the topic was first advertised at that recovery's START and the logger subscribed ~0.3-0.4 s later; the first logged row was already the END or a later STEP). Logged segments: replay residual <= 2.4e-7 m, reconstruction of policy_input with the virtual-target rows exact; all mismatches lie before the first logged recovery row."
+  },
+  "fixes_before_freezing": [
+    "PX4 (tools/apply_research.py): research_recovery is advertised at module start (no behaviour change; logging only).",
+    "config/p7.json: p7.task_failure_criterion added (task text: tilt > 45 deg or altitude loss > 1 m), reported by p7_metrics as task_outcome next to the unchanged frozen flight outcome, after dev-01 showed a 1.53 m altitude loss.",
+    "tools/p7_report.py added (analysis only); p7_metrics falls back to the repo config for task_failure_criterion."
+  ],
+  "note": "dev-01 run directories keep their p7-metrics.json from batch time (never re-run in place). The final candidate is flown in dev-02 (latency check and logging fix) before the equivalence."
+}

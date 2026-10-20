@@ -4546,7 +4546,12 @@
    "q4-D0.6-g0.5-A0:T1a3",
    "q4-D0.45-g0.5-A45:T1a3",
    "h-v2.5-D2.0-A0:T1a3r2"
-  ]
+  ],
+  "task_failure_criterion": {
+   "tilt_deg": 45.0,
+   "altitude_loss_m": 1.0,
+   "rule": "Task text (P6/P7): failure = tilt > 45 deg or altitude loss > 1 m. The frozen pre-registered flight outcome (p5.failure_criteria: safety envelope incl. tilt >= 45 deg, runner abort, motor saturation, ground, no joint recovery) has no altitude-loss term and stays the primary outcome (not changed). p7_metrics additionally reports task_outcome = FAILURE when whole-window max tilt >= 45 deg or max altitude loss > 1.0 m (same windows as the frozen outcome), and every run where the two differ is listed. Added after development run dev-01 q4-D0.6-g0.15 T1a3 (altitude loss 1.53 m, with tilt 46.3 deg, a failure under both), before the equivalence and the formal batches."
+  }
  },
  "p4": {
   "purpose": "P7 batch bookkeeping (tools/p7_batch.py reuses the P4-P6 batch rules).",

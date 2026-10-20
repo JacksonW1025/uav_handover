@@ -30,7 +30,7 @@ def p7_values(m):
             'max_along_track_lag_m':lg.get('max_along_track_lag_m'),'along_track_lag_at_6s_m':lg.get('along_track_lag_at_window_end_m'),'max_horizontal_distance_m':lg.get('max_horizontal_distance_m'),
             'horizontal_distance_at_6s_m':lg.get('horizontal_distance_at_window_end_m'),'lag_window_truncated':lg.get('truncated'),'lag_window_cut_by_next_interruption':lg.get('cut_by_next_interruption'),
             'max_tilt_deg':(g.get('window') or {}).get('max_tilt_deg')})
-    return {'rrec':(p7.get('parameters') or {}).get('MC_RAPTOR_RREC'),'recovery_status':rec.get('status'),'recovery_rows':rec.get('rows'),'per_resume':rows}
+    return {'task_outcome':p7.get('task_outcome'),'rrec':(p7.get('parameters') or {}).get('MC_RAPTOR_RREC'),'recovery_status':rec.get('status'),'recovery_rows':rec.get('rows'),'per_resume':rows}
 
 def tilt_of(r):
     og=r['metrics'].get('open_gap') or {}
@@ -51,7 +51,7 @@ def tables(runs,cfg):
                 name=p7_conditions.seq4_name(D,gap,g['axis']);r=next((x for x in runs if x['condition']==name and x['treatment']==g['treatment']),None)
                 cancelled=f"{name}:{g['treatment']}" in p7.get('cancelled',[])
                 if r is None:rows.append({'g_s':gap,'condition':name,'cancelled':cancelled,'flown':False});continue
-                t,op=tilt_of(r);rows.append({'g_s':gap,'condition':name,'flown':True,'id':r['id'],'outcome':r['outcome'],'max_tilt_deg':t,'max_tilt_from_open_gap':op,
+                t,op=tilt_of(r);rows.append({'g_s':gap,'condition':name,'flown':True,'id':r['id'],'outcome':r['outcome'],'task_outcome':(r['p7']['task_outcome'] or {}).get('outcome'),'max_tilt_deg':t,'max_tilt_from_open_gap':op,
                     'first_at_or_above_45_s':r['metrics']['first_at_or_above_45_s'],'max_altitude_loss_m':r['metrics']['max_altitude_loss_m'],
                     'gaps_completed':len(r['metrics']['gaps']),'per_interruption_max_tilt_deg':[x['max_tilt_deg'] for x in r['metrics']['gaps']],
                     'setpoint_jumps_m':[x['jump_along_axis_m'] for x in r['metrics']['gaps']],'captured_speeds_m_s':[x['captured_speed_m_s'] for x in r['metrics']['gaps']]})
@@ -62,11 +62,11 @@ def tables(runs,cfg):
         if pat in (p7['b'].get('sequences') or {}):
             s=p7['b']['sequences'][pat];t,op=tilt_of(r)
             out['B'][pat]={'id':r['id'],'windows_s':s['windows_s'],'count':s['count'],'durations_s':s['durations_s'],'intervals_s':s['intervals_s'],'total_interruption_s':s['total_interruption_s'],'span_s':s['span_s'],
-                'outcome':r['outcome'],'max_tilt_deg':t,'max_tilt_from_open_gap':op,'first_at_or_above_45_s':r['metrics']['first_at_or_above_45_s'],'max_altitude_loss_m':r['metrics']['max_altitude_loss_m'],
+                'outcome':r['outcome'],'task_outcome':(r['p7']['task_outcome'] or {}).get('outcome'),'max_tilt_deg':t,'max_tilt_from_open_gap':op,'first_at_or_above_45_s':r['metrics']['first_at_or_above_45_s'],'max_altitude_loss_m':r['metrics']['max_altitude_loss_m'],
                 'gaps_completed':len(r['metrics']['gaps']),'per_interruption_max_tilt_deg':[x['max_tilt_deg'] for x in r['metrics']['gaps']],'setpoint_jumps_m':[x['jump_along_axis_m'] for x in r['metrics']['gaps']]}
         if r['condition'].startswith('h-'):
             t,op=tilt_of(r)
-            out['C'].append({'id':r['id'],'condition':r['condition'],'treatment':r['treatment'],'outcome':r['outcome'],'max_tilt_deg':t,'max_tilt_from_open_gap':op,
+            out['C'].append({'id':r['id'],'condition':r['condition'],'treatment':r['treatment'],'outcome':r['outcome'],'task_outcome':(r['p7']['task_outcome'] or {}).get('outcome'),'max_tilt_deg':t,'max_tilt_from_open_gap':op,
                 'first_at_or_above_45_s':r['metrics']['first_at_or_above_45_s'],'max_altitude_loss_m':r['metrics']['max_altitude_loss_m'],'max_horizontal_radius_m':r['metrics']['max_horizontal_radius_m'],
                 'rrec':r['p7']['rrec'],'per_resume':r['p7']['per_resume']})
     return out
@@ -106,6 +106,7 @@ def main():
             'max_applied_age_us':max((r['output_chain_counts'] or {}).get('max_applied_age_us',0) for r in runs) if runs else None},
         'runs_checked':len(runs),'all_runs_passed':bool(runs) and all(r['passed'] for r in runs),'flight_failures':[r['id'] for r in runs if r.get('flight_failure')],
         'independence':{'runs':len(runs),'distinct_seeds':len(set(seeds))},'tables':tables(runs,cfg7),
+        'task_outcome_differs':[r['id'] for r in runs if r.get('p7') and (r['p7'].get('task_outcome') or {}).get('differs_from_flight_outcome')],
         'max_horizontal_radius_m':max((r.get('max_horizontal_radius_m') or 0) for r in runs) if runs else None,'runs':runs,
         'scope':'One frozen candidate, headless SITL only, x500, each run its own Gazebo seed. Measurements only: no model fitting, prediction or classification.'}
     out['passed']=bool(out['all_runs_passed'] and out['output_chain']['fraction_gate_met'] and results.get('status')=='PASS' and results.get('complete') and results.get('candidate_unchanged')

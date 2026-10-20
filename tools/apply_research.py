@@ -767,14 +767,18 @@ int Raptor::task_spawn(int argc, char *argv[])
 {''')
 
 # P4-01c: the takeover-target parameters are marked used at module start, so the log header records their values.
-# P7 adds MC_RAPTOR_RREC (migration for checkouts prepared with the P4-01c block first).
-migrate(rap,'\tparam_find("MC_RAPTOR_RTDEC");\n#endif\n','\tparam_find("MC_RAPTOR_RTDEC");\n\tparam_find("MC_RAPTOR_RREC");\n#endif\n')
+# P7 adds MC_RAPTOR_RREC and advertises research_recovery at module start (the logger subscribes to a topic only some
+# time after its first advertisement, which lost the first recovery's rows in development); migrations for checkouts
+# prepared with the earlier blocks first.
+migrate(rap,'\tparam_find("MC_RAPTOR_RTDEC");\n#endif\n','\tparam_find("MC_RAPTOR_RTDEC");\n\tparam_find("MC_RAPTOR_RREC");\n\t_research_recovery_pub.advertise();\n#endif\n')
+migrate(rap,'\tparam_find("MC_RAPTOR_RREC");\n#endif\n','\tparam_find("MC_RAPTOR_RREC");\n\t_research_recovery_pub.advertise();\n#endif\n')
 edit(rap,'\t_actuator_motors_pub.advertise();\n\t_tune_control_pub.advertise();\n','''\t_actuator_motors_pub.advertise();
 \t_tune_control_pub.advertise();
 #ifdef __PX4_POSIX
 \tparam_find("MC_RAPTOR_RTGT");
 \tparam_find("MC_RAPTOR_RTDEC");
 \tparam_find("MC_RAPTOR_RREC");
+\t_research_recovery_pub.advertise();
 #endif
 ''')
 

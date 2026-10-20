@@ -153,6 +153,13 @@ def analyze(run):
     if values.get('MC_RAPTOR_RREC') is None or abs(float(values['MC_RAPTOR_RREC'])-float(tp.get('rrec',0.)))>1e-5:problems.append(f"MC_RAPTOR_RREC {values.get('MC_RAPTOR_RREC')} != planned {tp.get('rrec',0.)}")
     p7['recovery']=recovery_block(run,cfg,base,T,problems)
     p7['lag']=lag_block(cfg,base,T,float(cfg['p7']['lag']['window_s']))
+    # Task criterion (p7.task_failure_criterion), reported next to the frozen flight outcome (never replaces it).
+    wh=base.get('whole') or {};tc=cfg['p7'].get('task_failure_criterion') or json.loads((Path(__file__).resolve().parents[1]/'config/p7.json').read_text())['p7']['task_failure_criterion'];og=((base.get('p6') or {}).get('open_gap') or {})
+    tilt=wh.get('max_tilt_deg') if wh.get('max_tilt_deg') is not None else og.get('max_tilt_deg_until_raptor_end');alt=wh.get('max_altitude_loss_m')
+    reasons=(['tilt'] if tilt is not None and tilt>=float(tc['tilt_deg']) else [])+(['altitude_loss'] if alt is not None and alt>float(tc['altitude_loss_m']) else [])
+    if base.get('aborted') and 'safety' in str(base.get('failure_reason')) and 'tilt' not in reasons:reasons.append('runner_safety_abort')
+    fo=(base.get('flight_outcome') or {}).get('outcome');p7['task_outcome']={'outcome':'FAILURE' if reasons else 'SUCCESS','reasons':reasons,'max_tilt_deg':tilt,'max_altitude_loss_m':alt,
+        'differs_from_flight_outcome':bool(fo is not None and fo!=('FAILURE' if reasons else 'SUCCESS'))}
     out=dict(base);out['p7']=p7;out['problems']=problems;out['status']='MEASURED' if not problems else 'INCOMPLETE'
     return clean(out)
 

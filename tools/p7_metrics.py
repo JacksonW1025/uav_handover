@@ -116,9 +116,15 @@ def recovery_block(run,cfg,base,T,problems):
             item['observed_velocity_jump_along_axis_m_s']=float((np.asarray(item['vehicle_velocity_ned_m_s'][:2]+[0.])-np.asarray(vb[:2]+[0.]))@axis) if vb is not None else None
             item['setpoint_jump_along_axis_m']=g['resume'].get('jump_along_axis_m')
         out['recoveries'].append(item)
-    extra=[int(s) for s,_,_ in segs if int(s) not in used]
-    if extra and not base.get('aborted'):problems.append(f'{len(extra)} recovery starts not at a resume')
-    out['starts_not_at_a_resume']=len(extra)
+    # A start outside a planned resume is accepted only when the network never observed the virtual target: no STEP row
+    # and an END CONVERGED in the start cycle (e.g. the stream start after a hover timeout capture in the setup, when the
+    # activation followed a pre-stream setpoint within 200 ms; the virtual target = vehicle state was already within 0.02).
+    extra=[(s,end,seg) for s,end,seg in segs if int(s) not in used]
+    def silent(x):
+        s,end,seg=x;return end is not None and int(rec['end_reason'][end])==1 and int(ts[end])==int(ts[s]) and not any(kind[i]==R_STEP for i in seg)
+    loud=[x for x in extra if not silent(x)]
+    if loud and not base.get('aborted'):problems.append(f'{len(loud)} recovery starts not at a resume with virtual-target cycles')
+    out['starts_not_at_a_resume']=len(extra);out['starts_not_at_a_resume_without_virtual_target_cycles']=[{'start_px4_us':int(tt[x[0]]),'start_sample':int(ts[x[0]])} for x in extra if silent(x)]
     ends=[x['end'] for x in out['recoveries'] if 'end' in x]
     out['status']='VERIFIED' if not [p for p in problems if 'recover' in p or 'virtual target' in p or 'replay' in p] else 'PROBLEMS'
     out['catch_up_s']=[x.get('catch_up_s') for x in out['recoveries']];out['ends']=ends

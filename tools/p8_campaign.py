@@ -17,8 +17,10 @@ config/p8.json, its own Gazebo seed; checks and measurement as tools/p8_batch.py
 evidence failure is rerun with the same case and a new seed (id suffix -r1, -r2; infra_rerun, not counted); after 2 reruns
 the batch stops. Flight failures are results. Every run flown is appended to <state>/runs/p8_b_cases.jsonl. The batch
 identity (tools/, research/, config/, Lab, binaries) is re-hashed before every run (IDENTITY_DRIFT stops the batch).
+No run starts while a ToDesk remote-desktop session is connected (the orchestrator waits and logs it); the session state at
+the start and end of every run is recorded in its row.
 """
-import argparse,json,sys,traceback
+import argparse,json,subprocess,sys,time,traceback
 from pathlib import Path
 import p2_batch,p8_conditions,p8_batch
 from p2_batch import identity,write,now,host_state,ROOT
@@ -27,6 +29,14 @@ from p6_batch import seed_of
 import p8_space,p8_methods
 
 MAX_RERUNS=2
+def remote_session():return bool(subprocess.run(['pgrep','-x','ToDesk_Session'],capture_output=True).stdout.strip())
+
+def wait_host(args):
+    """Host rule (p8.b.host_rule): no run starts while a remote-desktop session is connected; the wait is logged."""
+    if not remote_session():return 0.
+    t=time.monotonic();print('WAIT remote-desktop session connected',now(),flush=True);log_case(args.state,{'event':'wait_remote_desktop'})
+    while remote_session():time.sleep(30)
+    w=time.monotonic()-t;log_case(args.state,{'event':'wait_end','waited_s':round(w,1)});print('WAIT END',round(w,1),flush=True);return w
 ONLINE={'fuzz':p8_methods.Fuzz,'bo':p8_methods.BO}
 
 def campaign_file(state,cid):return state/'campaigns'/(cid.replace('/','_')+'.json')
@@ -67,11 +77,14 @@ def run_case(args,cfg,st,pend,rerun,out,candidate,plan):
          'campaign':st['campaign'],'method':st['method'],'sut':sut,'seed':st['seed'],'k':k,'name':cond+':'+sut,'case':pend['case'],'windows_s':p8_space.windows(pend['case']),
          'infra_rerun':bool(rerun),'stage':args.stage,'budget_check':pend['budget_check']}
     plan.append(row)
+    row['waited_for_host_s']=wait_host(args)
     if identity()!=candidate:row['status']='IDENTITY_DRIFT';return row
+    row['remote_desktop_session_at_start']=remote_session()
     log_case(args.state,{'event':'start','campaign':st['campaign'],'k':k,'run_id':rid,'name':row['name'],'windows_s':row['windows_s'],'budget':pend['budget_check'],'sim_seed':seed,'infra_rerun':bool(rerun),'batch':str(out.relative_to(ROOT))})
     print('START',st['campaign'],'k',k,rid,row['name'],'seed',seed,flush=True)
     try:p8_batch.run_row(row,out)
     except Exception as e:row['status']=row.get('status') if row.get('status')!='NOT_RUN' else 'ERROR';row['error']=repr(e);row['accepted']=False;row['flight_failure']=False;traceback.print_exc()
+    row['remote_desktop_session_at_end']=remote_session()
     log_case(args.state,{'event':'end','campaign':st['campaign'],'k':k,'run_id':rid,'name':row['name'],'status':row.get('status'),'accepted':row.get('accepted'),'flight_failure':row.get('flight_failure'),
              'fail_primary':row.get('fail_primary'),'fail_task':row.get('fail_task'),'max_tilt_deg':row.get('max_tilt_deg'),'max_altitude_loss_m':row.get('max_altitude_loss_m'),'infra_rerun':bool(rerun)})
     print('END',rid,row.get('status'),'accepted='+str(row.get('accepted')),'flight_failure='+str(row.get('flight_failure')),'tilt='+str(row.get('max_tilt_deg')),'alt_loss='+str(row.get('max_altitude_loss_m')),flush=True)

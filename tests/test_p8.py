@@ -99,7 +99,7 @@ def fake_run(row,out):
     return row
 
 def run_dry(tmp,monkeypatch,camps,segments):
-    monkeypatch.setattr(p8_batch,'run_row',fake_run);monkeypatch.setattr(p8_campaign,'identity',lambda:{'x':1})
+    monkeypatch.setattr(p8_batch,'run_row',fake_run);monkeypatch.setattr(p8_campaign,'identity',lambda:{'x':1});monkeypatch.setattr(p8_campaign,'remote_session',lambda:False)
     from types import SimpleNamespace
     state=tmp/'state';plan=[]
     for a,b in segments:

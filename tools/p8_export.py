@@ -168,7 +168,8 @@ def export_gap_run(run,out,batch,row,stage):
     if m6.get('aborted'):
         fa=next((x for x in events if x['event']=='failure'),None);ev.append(('runner_abort',int(s[-1]) if len(s) else t_last,{'reason':fa['reason'] if fa else None,'time':'last RAPTOR inference in the window'}))
     keys=['ep_u','ev_u','ep_w','ev_w','a_u','a_w','ep_u_clip','ev_u_clip','ep_w_clip','ev_w_clip','tilt_deg','alt_loss_m','v_u','alt_m','v_z','action_mean']
-    def state(i):return None if i<0 or i>=len(s) else {'t_s':float(data['t_s'][i]),'target_mode':str(mode[i]),**{k:float(data[k][i]) for k in keys}}
+    fin=lambda x:float(x) if np.isfinite(x) else None
+    def state(i):return None if i<0 or i>=len(s) else {'t_s':float(data['t_s'][i]),'target_mode':str(mode[i]),**{k:fin(data[k][i]) for k in keys}}
     evs=[]
     for name,t,info in sorted(ev,key=lambda x:x[1]):
         i=int(np.searchsorted(s,t,side='left'))

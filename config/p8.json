@@ -2166,7 +2166,8 @@
     "table": "export/p8_b_results.csv: campaign, method, sut, seed, k, name, fail_primary, fail_task, max_tilt_deg, max_alt_loss_m, infra_rerun"
    },
    "report": "per system x method: failures over the 3 seeds (primary and task criterion), distinct failure cells (p8_space.cell), round of the first failure, B1 and B2 separately; the model predictions of p8_frozen.json are never read or used",
-   "dev": "dev_b: 5 cases from positions 31-60 of random/T1/2 and random/T0/2 (never flown in the campaigns): heading 13-89 deg, 2-4 windows, a shrunk pre_gap_s (0.85) and post_gap_s; plus an orchestrator development run (state in a separate directory) before the equivalence"
+   "dev": "dev_b: 5 cases from positions 31-60 of random/T1/2 and random/T0/2 (never flown in the campaigns): heading 13-89 deg, 2-4 windows, a shrunk pre_gap_s (0.85) and post_gap_s; plus an orchestrator development run (state in a separate directory) before the equivalence",
+   "host_rule": "P6/P7 host rules; in addition the orchestrator does not start a run while a ToDesk remote-desktop session (ToDesk_Session process) is connected: it waits and logs the wait in p8_b_cases.jsonl, and records the session state at the start and end of every run (development 2026-10-22: with a session connected the real-time factor fell to about 0.92, the output-chain gate failed in every run and the logger missed state rows)."
   }
  },
  "p4": {

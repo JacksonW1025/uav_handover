@@ -1,0 +1,19 @@
+{
+ "batches": ["data/p8-20261022-dev-b", "data/p8-20261022-dev-bc"],
+ "candidate": "923ce8a9 (B pre-registration)",
+ "host": "a ToDesk remote-desktop session was connected during both development batches (ToDesk_Session about 180 % CPU, root process, not pinnable); host CPU 27-28 % vs 5-12 % in P8-A. Development only; nothing here is a result.",
+ "dev_b": {
+  "v1.8-H71.0 4 windows T1": "SUCCESS 32.2 deg, 0.18 m; gap timing VERIFIED; output-chain gate failed (max applied age 16 ms)",
+  "v1.7-H89.0 2 windows T1": "SUCCESS 18.7 deg; setpoint-free intervals 0.396 / 0.392 s for planned 0.43 / 0.42 (about 8 % short, the runner times the windows on the wall clock, PX4 measures sim time: real-time factor about 0.92); output chain 16 ms",
+  "v2.25-H56.0 3 windows T1 (pre_gap_s 0.85)": "SUCCESS 44.2 deg, 0.43 m; two intervals short as above; output chain 16 ms",
+  "v2.25-H13.0 4 windows T0": "not flown: run-time path check 8.01 m > 8.00 m (RAPTOR hover capture 0.108 m from the spawn point, beyond the 0.1 m pre-registered allowance; 2 of 291 P5-P8 runs exceeded 0.1 m); under the B rule an infrastructure failure, rerun with a new seed",
+  "v1.9-H60.0 2 windows T0": "SUCCESS 42.6 deg, 0.72 m; gap timing VERIFIED; output chain 12 ms"
+ },
+ "dev_bc": "orchestrator: fuzz/T0/0 and bo/T1/0 round 1 (Fuzz/BO initial samples v1.75 H4.0, 4 windows each; same seed 0, same draws). Campaign state (pending case, rng state), budget check and p8_b_cases.jsonl start/end lines written as designed; both runs failed the output-chain gate (20 / 16 ms) and gap timing (RTF), recorded as DEVELOPMENT_FAILED and not counted.",
+ "reconstruction": "the export reconstruction left 64-177 rows unmatched and 38-1324 components over 1e-4 in these runs (P6, P7 and P8-A: 0). No logger dropouts were recorded; the logger missed vehicle_local_position / raptor_status samples under load. The reconstruction does not depend on the heading; to be confirmed on the equivalence runs without the remote session (gate before B1: 0 components over 1e-4).",
+ "fixes_after_dev": [
+  "tools/p8_audit.py: B audit (campaign checks, online replay, tables), development-failed state entries skipped",
+  "tools/p8_export.py: event states with a missing motor row wrote NaN into summary.json (now null)",
+  "tools/p8_campaign.py + config p8.b.host_rule: no run starts while a ToDesk session is connected (wait logged), session state at start/end of every run recorded"
+ ]
+}

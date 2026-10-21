@@ -1,0 +1,196 @@
+{
+  "created_at": "2026-10-21T15:35:11.271615+08:00",
+  "stage": "a",
+  "host": {
+    "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+    "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+    "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+  },
+  "purpose": "P8-A identification flights: jump (v, L) and chase x0 4.0 V 2.0, 8 runs (config/p8.json p8.a)",
+  "config": "config/p8.json",
+  "output_chain_gate": {
+    "p99_us": 4000,
+    "max_us": 12000,
+    "longest_over_target_steps": 2,
+    "overwritten_fraction": 0.001,
+    "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+  },
+  "candidate": "candidate.json",
+  "mode": "standard",
+  "groups": [
+    {
+      "kind": "p6_ident",
+      "condition": "jump-v1.5-L1.5-A0",
+      "treatment": "T0",
+      "n": 1,
+      "config": "config/p8.json"
+    },
+    {
+      "kind": "p6_ident",
+      "condition": "jump-v1.5-L3.0-A0",
+      "treatment": "T0",
+      "n": 1,
+      "config": "config/p8.json"
+    },
+    {
+      "kind": "p6_ident",
+      "condition": "jump-v2.5-L1.5-A0",
+      "treatment": "T0",
+      "n": 1,
+      "config": "config/p8.json"
+    },
+    {
+      "kind": "p6_ident",
+      "condition": "jump-v2.5-L3.0-A0",
+      "treatment": "T0",
+      "n": 2,
+      "config": "config/p8.json"
+    },
+    {
+      "kind": "p6_ident",
+      "condition": "jump-v2.0-L3.0-A45",
+      "treatment": "T0",
+      "n": 1,
+      "config": "config/p8.json"
+    },
+    {
+      "kind": "p6_ident",
+      "condition": "jump-v2.5-L3.0-A45",
+      "treatment": "T0",
+      "n": 1,
+      "config": "config/p8.json"
+    },
+    {
+      "kind": "p6_ident",
+      "condition": "chase-x4.0-V2.0-A0",
+      "treatment": "T0",
+      "n": 1,
+      "config": "config/p8.json"
+    }
+  ],
+  "order": "as listed (repetitions interleave the groups)",
+  "independence": {
+    "master_seed": 20261021,
+    "sim_seed": "Every P4 batch run gets its own Gazebo seed (gz sim --seed): first 31 bits of sha256(batch prefix + run id + master_seed), recorded in plan.json, config.json and the Gazebo command line. Gazebo sensor noise (IMU, barometer, magnetometer) is drawn from this seed; without --seed it is drawn from std::random_device.",
+    "initial_yaw": {
+      "range_deg": [
+        -20.0,
+        20.0
+      ],
+      "conditions": [],
+      "rule": "P6 draws no random heading: every run spawns at yaw 0 (PX4 heading 96.0 deg).",
+      "heading_at_zero_deg": 96.0,
+      "heading_rule": "Gazebo yaw is counter-clockwise from East (ENU); PX4 heading is clockwise from North (NED) incl. the world magnetic declination. At spawn yaw 0 the PX4 heading is 96.0 deg (P3 batch-01 first C->N 95.99-96.05 deg; P4 dev-01 95.9 deg), so the expected heading before arming is 96.0 - initial_yaw_deg (tolerance 3 deg)."
+    },
+    "hover_point": "Not perturbed: the local frame origin is the spawn point and the Gazebo world is flat and translation invariant, so a horizontal offset of the hover point changes nothing the controllers or the physics see; the hover altitude stays the frozen 3 m (analysis references).",
+    "verification": "Before the batches: (1) startup-only runs with seeds A, A, B compare the at-rest raw gyro noise (sensor_gyro) sample by sample: same seed identical, different seed different; (2) development flights with different seeds/headings give different measured values; (3) every batch run checks that its Gazebo command carried the planned seed and that the heading at takeoff equals the planned heading (tolerance 3 deg).",
+    "default_settings": "Every P8 batch run (incl. equivalence and development) gets its own Gazebo seed."
+  },
+  "ident_outcomes": {
+    "classes": {
+      "IDENT_OK": "max tilt < 45 deg and no runner abort",
+      "IDENT_EXCEEDED_45": "max tilt >= 45 deg (log, every sample) without a runner abort: recorded, labelled ident_exceeded_45; not a failure and not test data",
+      "IDENT_ABORTED": "runner safety abort (tilt > 65 deg on 10 Hz telemetry, altitude loss > 1.0 m, or another envelope limit); the recorded part is exported"
+    },
+    "note": "none of the classes stops the batch; only infrastructure or evidence failures do"
+  },
+  "criteria": {
+    "primary": "P6 frozen flight-failure criterion (p5.failure_criteria) for p5_gap runs; identification runs use the P6 ident classes",
+    "task": {
+      "altitude_loss_m": 1.0,
+      "tilt_deg": 45.0,
+      "rule": "fixed second criterion: max tilt >= 45 deg or max altitude loss > 1.0 m (P7 task_failure_criterion window), reported next to the primary one for every run and in every table"
+    }
+  },
+  "stop_rule": "Identification outcomes with every infrastructure and evidence check passing are results and do not stop the batch; any other failed check stops it. Remaining runs stay NOT_RUN; nothing is re-run in place.",
+  "runs": [
+    {
+      "id": "jump-v1.5-L1.5-A0-T0-1",
+      "kind": "p6_ident",
+      "condition": "jump-v1.5-L1.5-A0",
+      "treatment": "T0",
+      "config": "config/p8.json",
+      "repetition": 1,
+      "sim_seed": 166776521,
+      "initial_yaw_deg": null,
+      "directory": "data/p8-20261021-a-jump-v1.5-L1.5-A0-T0-1"
+    },
+    {
+      "id": "jump-v1.5-L3.0-A0-T0-1",
+      "kind": "p6_ident",
+      "condition": "jump-v1.5-L3.0-A0",
+      "treatment": "T0",
+      "config": "config/p8.json",
+      "repetition": 1,
+      "sim_seed": 316982397,
+      "initial_yaw_deg": null,
+      "directory": "data/p8-20261021-a-jump-v1.5-L3.0-A0-T0-1"
+    },
+    {
+      "id": "jump-v2.5-L1.5-A0-T0-1",
+      "kind": "p6_ident",
+      "condition": "jump-v2.5-L1.5-A0",
+      "treatment": "T0",
+      "config": "config/p8.json",
+      "repetition": 1,
+      "sim_seed": 961975411,
+      "initial_yaw_deg": null,
+      "directory": "data/p8-20261021-a-jump-v2.5-L1.5-A0-T0-1"
+    },
+    {
+      "id": "jump-v2.5-L3.0-A0-T0-1",
+      "kind": "p6_ident",
+      "condition": "jump-v2.5-L3.0-A0",
+      "treatment": "T0",
+      "config": "config/p8.json",
+      "repetition": 1,
+      "sim_seed": 665963948,
+      "initial_yaw_deg": null,
+      "directory": "data/p8-20261021-a-jump-v2.5-L3.0-A0-T0-1"
+    },
+    {
+      "id": "jump-v2.0-L3.0-A45-T0-1",
+      "kind": "p6_ident",
+      "condition": "jump-v2.0-L3.0-A45",
+      "treatment": "T0",
+      "config": "config/p8.json",
+      "repetition": 1,
+      "sim_seed": 2132280512,
+      "initial_yaw_deg": null,
+      "directory": "data/p8-20261021-a-jump-v2.0-L3.0-A45-T0-1"
+    },
+    {
+      "id": "jump-v2.5-L3.0-A45-T0-1",
+      "kind": "p6_ident",
+      "condition": "jump-v2.5-L3.0-A45",
+      "treatment": "T0",
+      "config": "config/p8.json",
+      "repetition": 1,
+      "sim_seed": 923950101,
+      "initial_yaw_deg": null,
+      "directory": "data/p8-20261021-a-jump-v2.5-L3.0-A45-T0-1"
+    },
+    {
+      "id": "chase-x4.0-V2.0-A0-T0-1",
+      "kind": "p6_ident",
+      "condition": "chase-x4.0-V2.0-A0",
+      "treatment": "T0",
+      "config": "config/p8.json",
+      "repetition": 1,
+      "sim_seed": 253335201,
+      "initial_yaw_deg": null,
+      "directory": "data/p8-20261021-a-chase-x4.0-V2.0-A0-T0-1"
+    },
+    {
+      "id": "jump-v2.5-L3.0-A0-T0-2",
+      "kind": "p6_ident",
+      "condition": "jump-v2.5-L3.0-A0",
+      "treatment": "T0",
+      "config": "config/p8.json",
+      "repetition": 2,
+      "sim_seed": 1221568971,
+      "initial_yaw_deg": null,
+      "directory": "data/p8-20261021-a-jump-v2.5-L3.0-A0-T0-2"
+    }
+  ]
+}

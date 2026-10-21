@@ -45,16 +45,15 @@ def fig_a(a):
         ax[1].plot(x[w],t['tilt_deg'][w],color=c,lw=1.6);ax[2].plot(x[w],t['alt_loss_m'][w],color=c,lw=1.6)
     ax[1].axhline(45,color='#8a8984',lw=1,ls='--');ax[1].text(9.9,45.5,'45°',ha='right',va='bottom',color='#52514e',fontsize=8)
     ax[2].axhline(1.0,color='#8a8984',lw=1,ls='--');ax[2].text(9.9,1.02,'1 m',ha='right',va='bottom',color='#52514e',fontsize=8)
-    for a_,y in zip(ax,['未截断位置误差 ep_u m（负 = 落后）','倾角 °','高度损失 m（正 = 下降）']):
-        a_.set_ylabel(y);a_.set_xlabel('自跳变 / 目标出现起 s');a_.grid(alpha=.25,lw=.6)
+    for a_,y in zip(ax,['unclipped position error ep_u (m, negative = behind)','tilt (deg)','altitude loss (m, positive = lower)']):
+        a_.set_ylabel(y);a_.set_xlabel('time since the jump / target appearance (s)');a_.grid(alpha=.25,lw=.6)
         for s in ['top','right']:a_.spines[s].set_visible(False)
     ax[0].legend(fontsize=7,frameon=False,loc='lower right')
-    fig.suptitle('P8-A 辨识飞行：跳变 / 追赶后的落后、倾角与高度',fontsize=11);fig.tight_layout()
+    fig.suptitle('P8-A identification: lag, tilt and altitude after the setpoint jump / target appearance',fontsize=11);fig.tight_layout()
     FIG.mkdir(parents=True,exist_ok=True);fig.savefig(FIG/'p8-fig1-a-ident.png',dpi=130);plt.close(fig)
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--a',type=Path);a=p.parse_args()
-    plt.rcParams['font.sans-serif']=['Noto Sans CJK SC','WenQuanYi Zen Hei','DejaVu Sans'];plt.rcParams['axes.unicode_minus']=False
     if a.a:
         au=audit(a.a);cfg=json.loads((ROOT/au['config']).read_text())
         (a.a/'p8-table.md').write_text('# P8-A 辨识飞行\n\n'+table_a(au,cfg)+'\n');fig_a(au);print('A table and figure written')

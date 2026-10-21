@@ -7,7 +7,7 @@ then a 'p8' block:
   parameters   MC_RAPTOR_RREC in the log equals the treatment (0) and research_recovery has no row
   jump         jump family: exactly one setpoint step along the axis in the logged stream (step size = position increment
                minus the velocity feed-forward advance between the two rows; planned jump_m within 0.01 m); its arrival
-               time and family time (planned accel_s + pre_jump_s within 0.03 s); RAPTOR's first cycle reading it; the
+               time and family time (planned accel_s + pre_jump_s within 0.03 s: both on the 20 ms setpoint grid); RAPTOR's first cycle reading it; the
                realized cruise before and after it (setpoints at the cruise speed); the state just before / after
   lag          along-axis lag of the vehicle behind the time-parameterized target (latest logged setpoint advanced by its
                velocity) from the family start: initial value after the jump / target appearance, maximum, first time it
@@ -52,7 +52,7 @@ def jump_block(cfg,base,T,axis,problems):
     k=int(big[0]);tj=int(t[k+1]);out.update({'jump_m':float(step[k]),'jump_setpoint_px4_us':tj,'last_setpoint_before_px4_us':int(t[k]),
         'family_time_s':(tj-t_fam)/1e6,'planned_family_time_s':float(p['accel_s'])+float(p['pre_jump_s'])})
     if abs(out['jump_m']-L)>JUMP_SIZE_TOL_M:problems.append('setpoint jump differs from the planned jump_m')
-    if not -0.005<=out['family_time_s']-out['planned_family_time_s']<=JUMP_TIME_TOL_S:problems.append('setpoint jump not at the planned family time')
+    if abs(out['family_time_s']-out['planned_family_time_s'])>JUMP_TIME_TOL_S:problems.append('setpoint jump not at the planned family time')
     V=float(p['speed_m_s']);cruise=np.abs(v-V)<1e-4
     pre=np.flatnonzero(cruise[:k+1]);post=np.flatnonzero(cruise[k+1:])+k+1
     out['realized_pre_jump_cruise_s']=float((t[k]-t[pre[0]])/1e6+0.02) if len(pre) else None

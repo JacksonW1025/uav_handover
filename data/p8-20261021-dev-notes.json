@@ -1,0 +1,14 @@
+{
+ "batch": "data/p8-20261021-dev-01",
+ "purpose": "P8-A development (never results): the jump family (jump-v1.5-L3.0-A0) and chase x0 4.0 V 2.0 with max_chase_s 3.9 s on candidate 9caf9558 (pre-registration commit).",
+ "results": {
+  "jump-v1.5-L3.0-A0-T0-1": "IDENT_OK, 27.2 deg, altitude loss 0.073 m; one setpoint jump of 3.0000 m at family time 1.9957 s (planned 2.0), RAPTOR read it 3.8 ms after arrival, realized cruise 1.00 s / 2.99 s, catch-up (lag <= 0.2 m) 3.71 s after the jump, max speed 2.53 m/s; max applied age 4 ms",
+  "chase-x4.0-V2.0-A0-T0-1": "IDENT_EXCEEDED_45, 54.5 deg at 0.37 s, altitude loss 0.687 m; not caught up within 3.9 s (switch by max_chase_s), catch-up 5.73 s, max speed 3.72 m/s, max radius 6.95 m; max applied age 4 ms"
+ },
+ "fixes_before_the_formal_batch": [
+  "tools/p8_metrics.py: the jump family-time tolerance was asymmetric [-0.005, +0.03] s; the family start and the jump are both the first setpoint of the 20 ms emission grid after a profile time, so their difference can be up to one period either way (dev: -4.3 ms). Changed to +-0.03 s. Analysis only, not in the flight path.",
+  "tools/p8_audit.py and tools/p8_report.py added (analysis only)."
+ ],
+ "export_check": "tools/p8_export.py on both dev runs into a scratch directory (not export/): reconstruction 0 components over 1e-4 (max 3.8e-7), 0.56 / 0.59 MB per run; altitude, vertical velocity, action and motor-command columns present.",
+ "audit": "tools/p8_audit.py: both runs pass, metrics reproduced; batch status DEVELOPMENT (never an acceptance result)."
+}

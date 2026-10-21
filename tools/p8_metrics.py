@@ -17,6 +17,15 @@ then a 'p8' block:
                the motor command mean (actuator_motors) minimum / maximum and time at the upper or lower limit
   task_criterion   the P8 fixed second criterion (max tilt >= 45 deg or max altitude loss > 1.0 m), reported only (an
                identification flight is not a failure test)
+B (kind p5_gap, config/p8.json, P8 test cases): the frozen P6 analysis (p6_metrics.analyze: the frozen P5 analyzer for a
+single interruption, the P6 windows copy for 2-4 windows; interruption timing, in-flight captures, resume jumps, flight
+outcome = primary criterion), then a 'p8' block:
+  parameters   MC_RAPTOR_RREC 0 in the log and no research_recovery row
+  gap_timing   per interruption: setpoint-free interval vs planned D, the in-flight capture (time after the last reception,
+               mode), the resume; status VERIFIED when the frozen analyzer raised no interruption / capture problem
+  result       primary (frozen flight outcome, reasons), task criterion (P7 rule: max tilt >= 45 deg or max altitude loss
+               > 1.0 m over the frozen window [first interruption, end of post_stream]), max tilt (the frozen window; the
+               score fed back to the online methods) and its time, max altitude loss
 No model fitting, prediction or classification.
 """
 import argparse,json,math
@@ -116,10 +125,39 @@ def analyze_ident(run,cfg,base,problems):
         'note':'reported only; identification flights are not failure tests (ident class is the outcome)'}
     return p8
 
+GAP_WORDS=('gap','capture','setpoint','interruption','resume')
+
+def analyze_gap(run,cfg,base,problems):
+    u=ULog(str(run/'flight.ulg'),['research_recovery','vehicle_status']);values=parameters(u);tp=cfg['p2_treatment_parameters']
+    rows=sum(len(d.data['timestamp']) for d in u.data_list if d.name=='research_recovery')
+    p8={'parameters':{'MC_RAPTOR_RREC':values.get('MC_RAPTOR_RREC'),'planned_rrec':float(tp.get('rrec',0.)),'research_recovery_rows':rows}}
+    if values.get('MC_RAPTOR_RREC') is None or abs(float(values['MC_RAPTOR_RREC'])-float(tp.get('rrec',0.)))>1e-5:problems.append(f"MC_RAPTOR_RREC {values.get('MC_RAPTOR_RREC')} != planned {tp.get('rrec',0.)}")
+    if rows:problems.append(f'{rows} research_recovery rows with RREC 0')
+    gaps=base.get('gaps') or [];gp=[p for p in (base.get('problems') or []) if any(w in p for w in GAP_WORDS)]
+    p8['gap_timing']={'status':'VERIFIED' if not gp else 'PROBLEMS','problems':gp,'planned':base.get('planned_gaps'),'observed':base.get('observed_gaps'),
+        'gaps':[{'index':g.get('index'),'planned_D_s':g.get('planned_D_s'),'silence_s':g.get('silence_s'),'last_reception_px4_us':g.get('last_reception_px4_us'),
+                 'first_reception_px4_us':g.get('first_reception_px4_us'),'capture_px4_us':(g.get('capture') or {}).get('px4_us'),
+                 'capture_after_last_reception_s':(g.get('capture') or {}).get('after_last_reception_s'),'capture_mode':(g.get('capture') or {}).get('mode'),
+                 'captured_speed_m_s':(lambda v:None if v is None else math.hypot(v[0],v[1]))((g.get('capture') or {}).get('vehicle_velocity_ned_m_s')),
+                 'resume_jump_along_axis_m':(g.get('resume') or {}).get('jump_along_axis_m'),'resume_velocity_jump_m_s':(g.get('resume') or {}).get('velocity_jump_along_axis_m_s')} for g in gaps]}
+    wh=base.get('whole') or {};tl=(base.get('p6') or {}).get('tilt') or {};og=((base.get('p6') or {}).get('open_gap') or {})
+    tilt=wh.get('max_tilt_deg')
+    if tilt is None:tilt=tl.get('max_tilt_deg') if tl.get('max_tilt_deg') is not None else og.get('max_tilt_deg_until_raptor_end')
+    alt=wh.get('max_altitude_loss_m');tc=cfg['p8']['criteria']['task']
+    reasons=(['tilt'] if tilt is not None and tilt>=float(tc['tilt_deg']) else [])+(['altitude_loss'] if alt is not None and alt>float(tc['altitude_loss_m']) else [])
+    if base.get('aborted') and 'safety' in str(base.get('failure_reason')) and 'tilt' not in reasons:reasons.append('runner_safety_abort')
+    fo=base.get('flight_outcome') or {}
+    p8['result']={'fail_primary':fo.get('outcome')=='FAILURE','primary_reasons':fo.get('reasons'),'fail_task':bool(reasons),'task_reasons':reasons,
+        'max_tilt_deg':tilt,'max_tilt_at_s':tl.get('max_tilt_at_s'),'first_at_or_above_45_s':tl.get('first_at_or_above_45_s'),'max_altitude_loss_m':alt,
+        'score_definition':'max tilt over the frozen failure window [first interruption start, end of post_stream] (p5_metrics whole.max_tilt_deg)'}
+    if tilt is None:problems.append('no max tilt measured')
+    return p8
+
 def analyze(run):
     run=Path(run).resolve();cfg=json.loads((run/'config.json').read_text());meta=json.loads((run/'metadata.json').read_text())
     base=p6_metrics.analyze(run);problems=list(base.get('problems') or [])
     if meta['experiment_type']=='p6_ident':p8=analyze_ident(run,cfg,base,problems)
+    elif meta['experiment_type']=='p5_gap':p8=analyze_gap(run,cfg,base,problems)
     else:problems.append('not a P8 kind');p8=None
     out=dict(base);out['p8']=p8;out['problems']=problems;out['status']='MEASURED' if not problems else 'INCOMPLETE'
     return clean(out)

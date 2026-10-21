@@ -406,13 +406,15 @@
     "rini": 4,
     "rtgt": 0,
     "rtdec": 2.0,
-    "description": "N2 memory; original RAPTOR in-flight setpoint-timeout capture: current position and yaw, zero velocity (MC_RAPTOR_RTGT=0)"
+    "description": "N2 memory; original RAPTOR in-flight setpoint-timeout capture: current position and yaw, zero velocity (MC_RAPTOR_RTGT=0); P8: MC_RAPTOR_RREC=0 set explicitly",
+    "rrec": 0.0
    },
    "T1": {
     "rini": 4,
     "rtgt": 2,
     "rtdec": 2.0,
-    "description": "N2 memory; speed-matched target at activation and at every in-flight setpoint-timeout capture (MC_RAPTOR_RTGT=2), 2.0 m/s^2"
+    "description": "N2 memory; speed-matched target at activation and at every in-flight setpoint-timeout capture (MC_RAPTOR_RTGT=2), 2.0 m/s^2; P8: MC_RAPTOR_RREC=0 set explicitly",
+    "rrec": 0.0
    },
    "T1a3": {
     "rini": 4,
@@ -1957,9 +1959,215 @@
      ]
     },
     "rule": "P6-A chase x2.0 V2.0 A0 (3 runs, IDENT_EXCEEDED_45, 52.5-53.2 deg) on the P8 candidate with config/p6.json and the frozen p6_metrics: same class and max tilt within 2.5 deg of the P6 range; MC_RAPTOR_RREC 0 in the log and no research_recovery row. Otherwise stop and write diagnosis.json."
+   },
+   "b": {
+    "groups": "p5_gap:v2.0-H0.0-W0.0-0.3:T0:2,p5_gap:v2.0-H45.0-W0.0-0.3:T0:2,p5_gap:v2.0-H0.0-W0.0-0.55_0.7-1.25_1.4-1.95_2.1-2.65:T1:2",
+    "reference": {
+     "v2.0-H0.0-W0.0-0.3:T0": {
+      "p6_name": "v2.0-D0.3-A0",
+      "outcome": "SUCCESS",
+      "max_tilt_deg": [
+       28.5,
+       28.9
+      ],
+      "source": "P6 B1 28.5 deg, P7 single reference 28.9 deg"
+     },
+     "v2.0-H45.0-W0.0-0.3:T0": {
+      "p6_name": "v2.0-D0.3-A45",
+      "outcome": "SUCCESS",
+      "max_tilt_deg": [
+       35.2,
+       37.6
+      ],
+      "source": "P6 C1 35.2 deg, P7 single reference 37.6 deg"
+     },
+     "v2.0-H0.0-W0.0-0.55_0.7-1.25_1.4-1.95_2.1-2.65:T1": {
+      "p6_name": "M1-A0",
+      "outcome": "SUCCESS",
+      "max_tilt_deg": [
+       32.8,
+       32.8
+      ],
+      "source": "P6 C2 M1-A0 32.8 deg"
+     }
+    },
+    "rule": "the three P6 conditions through the new P8 case path (config/p8.json, p8_conditions.case_spec, p8_metrics), 2 runs each: same flight outcome as the history and max tilt (frozen whole window) within 2.5 deg of the historical range; for heading 0 the generated spec (without its description) and the merged profile must be byte-identical (json.dumps) to P6 gap_spec of the P6 name. Otherwise stop and write diagnosis.json."
    }
   },
-  "host": "P6/P7 rules: jetson_clocks, no ToDesk session, user-session processes on cores 0-3, PX4/Gazebo/Agent/runner pinned (p4.host.cpu_affinity), batches launched through the session background mechanism, no commits while a batch runs."
+  "host": "P6/P7 rules: jetson_clocks, no ToDesk session, user-session processes on cores 0-3, PX4/Gazebo/Agent/runner pinned (p4.host.cpu_affinity), batches launched through the session background mechanism, no commits while a batch runs.",
+  "b": {
+   "purpose": "P8-B (task 2026-10-21, second part): baseline comparison of test generation on SITL. 5 methods x 2 systems under test x 3 seeds = 30 campaigns of 30 runs (900). This harness flies and exports only; the methods and lists are the project frozen files in tools/p8/ (committed verbatim, commit 807200cc).",
+   "files_sha256": {
+    "p8_space.py": "1a49419c504eb3cc22e450e7a90e556aa9826e8a2eb070f77e9e5dce87ebd1b6",
+    "p8_methods.py": "e2367b0923b5924afd179dd55e3c7c8c19965c2be2cb23bbf6c38524e6779f73",
+    "p8_build_lists.py": "98b8fb30fdd0a1f3ba17752109510a954a9a7775c9dc07723851256387541312",
+    "p8_list_index.json": "566ef0b9b992a0c33d9fd882a78600a51695e2c824607ad62ff4cafde1b2bda6",
+    "p8_lists.json": "f3327225f734c17d36d5006b58a8364373c728e60a22404968db837bb37db478"
+   },
+   "names_sha256": "4f6a2b47e03a39f788dc15dd4c1ecdc932eb5bec60f694bef376a6644be93da8",
+   "project_p8_frozen_json_sha256": "fe784e62aa5ee8c1ea5cb29fc2ec2d44169c2d02a084130c31342d28d25ba7d4",
+   "project_p8_frozen_json_note": "held by the project (same cases as p8_lists.json plus their model predictions); not available here, recorded to show the predictions were written before any B flight",
+   "build_environment": {
+    "python": "3.12.3",
+    "numpy": "1.26.4",
+    "scipy": "1.11.4",
+    "lists_sha256_matches_task": true,
+    "names_sha256_matches_task": true
+   },
+   "suts": {
+    "T0": {
+     "treatment": "T0",
+     "rtgt": 0,
+     "rtdec": 2.0
+    },
+    "T1": {
+     "treatment": "T1",
+     "rtgt": 2,
+     "rtdec": 2.0
+    },
+    "note": "treatments p5.treatments T0 / T1: N2 memory (RINI=4), RREC=0 explicit"
+   },
+   "methods": {
+    "offline": [
+     "random",
+     "contest",
+     "ours"
+    ],
+    "online": [
+     "fuzz",
+     "bo"
+    ],
+    "offline_rule": "lists[\"<method>/<sut>/<seed>\"] of tools/p8/p8_lists.json (60 cases each) taken in order; a case whose gap_spec fit is cancelled would be skipped (does not count), until 30 runs are flown",
+    "online_rule": "m = p8_methods.Fuzz(sut, seed, p8_space.fits) or BO(...); each round c = m.propose(history); after the run (c, max tilt deg, primary failure) is appended to history. After every propose the history, the proposed case and m.rng.bit_generator.state are written to the campaign state file; a restart restores them and never redraws"
+   },
+   "campaigns": [
+    "random/T0/0",
+    "random/T0/1",
+    "random/T0/2",
+    "random/T1/0",
+    "random/T1/1",
+    "random/T1/2",
+    "contest/T0/0",
+    "contest/T0/1",
+    "contest/T0/2",
+    "contest/T1/0",
+    "contest/T1/1",
+    "contest/T1/2",
+    "ours/T0/0",
+    "ours/T0/1",
+    "ours/T0/2",
+    "ours/T1/0",
+    "ours/T1/1",
+    "ours/T1/2",
+    "fuzz/T0/0",
+    "fuzz/T0/1",
+    "fuzz/T0/2",
+    "fuzz/T1/0",
+    "fuzz/T1/1",
+    "fuzz/T1/2",
+    "bo/T0/0",
+    "bo/T0/1",
+    "bo/T0/2",
+    "bo/T1/0",
+    "bo/T1/1",
+    "bo/T1/2"
+   ],
+   "seeds": [
+    0,
+    1,
+    2
+   ],
+   "rounds": 30,
+   "b1_rounds": 15,
+   "rotation": {
+    "order_seed": 20261022,
+    "order": [
+     "ours/T1/0",
+     "bo/T1/2",
+     "bo/T0/1",
+     "contest/T0/2",
+     "ours/T0/0",
+     "fuzz/T0/2",
+     "ours/T0/2",
+     "random/T0/2",
+     "random/T1/0",
+     "fuzz/T0/1",
+     "bo/T0/2",
+     "ours/T0/1",
+     "bo/T1/1",
+     "contest/T1/1",
+     "bo/T1/0",
+     "ours/T1/1",
+     "contest/T0/0",
+     "bo/T0/0",
+     "random/T1/1",
+     "ours/T1/2",
+     "random/T0/0",
+     "fuzz/T1/1",
+     "fuzz/T1/2",
+     "contest/T0/1",
+     "random/T0/1",
+     "random/T1/2",
+     "contest/T1/0",
+     "fuzz/T0/0",
+     "contest/T1/2",
+     "fuzz/T1/0"
+    ],
+    "rule": "the 30 campaigns in this fixed order (random.Random(20261022).shuffle of the campaign list method-major) form a ring; round k flies the k-th run of every campaign in that order (B1: rounds 1-15, pushed; B2: rounds 16-30)"
+   },
+   "budget_check": {
+    "rule": "before every run: tools/p8_conditions.budget_check -- p8_space.budget(case) must equal the gap_spec fit of the same case (P6 condition_rule via p6_conditions.fit: pre_gap_s, post_gap_s, or both cancelled) and the windows must be p8_space.windows(case); on any difference the batch stops and writes diagnosis.json (task rule)",
+    "preflight_check_of_the_offline_lists": {
+     "checked": 1080,
+     "mismatches": [
+      {
+       "list": "contest/T0/0",
+       "position": 28,
+       "name": "v2.4-H28.0-W0.0-0.32_0.78-1.05:T0",
+       "gap_spec": [
+        1.0,
+        2.55
+       ],
+       "p8_space_budget": [
+        1.0,
+        2.6
+       ],
+       "would_be_flown": "round 28 (B2)"
+      },
+      {
+       "list": "random/T1/0",
+       "position": 33,
+       "name": "v2.0-H8.0-W0.0-0.78_1.08-1.65_2.31-3.0:T1",
+       "gap_spec": [
+        0.85,
+        2.0
+       ],
+       "p8_space_budget": [
+        0.9,
+        2.0
+       ],
+       "would_be_flown": "no (only positions 1-30 are flown when nothing is skipped)"
+      }
+     ],
+     "cause": "both at the exact budget boundary (radius 8.000 m): p8_space evaluates the closed form with a 1e-9 tolerance and accepts; gap_spec uses the runner path check, whose start offset is rounded to 1e-6 m, so the line end exceeds 8.0 m by up to 5e-7 m and the next shrink step is taken",
+     "handling": "not changed (task rule): the run that reaches such a case stops the batch with diagnosis.json; the user decides"
+    }
+   },
+   "case_names": "runner condition = p8_space.name(case, sut) without \":<sut>\", treatment = sut; spec from p8_conditions.case_spec (P6 gap_spec rule, axis [cos h, sin h, 0] rounded to 9 decimals; one window -> the P6 single-interruption form)",
+   "run_ids": "<method>-<sut>-s<seed>-k<NN> (infrastructure rerun: suffix -r<N>), directory data/<prefix>-<id>; Gazebo seed = first 31 bits of sha256(prefix/id/master_seed)",
+   "infrastructure_rule": "an infrastructure or evidence failure (any batch check other than the pre-registered flight outcome) is rerun with the same case and a new seed (id suffix -r1, -r2), marked infra_rerun, not counted; at most 2 reruns per run, then the batch stops. Flight failures are results. No run is repeated in place.",
+   "cases_log": "every run actually flown (incl. infrastructure reruns) appended to <state>/runs/p8_b_cases.jsonl: campaign, k, name, windows, budget check, sim seed, run id",
+   "export": {
+    "trace_window": "[last reception before the first interruption - 1 s, first reception after the last interruption + 6 s]",
+    "full_rate": "within +-1 s of every event (captures, resumes)",
+    "elsewhere_hz": 50,
+    "max_run_bytes": 150000,
+    "max_total_bytes": 150000000,
+    "table": "export/p8_b_results.csv: campaign, method, sut, seed, k, name, fail_primary, fail_task, max_tilt_deg, max_alt_loss_m, infra_rerun"
+   },
+   "report": "per system x method: failures over the 3 seeds (primary and task criterion), distinct failure cells (p8_space.cell), round of the first failure, B1 and B2 separately; the model predictions of p8_frozen.json are never read or used",
+   "dev": "dev_b: 5 cases from positions 31-60 of random/T1/2 and random/T0/2 (never flown in the campaigns): heading 13-89 deg, 2-4 windows, a shrunk pre_gap_s (0.85) and post_gap_s; plus an orchestrator development run (state in a separate directory) before the equivalence"
+  }
  },
  "p4": {
   "purpose": "P8 batches: independent Gazebo seed per run (master seed 20261021), spawn yaw 0.",
@@ -1996,7 +2204,9 @@
   "groups": {
    "dev": "p6_ident:jump-v1.5-L3.0-A0:T0:1,p6_ident:chase-x4.0-V2.0-A0:T0:1",
    "equivalence": "p6_ident:chase-x2.0-V2.0-A0:T0:2@config/p6.json",
-   "a": "p6_ident:jump-v1.5-L1.5-A0:T0:1,p6_ident:jump-v1.5-L3.0-A0:T0:1,p6_ident:jump-v2.5-L1.5-A0:T0:1,p6_ident:jump-v2.5-L3.0-A0:T0:2,p6_ident:jump-v2.0-L3.0-A45:T0:1,p6_ident:jump-v2.5-L3.0-A45:T0:1,p6_ident:chase-x4.0-V2.0-A0:T0:1"
+   "a": "p6_ident:jump-v1.5-L1.5-A0:T0:1,p6_ident:jump-v1.5-L3.0-A0:T0:1,p6_ident:jump-v2.5-L1.5-A0:T0:1,p6_ident:jump-v2.5-L3.0-A0:T0:2,p6_ident:jump-v2.0-L3.0-A45:T0:1,p6_ident:jump-v2.5-L3.0-A45:T0:1,p6_ident:chase-x4.0-V2.0-A0:T0:1",
+   "dev_b": "p5_gap:v1.8-H71.0-W0.0-0.44_0.67-1.13_1.62-2.1_2.39-3.16:T1:1,p5_gap:v1.7-H89.0-W0.0-0.43_0.83-1.25:T1:1,p5_gap:v2.25-H56.0-W0.0-0.3_0.41-1.15_1.63-2.22:T1:1,p5_gap:v2.25-H13.0-W0.0-0.26_0.46-0.77_1.04-1.35_1.62-1.97:T0:1,p5_gap:v1.9-H60.0-W0.0-0.27_1.05-1.39:T0:1",
+   "equivalence_b": "p5_gap:v2.0-H0.0-W0.0-0.3:T0:2,p5_gap:v2.0-H45.0-W0.0-0.3:T0:2,p5_gap:v2.0-H0.0-W0.0-0.55_0.7-1.25_1.4-1.95_2.1-2.65:T1:2"
   }
  }
 }

@@ -139,7 +139,7 @@ uav_lab/.local/venv/bin/python tools/apply_research.py
 Tests:
 
 ```bash
-# Python (79 tests); single test: append ::test_name
+# Python (83 tests); single test: append ::test_name
 uav_lab/.local/venv/bin/python -m pytest -q tests/test_readiness.py tests/test_recovery.py tests/test_executor_acceptance.py tests/test_output_chain.py tests/test_p0_closure.py tests/test_p1.py tests/test_p2.py tests/test_p3.py tests/test_p4.py tests/test_p4c.py tests/test_p5.py tests/test_p6.py tests/test_p7.py tests/test_p8.py
 uav_lab/.local/venv/bin/python -m pytest -q tests/test_recovery.py::test_missing_data_does_not_count_as_continuous
 

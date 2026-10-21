@@ -20,6 +20,7 @@ import uuid
 import resource
 from readiness import Readiness
 import p6_conditions
+import p8_conditions
 import psutil
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -122,7 +123,11 @@ class Experiment:
             p6=self.cfg.get('p6',{}).get('ident',{})
             if args.condition not in p6.get('conditions',{}):raise RuntimeError('p6_ident needs --condition from config p6.ident.conditions')
             if args.treatment not in P6_TREATMENT_KINDS[args.kind] or args.treatment not in p6['treatments']:raise RuntimeError(f'p6_ident needs --treatment in {P6_TREATMENT_KINDS[args.kind]}')
-            self.pcfg=p6_conditions.ident_cfg(self.cfg,args.condition);self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(self.pcfg.get('speed_m_s',0.))
+            # P8-A (config with a p8 section): the same kind with the jump family (p8_conditions; other families delegate to
+            # the unchanged p6_conditions).
+            self.ident=p8_conditions if 'p8' in self.cfg else p6_conditions
+            if p6['conditions'][args.condition].get('cancelled'):raise RuntimeError('condition cancelled by the pre-registered safety budget: '+args.condition)
+            self.pcfg=self.ident.ident_cfg(self.cfg,args.condition);self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(self.pcfg.get('speed_m_s',0.))
             self.cfg['p2_treatment']=args.treatment;self.cfg['p2_treatment_parameters']=p6['treatments'][args.treatment];self.cfg['p2_profile']=self.pcfg
             self.cfg['p6_condition_spec']=p6['conditions'][args.condition]
             # Identification flights measure the saturated region: for this kind only the runner tilt abort is raised and an
@@ -549,10 +554,10 @@ class Experiment:
         if t<tr:return s0,v0,a0
         tau=t-tr-float(self.pcfg['reference_hold_s'])
         if tau<0:return s0,0.,0.
-        s,v,a=p6_conditions.ident_motion(self.pcfg,tau,self.p6_switch_s);return s0+s,v,a
+        s,v,a=getattr(self,'ident',p6_conditions).ident_motion(self.pcfg,tau,self.p6_switch_s);return s0+s,v,a
 
     def p6_total(self):
-        return self.p6_family_start()+p6_conditions.ident_motion_duration(self.pcfg,self.p6_switch_s)+float(self.pcfg['end_hold_s'])
+        return self.p6_family_start()+getattr(self,'ident',p6_conditions).ident_motion_duration(self.pcfg,self.p6_switch_s)+float(self.pcfg['end_hold_s'])
 
     def p6_chase_check(self,origin,axis):
         # chase: the target decelerates once the vehicle has caught up (along-axis distance to the target <= catch_up_m on
@@ -587,7 +592,7 @@ class Experiment:
         self.event('p1_reference_origin',source=source,origin_ned_m=origin,yaw_rad=yaw)
         check=self.p6_path_check(origin);self.event('p6_planned_path_check',**check)
         if not check['inside']:raise RuntimeError(f"planned path would leave the safety radius margin: {check['radius_with_allowance_m']:.2f} m > {check['limit_m']:.2f} m")
-        gap=p6_conditions.ident_gap(p);fs=self.p6_family_start();windows=[(fs+gap[0],fs+gap[1])] if gap else []
+        gap=getattr(self,'ident',p6_conditions).ident_gap(p);fs=self.p6_family_start();windows=[(fs+gap[0],fs+gap[1])] if gap else []
         axis=[float(x) for x in p['motion_axis_ned']]
         self.event('p6_ident_plan',family=p['family'],family_start_profile_s=fs,windows_profile_s=windows,planned_total_s=self.p6_total(),start_offset_m=p['start_offset_m'],path_length_m=p['path_length_m'])
         self.p6_switch_s=None
@@ -1100,7 +1105,7 @@ def main():
     p.add_argument('--sim-seed',type=int,help='P4: Gazebo random seed (gz sim --seed), recorded in config.json and metadata')
     p.add_argument('--initial-yaw-deg',type=float,help='P4: initial heading of the spawned x500 (PX4_GZ_MODEL_POSE yaw), recorded')
     p.add_argument('--condition',help='P1/P2 pre-handover motion condition (config p1.conditions / p2.conditions)')
-    p.add_argument('--treatment',help='P2 treatment (config p2.treatments): N0 N1 N2g N2 N2s Nstar for p2_c_to_n, C0 C2 for p2_n_to_c, B for baselines; P3: N0 N3 N2s N2 for p3_sequence (conditions D1 D2 D3), B for p3_baseline_raptor (condition R); P5: T0 T1 T1a1 T1a3 for p5_gap (config p5.conditions); P6: also T1a0.75 T1a1.5 for p5_gap (generated conditions), T0 for p6_ident (config p6.ident.conditions)')
+    p.add_argument('--treatment',help='P2 treatment (config p2.treatments): N0 N1 N2g N2 N2s Nstar for p2_c_to_n, C0 C2 for p2_n_to_c, B for baselines; P3: N0 N3 N2s N2 for p3_sequence (conditions D1 D2 D3), B for p3_baseline_raptor (condition R); P5: T0 T1 T1a1 T1a3 for p5_gap (config p5.conditions); P6: also T1a0.75 T1a1.5 for p5_gap (generated conditions), T0 for p6_ident (config p6.ident.conditions; P8-A also the jump family)')
     args=p.parse_args();e=Experiment(args);status='FAIL';reason=None
     try:
         e.execute();status='PASS'

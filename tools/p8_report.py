@@ -2,6 +2,7 @@
 """P8 figures (docs/figures/p8) and tables (<batch>/p8-table.md) from the batch audits and the exports.
 
   p8_report.py --a data/<A batch>
+  p8_report.py --b data/<B1 batch> [data/<B2 batch>] --state data/<B state>
 
 Tables list measured values only (outcome, max tilt, altitude loss, jump timing, catch-up); no model, no prediction.
 """
@@ -52,8 +53,63 @@ def fig_a(a):
     fig.suptitle('P8-A identification: lag, tilt and altitude after the setpoint jump / target appearance',fontsize=11);fig.tight_layout()
     FIG.mkdir(parents=True,exist_ok=True);fig.savefig(FIG/'p8-fig1-a-ident.png',dpi=130);plt.close(fig)
 
+METHODS=['random','contest','ours','fuzz','bo']
+
+def camp_states(state):
+    return {f.stem.replace('_','/'):json.loads(f.read_text()) for f in sorted((Path(state)/'campaigns').glob('*.json'))}
+
+def b_rows(states,lo,hi):
+    """Per system x method over rounds lo..hi: failures (primary, task) per seed, distinct failure cells, first failure round."""
+    out={}
+    for sut in ['T0','T1']:
+        for m in METHODS:
+            seeds={}
+            for k in range(3):
+                st=states.get(f'{m}/{sut}/{k}')
+                runs=[x for x in (st or {}).get('runs',[]) if x.get('status')!='DEVELOPMENT_FAILED' and lo<=x['k']<=hi]
+                fp=[x for x in runs if x['fail_primary']];ft=[x for x in runs if x['fail_task']]
+                seeds[k]={'n':len(runs),'fp':len(fp),'ft':len(ft),'first_fp':fp[0]['k'] if fp else None,'first_ft':ft[0]['k'] if ft else None,
+                          'cells_fp':{tuple(x['cell']) for x in fp},'cells_ft':{tuple(x['cell']) for x in ft},'reruns':sum(len(x.get('infra_reruns') or []) for x in runs)}
+            out[(sut,m)]=seeds
+    return out
+
+def table_b(states,lo,hi,title):
+    R=b_rows(states,lo,hi)
+    rows=[f'### {title}（第 {lo}–{hi} 轮）','','| 被测 | 方法 | 轮数 | 主判据失败（种子 0/1/2 = 合计） | 任务判据失败（0/1/2 = 合计） | 不同失败格（主 / 任务，3 种子合并） | 第一个主判据失败的轮次（0/1/2） | 第一个任务判据失败的轮次（0/1/2） | 基础设施补跑 |','|---|---|---|---|---|---|---|---|---|']
+    f=lambda x:'—' if x is None else str(x)
+    for (sut,m),s in R.items():
+        n=sum(x['n'] for x in s.values())
+        rows.append(f"| {sut} | {m} | {n} | {'/'.join(str(s[k]['fp']) for k in range(3))} = **{sum(s[k]['fp'] for k in range(3))}** | {'/'.join(str(s[k]['ft']) for k in range(3))} = {sum(s[k]['ft'] for k in range(3))} | "
+                    f"{len(set().union(*[s[k]['cells_fp'] for k in range(3)]))} / {len(set().union(*[s[k]['cells_ft'] for k in range(3)]))} | {'/'.join(f(s[k]['first_fp']) for k in range(3))} | {'/'.join(f(s[k]['first_ft']) for k in range(3))} | {sum(s[k]['reruns'] for k in range(3))} |")
+    return '\n'.join(rows)
+
+def fig_b(states,hi):
+    fig,ax=plt.subplots(2,2,figsize=(12,7.5),sharex=True)
+    for j,sut in enumerate(['T0','T1']):
+        for i,key in enumerate(['fail_primary','fail_task']):
+            a=ax[i][j]
+            for c,m in enumerate(METHODS):
+                cum=np.zeros(hi)
+                for k in range(3):
+                    st=states.get(f'{m}/{sut}/{k}') or {}
+                    for x in st.get('runs',[]):
+                        if x.get('status')!='DEVELOPMENT_FAILED' and x['k']<=hi and x[key]:cum[x['k']-1:]+=1
+                a.step(np.arange(1,hi+1),cum,where='post',color=SERIES[c],lw=2,label=m)
+            a.set_title(f"{sut}: {'primary (frozen flight-failure) criterion' if key=='fail_primary' else 'task criterion (tilt >= 45 deg or altitude loss > 1 m)'}",fontsize=9)
+            a.set_ylabel('cumulative failures, 3 seeds');a.grid(alpha=.25,lw=.6)
+            for sp in ['top','right']:a.spines[sp].set_visible(False)
+            if i==1:a.set_xlabel('round k')
+    ax[0][0].legend(frameon=False,fontsize=8);fig.suptitle('P8-B: cumulative failures found per method (sum over seeds 0-2)',fontsize=11);fig.tight_layout()
+    FIG.mkdir(parents=True,exist_ok=True);fig.savefig(FIG/'p8-fig2-b-failures.png',dpi=130);plt.close(fig)
+
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--a',type=Path);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--a',type=Path);p.add_argument('--b',type=Path,nargs='*');p.add_argument('--state',type=Path);a=p.parse_args()
+    if a.b:
+        states=camp_states(a.state);hi=max([x['k'] for st in states.values() for x in st['runs'] if 'k' in x] or [0])
+        txt='# P8-B 测试生成基线对比\n\n'+table_b(states,1,min(15,hi),'B1')+'\n\n'
+        if hi>15:txt+=table_b(states,16,hi,'B2')+'\n\n'+table_b(states,1,hi,'B1 + B2')+'\n'
+        for b in a.b:(b/'p8-table.md').write_text(txt)
+        fig_b(states,hi);print('B tables and figure written, rounds up to',hi)
     if a.a:
         au=audit(a.a);cfg=json.loads((ROOT/au['config']).read_text())
         (a.a/'p8-table.md').write_text('# P8-A 辨识飞行\n\n'+table_a(au,cfg)+'\n');fig_a(au);print('A table and figure written')

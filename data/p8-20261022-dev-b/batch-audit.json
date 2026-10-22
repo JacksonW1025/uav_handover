@@ -1,0 +1,780 @@
+{
+  "batch": "data/p8-20261022-dev-b",
+  "stage": "dev_b",
+  "config": "config/p8.json",
+  "audit_code_sha256": {
+    "p8_audit.py": "39413d04f7262906948592a7d6b1b9edf0d4e7b418908bbaea7c34c1cc996323",
+    "p8_metrics.py": "3acf80bc344cf8dadec64fa26f03da597d524dcd1709c375a558a10ba0ceb557",
+    "p6_metrics.py": "f1248359122aa26021fbc667fa3d15471b0c8588a4cc3c57ceb10b5660e78517",
+    "p5_metrics.py": "5b360e637b4df300a14f9dabef84156e2cf950713d2e8ad0884b6903595269cc",
+    "p8_batch.py": "3bd5b24048e2667da3d649e4e0da554ae0c072ef5fb053ddff287b1059f1a1d4",
+    "p8_campaign.py": "e45f5793181d02b36a23ad0a73a14b6d7db0ef527bd71ca048105a15cc10f15f",
+    "p8_conditions.py": "475b419238370f2a17af06eac4c621e77cfa93184e3df90e5187b876e5691c61",
+    "p6_conditions.py": "f2890513262acae5fb79a099207d2345ce512acd98ea065ed56a8b241287d390",
+    "p1_metrics.py": "c269f251eafa4adfb6c15adac7fe4288e8fa43c2bd6f1b8b0a3c4562df5cbafb",
+    "p0_metrics.py": "8b28205627831a66f00ffb8dfb7dbe9263f6df371bff267a2d8410d115fa441f",
+    "recovery.py": "98deed44eae315df40469ca3ff5a910ccb5860b1581639759784e902f0960939",
+    "preparation_audit.py": "d6f4815591b88c053da9a22d7e5394e800a853bae09f8b51a1815ee381d68776"
+  },
+  "runner_results": {
+    "status": "DEVELOPMENT",
+    "complete": true,
+    "accepted": 0,
+    "flight_failures": 0,
+    "failed": 5,
+    "not_run": 0,
+    "candidate_unchanged": true,
+    "identification_outcomes": {},
+    "failed_checks": {
+      "v1.8-H71.0-W0.0-0.44_0.67-1.13_1.62-2.1_2.39-3.16-T1-1": [
+        "output_chain"
+      ],
+      "v1.7-H89.0-W0.0-0.43_0.83-1.25-T1-1": [
+        "output_chain",
+        "p8_measured",
+        "subject_measured"
+      ],
+      "v2.25-H56.0-W0.0-0.3_0.41-1.15_1.63-2.22-T1-1": [
+        "output_chain",
+        "p8_measured",
+        "subject_measured"
+      ],
+      "v2.25-H13.0-W0.0-0.26_0.46-0.77_1.04-1.35_1.62-1.97-T0-1": [
+        "output_chain",
+        "execution",
+        "p8_measured",
+        "subject_measured"
+      ],
+      "v1.9-H60.0-W0.0-0.27_1.05-1.39-T0-1": [
+        "output_chain"
+      ]
+    }
+  },
+  "output_chain": {
+    "gate": {
+      "p99_us": 4000,
+      "max_us": 12000,
+      "longest_over_target_steps": 2,
+      "overwritten_fraction": 0.001,
+      "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+    },
+    "neural_motor_steps": 130656,
+    "overwritten_motor_commands": 5777,
+    "overwritten_fraction": 0.04421534410972324,
+    "fraction_gate_met": false,
+    "per_run_gate_failures": [
+      "v1.8-H71.0-W0.0-0.44_0.67-1.13_1.62-2.1_2.39-3.16-T1-1",
+      "v1.7-H89.0-W0.0-0.43_0.83-1.25-T1-1",
+      "v2.25-H56.0-W0.0-0.3_0.41-1.15_1.63-2.22-T1-1",
+      "v2.25-H13.0-W0.0-0.26_0.46-0.77_1.04-1.35_1.62-1.97-T0-1",
+      "v1.9-H60.0-W0.0-0.27_1.05-1.39-T0-1"
+    ],
+    "max_applied_age_us": 16000.0,
+    "runs_with_8ms_or_more": [
+      "v1.8-H71.0-W0.0-0.44_0.67-1.13_1.62-2.1_2.39-3.16-T1-1",
+      "v1.7-H89.0-W0.0-0.43_0.83-1.25-T1-1",
+      "v2.25-H56.0-W0.0-0.3_0.41-1.15_1.63-2.22-T1-1",
+      "v2.25-H13.0-W0.0-0.26_0.46-0.77_1.04-1.35_1.62-1.97-T0-1",
+      "v1.9-H60.0-W0.0-0.27_1.05-1.39-T0-1"
+    ]
+  },
+  "runs_checked": 5,
+  "identification_outcomes": {},
+  "task_criterion_exceeded": {},
+  "independence": {
+    "runs": 5,
+    "distinct_seeds": 5
+  },
+  "max_horizontal_radius_m": 7.077679634094238,
+  "scope": "One frozen candidate, headless SITL only, x500, each run its own Gazebo seed. Flies and exports only; no model fitting or prediction.",
+  "all_runs_passed": false,
+  "passed": false,
+  "runs": [
+    {
+      "id": "v1.8-H71.0-W0.0-0.44_0.67-1.13_1.62-2.1_2.39-3.16-T1-1",
+      "kind": "p5_gap",
+      "condition": "v1.8-H71.0-W0.0-0.44_0.67-1.13_1.62-2.1_2.39-3.16",
+      "treatment": "T1",
+      "config": "config/p8.json",
+      "sim_seed": 330596096,
+      "campaign": null,
+      "k": null,
+      "infra_rerun": null,
+      "directory": "data/p8-20261022-dev-b-v1.8-H71.0-W0.0-0.44_0.67-1.13_1.62-2.1_2.39-3.16-T1-1",
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "ulog_sha256_matches": true,
+      "GZ_IP": "127.0.0.1",
+      "capture_raw_sensors": false,
+      "process_names": [
+        "agent",
+        "agent-reconnected",
+        "gazebo",
+        "gz-stats",
+        "px4",
+        "tegrastats"
+      ],
+      "validation": "PASS",
+      "analysis": "PASS",
+      "recovery_status": "PASS",
+      "joint_recovery_status_counts": {
+        "SETTLED": 3,
+        "NOT_SETTLED": 0,
+        "INSUFFICIENT_OBSERVATION": 0
+      },
+      "executor_acceptance": "PASS",
+      "executor_warnings_whole_run": 0,
+      "first_recovery_uncertain_stages": 0,
+      "trace": {
+        "status": "MEASURED",
+        "publish_sim_age_max_us": 8000.0,
+        "run_sim_age_max_us": 8000.0,
+        "bridge_age_bins": {
+          "<=0ms": 21908,
+          "(0,4]ms": 342,
+          "(4,8]ms": 6,
+          "(8,12]ms": 0,
+          "(12,20]ms": 0,
+          "(20,40]ms": 0,
+          "(40,100]ms": 0,
+          ">100ms": 0
+        },
+        "bridge_repeated": 0,
+        "bridge_regressed": 0,
+        "bridge_negative_age": 0,
+        "neural_owner_bridge_age_max_us": 8000.0
+      },
+      "output_chain": {
+        "status": "MEASURED",
+        "neural_steps": 8169,
+        "neural_hold_steps": 322,
+        "neural_gazebo_overwritten": 288,
+        "neural_over_target_steps": 351,
+        "neural_applied_age_max_us": 16000.0,
+        "neural_longest_over_target_steps": 3,
+        "px4_overwritten_neural": 34,
+        "motors_disagree_steps": 15,
+        "neural_published_not_applied_logged": 319
+      },
+      "passed": false,
+      "output_chain_gate_errors": [
+        "0: p99 over gate",
+        "0: max over gate",
+        "0: consecutive over-target steps",
+        "1: p99 over gate",
+        "1: max over gate",
+        "1: consecutive over-target steps",
+        "2: p99 over gate",
+        "2: max over gate",
+        "2: consecutive over-target steps",
+        "3: p99 over gate",
+        "3: max over gate",
+        "3: consecutive over-target steps"
+      ],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_counts": {
+        "steps": 32676,
+        "overwritten": 1279,
+        "max_applied_age_us": 16000.0
+      },
+      "recomputed": {
+        "file": "p8-metrics.json",
+        "reproduced": true,
+        "measured": true,
+        "problems": []
+      },
+      "independence": {
+        "planned": {
+          "sim_seed": 330596096,
+          "initial_yaw_deg": null
+        },
+        "gazebo_seed_argument": "330596096",
+        "heading_before_arming_deg": 96.02197908050876,
+        "expected_heading_deg": 96.0,
+        "heading_error_deg": 0.021979080508742754
+      },
+      "metrics": {
+        "outcome": "SUCCESS",
+        "reasons": [],
+        "fail_task": false,
+        "task_reasons": [],
+        "max_tilt_deg": 32.200569883693404,
+        "max_tilt_at_s": 3.456,
+        "max_altitude_loss_m": 0.18076157569885254,
+        "aborted": false,
+        "max_horizontal_radius_m": 7.077679634094238,
+        "gap_timing": "VERIFIED",
+        "parameters": {
+          "MC_RAPTOR_RREC": 0.0,
+          "planned_rrec": 0.0,
+          "research_recovery_rows": 0
+        },
+        "captures": [
+          [
+            0.204,
+            2
+          ],
+          [
+            0.204,
+            2
+          ],
+          [
+            0.204,
+            2
+          ],
+          [
+            0.204,
+            2
+          ]
+        ]
+      },
+      "outcome": "SUCCESS",
+      "flight_failure": false,
+      "counted": null,
+      "max_horizontal_radius_m": 7.077679634094238
+    },
+    {
+      "id": "v1.7-H89.0-W0.0-0.43_0.83-1.25-T1-1",
+      "kind": "p5_gap",
+      "condition": "v1.7-H89.0-W0.0-0.43_0.83-1.25",
+      "treatment": "T1",
+      "config": "config/p8.json",
+      "sim_seed": 1519501578,
+      "campaign": null,
+      "k": null,
+      "infra_rerun": null,
+      "directory": "data/p8-20261022-dev-b-v1.7-H89.0-W0.0-0.43_0.83-1.25-T1-1",
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "ulog_sha256_matches": true,
+      "GZ_IP": "127.0.0.1",
+      "capture_raw_sensors": false,
+      "process_names": [
+        "agent",
+        "agent-reconnected",
+        "gazebo",
+        "gz-stats",
+        "px4",
+        "tegrastats"
+      ],
+      "validation": "PASS",
+      "analysis": "PASS",
+      "recovery_status": "PASS",
+      "joint_recovery_status_counts": {
+        "SETTLED": 3,
+        "NOT_SETTLED": 0,
+        "INSUFFICIENT_OBSERVATION": 0
+      },
+      "executor_acceptance": "PASS",
+      "executor_warnings_whole_run": 0,
+      "first_recovery_uncertain_stages": 0,
+      "trace": {
+        "status": "MEASURED",
+        "publish_sim_age_max_us": 8000.0,
+        "run_sim_age_max_us": 8000.0,
+        "bridge_age_bins": {
+          "<=0ms": 21229,
+          "(0,4]ms": 271,
+          "(4,8]ms": 4,
+          "(8,12]ms": 0,
+          "(12,20]ms": 0,
+          "(20,40]ms": 0,
+          "(40,100]ms": 0,
+          ">100ms": 0
+        },
+        "bridge_repeated": 0,
+        "bridge_regressed": 0,
+        "bridge_negative_age": 0,
+        "neural_owner_bridge_age_max_us": 8000.0
+      },
+      "output_chain": {
+        "status": "MEASURED",
+        "neural_steps": 7520,
+        "neural_hold_steps": 341,
+        "neural_gazebo_overwritten": 263,
+        "neural_over_target_steps": 362,
+        "neural_applied_age_max_us": 16000.0,
+        "neural_longest_over_target_steps": 3,
+        "px4_overwritten_neural": 78,
+        "motors_disagree_steps": 13,
+        "neural_published_not_applied_logged": 335
+      },
+      "passed": false,
+      "output_chain_gate_errors": [
+        "0: p99 over gate",
+        "0: max over gate",
+        "0: consecutive over-target steps",
+        "1: p99 over gate",
+        "1: max over gate",
+        "1: consecutive over-target steps",
+        "2: p99 over gate",
+        "2: max over gate",
+        "2: consecutive over-target steps",
+        "3: p99 over gate",
+        "3: max over gate",
+        "3: consecutive over-target steps"
+      ],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_counts": {
+        "steps": 30080,
+        "overwritten": 1355,
+        "max_applied_age_us": 16000.0
+      },
+      "recomputed": {
+        "file": "p8-metrics.json",
+        "reproduced": true,
+        "measured": false,
+        "problems": [
+          "gap 0: setpoint-free interval differs from the planned D",
+          "gap 1: setpoint-free interval differs from the planned D"
+        ]
+      },
+      "independence": {
+        "planned": {
+          "sim_seed": 1519501578,
+          "initial_yaw_deg": null
+        },
+        "gazebo_seed_argument": "1519501578",
+        "heading_before_arming_deg": 96.00890847921113,
+        "expected_heading_deg": 96.0,
+        "heading_error_deg": 0.008908479211129361
+      },
+      "metrics": {
+        "outcome": "SUCCESS",
+        "reasons": [],
+        "fail_task": false,
+        "task_reasons": [],
+        "max_tilt_deg": 18.720190793608694,
+        "max_tilt_at_s": 4.468,
+        "max_altitude_loss_m": 0.07071900367736816,
+        "aborted": false,
+        "max_horizontal_radius_m": 5.347950458526611,
+        "gap_timing": "PROBLEMS",
+        "parameters": {
+          "MC_RAPTOR_RREC": 0.0,
+          "planned_rrec": 0.0,
+          "research_recovery_rows": 0
+        },
+        "captures": [
+          [
+            0.204,
+            2
+          ],
+          [
+            0.204,
+            2
+          ]
+        ]
+      },
+      "outcome": "SUCCESS",
+      "flight_failure": false,
+      "counted": null,
+      "max_horizontal_radius_m": 5.347950458526611
+    },
+    {
+      "id": "v2.25-H56.0-W0.0-0.3_0.41-1.15_1.63-2.22-T1-1",
+      "kind": "p5_gap",
+      "condition": "v2.25-H56.0-W0.0-0.3_0.41-1.15_1.63-2.22",
+      "treatment": "T1",
+      "config": "config/p8.json",
+      "sim_seed": 87221116,
+      "campaign": null,
+      "k": null,
+      "infra_rerun": null,
+      "directory": "data/p8-20261022-dev-b-v2.25-H56.0-W0.0-0.3_0.41-1.15_1.63-2.22-T1-1",
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "ulog_sha256_matches": true,
+      "GZ_IP": "127.0.0.1",
+      "capture_raw_sensors": false,
+      "process_names": [
+        "agent",
+        "agent-reconnected",
+        "gazebo",
+        "gz-stats",
+        "px4",
+        "tegrastats"
+      ],
+      "validation": "PASS",
+      "analysis": "PASS",
+      "recovery_status": "PASS",
+      "joint_recovery_status_counts": {
+        "SETTLED": 3,
+        "NOT_SETTLED": 0,
+        "INSUFFICIENT_OBSERVATION": 0
+      },
+      "executor_acceptance": "PASS",
+      "executor_warnings_whole_run": 0,
+      "first_recovery_uncertain_stages": 0,
+      "trace": {
+        "status": "MEASURED",
+        "publish_sim_age_max_us": 12000.0,
+        "run_sim_age_max_us": 12000.0,
+        "bridge_age_bins": {
+          "<=0ms": 21608,
+          "(0,4]ms": 285,
+          "(4,8]ms": 11,
+          "(8,12]ms": 0,
+          "(12,20]ms": 0,
+          "(20,40]ms": 0,
+          "(40,100]ms": 0,
+          ">100ms": 0
+        },
+        "bridge_repeated": 0,
+        "bridge_regressed": 0,
+        "bridge_negative_age": 0,
+        "neural_owner_bridge_age_max_us": 8000.0
+      },
+      "output_chain": {
+        "status": "MEASURED",
+        "neural_steps": 7897,
+        "neural_hold_steps": 362,
+        "neural_gazebo_overwritten": 297,
+        "neural_over_target_steps": 382,
+        "neural_applied_age_max_us": 16000.0,
+        "neural_longest_over_target_steps": 3,
+        "px4_overwritten_neural": 65,
+        "motors_disagree_steps": 9,
+        "neural_published_not_applied_logged": 356
+      },
+      "passed": false,
+      "output_chain_gate_errors": [
+        "0: p99 over gate",
+        "0: max over gate",
+        "0: consecutive over-target steps",
+        "1: p99 over gate",
+        "1: max over gate",
+        "1: consecutive over-target steps",
+        "2: p99 over gate",
+        "2: max over gate",
+        "2: consecutive over-target steps",
+        "3: p99 over gate",
+        "3: max over gate",
+        "3: consecutive over-target steps"
+      ],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_counts": {
+        "steps": 31588,
+        "overwritten": 1438,
+        "max_applied_age_us": 16000.0
+      },
+      "recomputed": {
+        "file": "p8-metrics.json",
+        "reproduced": true,
+        "measured": false,
+        "problems": [
+          "gap 1: setpoint-free interval differs from the planned D",
+          "gap 2: setpoint-free interval differs from the planned D"
+        ]
+      },
+      "independence": {
+        "planned": {
+          "sim_seed": 87221116,
+          "initial_yaw_deg": null
+        },
+        "gazebo_seed_argument": "87221116",
+        "heading_before_arming_deg": 96.04916137539479,
+        "expected_heading_deg": 96.0,
+        "heading_error_deg": 0.04916137539478882
+      },
+      "metrics": {
+        "outcome": "SUCCESS",
+        "reasons": [],
+        "fail_task": false,
+        "task_reasons": [],
+        "max_tilt_deg": 44.21240822483862,
+        "max_tilt_at_s": 1.372,
+        "max_altitude_loss_m": 0.4283170700073242,
+        "aborted": false,
+        "max_horizontal_radius_m": 7.002517223358154,
+        "gap_timing": "PROBLEMS",
+        "parameters": {
+          "MC_RAPTOR_RREC": 0.0,
+          "planned_rrec": 0.0,
+          "research_recovery_rows": 0
+        },
+        "captures": [
+          [
+            0.204,
+            2
+          ],
+          [
+            0.204,
+            2
+          ],
+          [
+            0.204,
+            2
+          ]
+        ]
+      },
+      "outcome": "SUCCESS",
+      "flight_failure": false,
+      "counted": null,
+      "max_horizontal_radius_m": 7.002517223358154
+    },
+    {
+      "id": "v2.25-H13.0-W0.0-0.26_0.46-0.77_1.04-1.35_1.62-1.97-T0-1",
+      "kind": "p5_gap",
+      "condition": "v2.25-H13.0-W0.0-0.26_0.46-0.77_1.04-1.35_1.62-1.97",
+      "treatment": "T0",
+      "config": "config/p8.json",
+      "sim_seed": 1755276344,
+      "campaign": null,
+      "k": null,
+      "infra_rerun": null,
+      "directory": "data/p8-20261022-dev-b-v2.25-H13.0-W0.0-0.26_0.46-0.77_1.04-1.35_1.62-1.97-T0-1",
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "ulog_sha256_matches": true,
+      "GZ_IP": "127.0.0.1",
+      "capture_raw_sensors": false,
+      "process_names": [
+        "agent",
+        "agent-reconnected",
+        "gazebo",
+        "gz-stats",
+        "px4",
+        "tegrastats"
+      ],
+      "validation": "FAIL",
+      "analysis": "FAIL",
+      "recovery_status": "PASS",
+      "joint_recovery_status_counts": {
+        "SETTLED": 2,
+        "NOT_SETTLED": 0,
+        "INSUFFICIENT_OBSERVATION": 0
+      },
+      "executor_acceptance": "PASS",
+      "executor_warnings_whole_run": 0,
+      "first_recovery_uncertain_stages": 1,
+      "trace": {
+        "status": "MEASURED",
+        "publish_sim_age_max_us": 8000.0,
+        "run_sim_age_max_us": 8000.0,
+        "bridge_age_bins": {
+          "<=0ms": 11810,
+          "(0,4]ms": 171,
+          "(4,8]ms": 7,
+          "(8,12]ms": 0,
+          "(12,20]ms": 0,
+          "(20,40]ms": 0,
+          "(40,100]ms": 0,
+          ">100ms": 0
+        },
+        "bridge_repeated": 0,
+        "bridge_regressed": 0,
+        "bridge_negative_age": 0,
+        "neural_owner_bridge_age_max_us": 4000.0
+      },
+      "output_chain": {
+        "status": "MEASURED",
+        "neural_steps": 1343,
+        "neural_hold_steps": 70,
+        "neural_gazebo_overwritten": 57,
+        "neural_over_target_steps": 78,
+        "neural_applied_age_max_us": 12000.0,
+        "neural_longest_over_target_steps": 2,
+        "px4_overwritten_neural": null,
+        "motors_disagree_steps": 5,
+        "neural_published_not_applied_logged": 63
+      },
+      "passed": false,
+      "output_chain_gate_errors": [
+        "missing overwrite counter",
+        "0: p99 over gate",
+        "1: p99 over gate",
+        "2: p99 over gate",
+        "3: p99 over gate"
+      ],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_counts": {
+        "steps": 5372,
+        "overwritten": 228,
+        "max_applied_age_us": 12000.0
+      },
+      "recomputed": {
+        "file": "p8-metrics.json",
+        "reproduced": true,
+        "measured": false,
+        "problems": [
+          "profile start, research_memory or research_target missing",
+          "no max tilt measured"
+        ]
+      },
+      "independence": {
+        "planned": {
+          "sim_seed": 1755276344,
+          "initial_yaw_deg": null
+        },
+        "gazebo_seed_argument": "1755276344",
+        "heading_before_arming_deg": 95.85621394843399,
+        "expected_heading_deg": 96.0,
+        "heading_error_deg": -0.14378605156599633
+      },
+      "metrics": {
+        "outcome": null,
+        "reasons": null,
+        "fail_task": false,
+        "task_reasons": [],
+        "max_tilt_deg": null,
+        "max_tilt_at_s": null,
+        "max_altitude_loss_m": null,
+        "aborted": null,
+        "max_horizontal_radius_m": null,
+        "gap_timing": "VERIFIED",
+        "parameters": {
+          "MC_RAPTOR_RREC": 0.0,
+          "planned_rrec": 0.0,
+          "research_recovery_rows": 0
+        },
+        "captures": []
+      },
+      "outcome": null,
+      "flight_failure": false,
+      "counted": null,
+      "max_horizontal_radius_m": null
+    },
+    {
+      "id": "v1.9-H60.0-W0.0-0.27_1.05-1.39-T0-1",
+      "kind": "p5_gap",
+      "condition": "v1.9-H60.0-W0.0-0.27_1.05-1.39",
+      "treatment": "T0",
+      "config": "config/p8.json",
+      "sim_seed": 723256457,
+      "campaign": null,
+      "k": null,
+      "infra_rerun": null,
+      "directory": "data/p8-20261022-dev-b-v1.9-H60.0-W0.0-0.27_1.05-1.39-T0-1",
+      "px4_exit_codes": [
+        0
+      ],
+      "crash_markers": [],
+      "ulog_sha256_matches": true,
+      "GZ_IP": "127.0.0.1",
+      "capture_raw_sensors": false,
+      "process_names": [
+        "agent",
+        "agent-reconnected",
+        "gazebo",
+        "gz-stats",
+        "px4",
+        "tegrastats"
+      ],
+      "validation": "PASS",
+      "analysis": "PASS",
+      "recovery_status": "PASS",
+      "joint_recovery_status_counts": {
+        "SETTLED": 3,
+        "NOT_SETTLED": 0,
+        "INSUFFICIENT_OBSERVATION": 0
+      },
+      "executor_acceptance": "PASS",
+      "executor_warnings_whole_run": 0,
+      "first_recovery_uncertain_stages": 1,
+      "trace": {
+        "status": "MEASURED",
+        "publish_sim_age_max_us": 8000.0,
+        "run_sim_age_max_us": 8000.0,
+        "bridge_age_bins": {
+          "<=0ms": 21408,
+          "(0,4]ms": 366,
+          "(4,8]ms": 6,
+          "(8,12]ms": 0,
+          "(12,20]ms": 0,
+          "(20,40]ms": 0,
+          "(40,100]ms": 0,
+          ">100ms": 0
+        },
+        "bridge_repeated": 0,
+        "bridge_regressed": 0,
+        "bridge_negative_age": 0,
+        "neural_owner_bridge_age_max_us": 8000.0
+      },
+      "output_chain": {
+        "status": "MEASURED",
+        "neural_steps": 7735,
+        "neural_hold_steps": 373,
+        "neural_gazebo_overwritten": 276,
+        "neural_over_target_steps": 389,
+        "neural_applied_age_max_us": 12000.0,
+        "neural_longest_over_target_steps": 3,
+        "px4_overwritten_neural": 97,
+        "motors_disagree_steps": 18,
+        "neural_published_not_applied_logged": 365
+      },
+      "passed": false,
+      "output_chain_gate_errors": [
+        "0: p99 over gate",
+        "0: consecutive over-target steps",
+        "1: p99 over gate",
+        "1: consecutive over-target steps",
+        "2: p99 over gate",
+        "2: consecutive over-target steps",
+        "3: p99 over gate",
+        "3: consecutive over-target steps"
+      ],
+      "output_chain_errors_attributed_to_abort": [],
+      "output_chain_counts": {
+        "steps": 30940,
+        "overwritten": 1477,
+        "max_applied_age_us": 12000.0
+      },
+      "recomputed": {
+        "file": "p8-metrics.json",
+        "reproduced": true,
+        "measured": true,
+        "problems": []
+      },
+      "independence": {
+        "planned": {
+          "sim_seed": 723256457,
+          "initial_yaw_deg": null
+        },
+        "gazebo_seed_argument": "723256457",
+        "heading_before_arming_deg": 95.77808310618092,
+        "expected_heading_deg": 96.0,
+        "heading_error_deg": -0.22191689381907054
+      },
+      "metrics": {
+        "outcome": "SUCCESS",
+        "reasons": [],
+        "fail_task": false,
+        "task_reasons": [],
+        "max_tilt_deg": 42.605233676911475,
+        "max_tilt_at_s": 1.452,
+        "max_altitude_loss_m": 0.7249219417572021,
+        "aborted": false,
+        "max_horizontal_radius_m": 6.14912223815918,
+        "gap_timing": "VERIFIED",
+        "parameters": {
+          "MC_RAPTOR_RREC": 0.0,
+          "planned_rrec": 0.0,
+          "research_recovery_rows": 0
+        },
+        "captures": [
+          [
+            0.204,
+            0
+          ],
+          [
+            0.208,
+            0
+          ]
+        ]
+      },
+      "outcome": "SUCCESS",
+      "flight_failure": false,
+      "counted": null,
+      "max_horizontal_radius_m": 6.14912223815918
+    }
+  ]
+}

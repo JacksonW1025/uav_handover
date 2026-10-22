@@ -1,6 +1,8 @@
 # Experiment Status
 
-实验状态：**P8 进行中（2026-10-21）**：A 补辨识飞行完成并推送，B（测试生成基线对比）等待项目交来 `tools/p8/` 冻结文件，详见 [P8 报告](docs/THOR_P8_REPORT.md)。
+实验状态：**P8 进行中（2026-10-22）**：A 补辨识飞行完成并推送；B（测试生成基线对比）B1 完成并推送，B2 进行中，详见 [P8 报告](docs/THOR_P8_REPORT.md)。
+
+- **P8-B1 已推送**：[equivalence-b](data/p8-20261022-equivalence-b/) 6/6；[batch-b1](data/p8-20261022-batch-b1/) 450/450（第 1–15 轮，审计通过，无补跑），主判据失败 191、任务判据失败 236，按被测 × 方法见 [p8-table.md](data/p8-20261022-batch-b1/p8-table.md)；导出 450 轮 37.5 MB（单轮 ≤ 128 KB）、[p8_b_results.csv](export/p8_b_results.csv)。开发运行时 ToDesk 连着，证据无效，见 [dev-b-notes](data/p8-20261022-dev-b-notes.json)。B2 预计在第 28 轮按规则停（contest/T0/0 第 28 条在预算边界上 `budget` 与 `gap_spec` 不一致）。
 
 - **P8-A 导出已推送，commit `29641a54`**：[batch-a](data/p8-20261021-batch-a/) 8/8（审计通过），[equivalence](data/p8-20261021-equivalence/) 2/2，开发 [dev-01](data/p8-20261021-dev-01/)。jump 7 轮全部 IDENT_OK（21.8–27.8°，高度损失 0.07–0.13 m，位置输入饱和 1.7–3.5 s），chase x0 4.0 V2.0 54.0° / 0.62 m（ident_exceeded_45）；无取消、无中止。导出新增 8 轮（含高度、垂直速度、网络输出与电机指令均值列）。
 

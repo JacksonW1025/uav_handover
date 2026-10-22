@@ -1,0 +1,152 @@
+{
+  "created_at": "2026-10-22T02:22:03.070022+08:00",
+  "stage": "dev",
+  "purpose": "P8-B orchestrator development (state, budget check, cases log); never results",
+  "config": "config/p8.json",
+  "state": "data/p8-20261022-dev-bc-state",
+  "prefix": "p8-20261022-dev-bc",
+  "rounds": [
+    1,
+    1
+  ],
+  "order": [
+    "bo/T1/0",
+    "fuzz/T0/0"
+  ],
+  "output_chain_gate": {
+    "p99_us": 4000,
+    "max_us": 12000,
+    "longest_over_target_steps": 2,
+    "overwritten_fraction": 0.001,
+    "basis": "Recorded engineering acceptance agreement: 4 ms physics step, 12 ms maximum. The 12.5 ms rotor time constant is context, not proof of policy delay tolerance or stability."
+  },
+  "candidate": "candidate.json",
+  "mode": "development",
+  "rules": {
+    "methods": {
+      "offline": [
+        "random",
+        "contest",
+        "ours"
+      ],
+      "online": [
+        "fuzz",
+        "bo"
+      ],
+      "offline_rule": "lists[\"<method>/<sut>/<seed>\"] of tools/p8/p8_lists.json (60 cases each) taken in order; a case whose gap_spec fit is cancelled would be skipped (does not count), until 30 runs are flown",
+      "online_rule": "m = p8_methods.Fuzz(sut, seed, p8_space.fits) or BO(...); each round c = m.propose(history); after the run (c, max tilt deg, primary failure) is appended to history. After every propose the history, the proposed case and m.rng.bit_generator.state are written to the campaign state file; a restart restores them and never redraws"
+    },
+    "rotation": {
+      "order_seed": 20261022,
+      "order": [
+        "ours/T1/0",
+        "bo/T1/2",
+        "bo/T0/1",
+        "contest/T0/2",
+        "ours/T0/0",
+        "fuzz/T0/2",
+        "ours/T0/2",
+        "random/T0/2",
+        "random/T1/0",
+        "fuzz/T0/1",
+        "bo/T0/2",
+        "ours/T0/1",
+        "bo/T1/1",
+        "contest/T1/1",
+        "bo/T1/0",
+        "ours/T1/1",
+        "contest/T0/0",
+        "bo/T0/0",
+        "random/T1/1",
+        "ours/T1/2",
+        "random/T0/0",
+        "fuzz/T1/1",
+        "fuzz/T1/2",
+        "contest/T0/1",
+        "random/T0/1",
+        "random/T1/2",
+        "contest/T1/0",
+        "fuzz/T0/0",
+        "contest/T1/2",
+        "fuzz/T1/0"
+      ],
+      "rule": "the 30 campaigns in this fixed order (random.Random(20261022).shuffle of the campaign list method-major) form a ring; round k flies the k-th run of every campaign in that order (B1: rounds 1-15, pushed; B2: rounds 16-30)"
+    },
+    "budget_check": {
+      "rule": "before every run: tools/p8_conditions.budget_check -- p8_space.budget(case) must equal the gap_spec fit of the same case (P6 condition_rule via p6_conditions.fit: pre_gap_s, post_gap_s, or both cancelled) and the windows must be p8_space.windows(case); on any difference the batch stops and writes diagnosis.json (task rule)",
+      "preflight_check_of_the_offline_lists": {
+        "checked": 1080,
+        "mismatches": [
+          {
+            "list": "contest/T0/0",
+            "position": 28,
+            "name": "v2.4-H28.0-W0.0-0.32_0.78-1.05:T0",
+            "gap_spec": [
+              1.0,
+              2.55
+            ],
+            "p8_space_budget": [
+              1.0,
+              2.6
+            ],
+            "would_be_flown": "round 28 (B2)"
+          },
+          {
+            "list": "random/T1/0",
+            "position": 33,
+            "name": "v2.0-H8.0-W0.0-0.78_1.08-1.65_2.31-3.0:T1",
+            "gap_spec": [
+              0.85,
+              2.0
+            ],
+            "p8_space_budget": [
+              0.9,
+              2.0
+            ],
+            "would_be_flown": "no (only positions 1-30 are flown when nothing is skipped)"
+          }
+        ],
+        "cause": "both at the exact budget boundary (radius 8.000 m): p8_space evaluates the closed form with a 1e-9 tolerance and accepts; gap_spec uses the runner path check, whose start offset is rounded to 1e-6 m, so the line end exceeds 8.0 m by up to 5e-7 m and the next shrink step is taken",
+        "handling": "not changed (task rule): the run that reaches such a case stops the batch with diagnosis.json; the user decides"
+      }
+    },
+    "infrastructure_rule": "an infrastructure or evidence failure (any batch check other than the pre-registered flight outcome) is rerun with the same case and a new seed (id suffix -r1, -r2), marked infra_rerun, not counted; at most 2 reruns per run, then the batch stops. Flight failures are results. No run is repeated in place.",
+    "cases_log": "every run actually flown (incl. infrastructure reruns) appended to <state>/runs/p8_b_cases.jsonl: campaign, k, name, windows, budget check, sim seed, run id",
+    "run_ids": "<method>-<sut>-s<seed>-k<NN> (infrastructure rerun: suffix -r<N>), directory data/<prefix>-<id>; Gazebo seed = first 31 bits of sha256(prefix/id/master_seed)"
+  },
+  "criteria": {
+    "primary": "P6 frozen flight-failure criterion (p5.failure_criteria) for p5_gap runs; identification runs use the P6 ident classes",
+    "task": {
+      "altitude_loss_m": 1.0,
+      "tilt_deg": 45.0,
+      "rule": "fixed second criterion: max tilt >= 45 deg or max altitude loss > 1.0 m (P7 task_failure_criterion window), reported next to the primary one for every run and in every table"
+    }
+  },
+  "flight_failures": {
+    "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+    "no_joint_recovery_s": 10.0,
+    "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+    "motor_saturation_continuous_s": 0.5,
+    "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+    "ground_altitude_m": 0.2,
+    "ground": "altitude <= 0.2 m inside [trigger, window end]",
+    "window": "[first gap start, end of the post_stream phase] (truncated at an abort); no_joint_recovery is judged from RAPTOR's capture after the final stream stop at rest (frozen P0 thresholds) instead of an owner change"
+  },
+  "independence": {
+    "master_seed": 20261021,
+    "sim_seed": "Every P4 batch run gets its own Gazebo seed (gz sim --seed): first 31 bits of sha256(batch prefix + run id + master_seed), recorded in plan.json, config.json and the Gazebo command line. Gazebo sensor noise (IMU, barometer, magnetometer) is drawn from this seed; without --seed it is drawn from std::random_device.",
+    "initial_yaw": {
+      "range_deg": [
+        -20.0,
+        20.0
+      ],
+      "conditions": [],
+      "rule": "P6 draws no random heading: every run spawns at yaw 0 (PX4 heading 96.0 deg).",
+      "heading_at_zero_deg": 96.0,
+      "heading_rule": "Gazebo yaw is counter-clockwise from East (ENU); PX4 heading is clockwise from North (NED) incl. the world magnetic declination. At spawn yaw 0 the PX4 heading is 96.0 deg (P3 batch-01 first C->N 95.99-96.05 deg; P4 dev-01 95.9 deg), so the expected heading before arming is 96.0 - initial_yaw_deg (tolerance 3 deg)."
+    },
+    "hover_point": "Not perturbed: the local frame origin is the spawn point and the Gazebo world is flat and translation invariant, so a horizontal offset of the hover point changes nothing the controllers or the physics see; the hover altitude stays the frozen 3 m (analysis references).",
+    "verification": "Before the batches: (1) startup-only runs with seeds A, A, B compare the at-rest raw gyro noise (sensor_gyro) sample by sample: same seed identical, different seed different; (2) development flights with different seeds/headings give different measured values; (3) every batch run checks that its Gazebo command carried the planned seed and that the heading at takeoff equals the planned heading (tolerance 3 deg).",
+    "default_settings": "Every P8 batch run (incl. equivalence and development) gets its own Gazebo seed."
+  }
+}

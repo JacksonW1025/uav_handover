@@ -1,0 +1,483 @@
+{
+ "run": "p8-20261022-b-bo-T0-s0-k04",
+ "run_directory": "data/p8-20261022-b-bo-T0-s0-k04",
+ "batch": "data/p8-20261022-batch-b1",
+ "stage": "p8-b1",
+ "kind": "p5_gap",
+ "campaign": "bo/T0/0",
+ "method": "bo",
+ "sut": "T0",
+ "seed": 0,
+ "k": 4,
+ "infra_rerun": false,
+ "name": "v2.15-H55.0-W0.0-0.29_0.87-1.22_1.78-2.13:T0",
+ "case": {
+  "v": 2.15,
+  "heading_deg": 55.0,
+  "durs": [
+   0.29,
+   0.35000000000000003,
+   0.35000000000000003
+  ],
+  "restored": [
+   0.58,
+   0.56
+  ]
+ },
+ "condition": "v2.15-H55.0-W0.0-0.29_0.87-1.22_1.78-2.13",
+ "treatment": "T0",
+ "treatment_parameters": {
+  "rini": 4,
+  "rtgt": 0,
+  "rtdec": 2.0,
+  "description": "N2 memory; original RAPTOR in-flight setpoint-timeout capture: current position and yaw, zero velocity (MC_RAPTOR_RTGT=0); P8: MC_RAPTOR_RREC=0 set explicitly",
+  "rrec": 0.0
+ },
+ "windows_s": [
+  [
+   0.0,
+   0.29
+  ],
+  [
+   0.87,
+   1.22
+  ],
+  [
+   1.78,
+   2.13
+  ]
+ ],
+ "budget": {
+  "pre_gap_s": 1.0,
+  "post_gap_s": 2.25,
+  "safety_budget_m": {
+   "path_m": 13.797625,
+   "radius_at_spawn_m": 7.898813,
+   "interruption_drift_m": 0.0,
+   "hover_offset_allowance_m": 0.1,
+   "radius_m": 7.998813,
+   "limit_m": 8.0,
+   "inside": true
+  },
+  "budget_check": {
+   "condition": "v2.15-H55.0-W0.0-0.29_0.87-1.22_1.78-2.13",
+   "gap_spec": [
+    1.0,
+    2.25
+   ],
+   "p8_space_budget": [
+    1.0,
+    2.25
+   ],
+   "windows_s": [
+    [
+     0.0,
+     0.29
+    ],
+    [
+     0.87,
+     1.22
+    ],
+    [
+     1.78,
+     2.13
+    ]
+   ],
+   "equal": true,
+   "safety_budget_m": {
+    "path_m": 13.797625,
+    "radius_at_spawn_m": 7.898813,
+    "interruption_drift_m": 0.0,
+    "hover_offset_allowance_m": 0.1,
+    "radius_m": 7.998813,
+    "limit_m": 8.0,
+    "inside": true
+   }
+  }
+ },
+ "speed_m_s": 2.15,
+ "motion_axis_ned": [
+  0.573576436,
+  0.819152044,
+  0.0
+ ],
+ "sim_seed": 1918233997,
+ "batch_status": {
+  "status": "FAIL",
+  "accepted": false,
+  "flight_failure": true,
+  "infrastructure_ok": true
+ },
+ "outcome": "FAILURE",
+ "fail_primary": true,
+ "primary_reasons": [
+  "safety_envelope:tilt_safety_deg",
+  "runner_safety_abort"
+ ],
+ "fail_task": true,
+ "task_reasons": [
+  "tilt"
+ ],
+ "max_tilt_deg": 53.89116128862595,
+ "max_tilt_at_s": 1.312,
+ "first_at_or_above_45_s": 1.244,
+ "max_altitude_loss_m": 0.5388336181640625,
+ "aborted": true,
+ "abort_reason": "safety: flight envelope exceeded",
+ "gap_timing": {
+  "status": "VERIFIED",
+  "problems": [],
+  "planned": 3,
+  "observed": 2,
+  "gaps": [
+   {
+    "index": 0,
+    "planned_D_s": 0.29,
+    "silence_s": 0.304107,
+    "last_reception_px4_us": 67128000,
+    "first_reception_px4_us": 67432107,
+    "capture_px4_us": 67332000,
+    "capture_after_last_reception_s": 0.204,
+    "capture_mode": 0,
+    "captured_speed_m_s": 2.1469311181079465,
+    "resume_jump_along_axis_m": 0.3322869842407522,
+    "resume_velocity_jump_m_s": 2.1500000424198773
+   },
+   {
+    "index": 1,
+    "planned_D_s": 0.35,
+    "silence_s": 0.352143,
+    "last_reception_px4_us": 68008000,
+    "first_reception_px4_us": 68360143,
+    "capture_px4_us": 68212000,
+    "capture_after_last_reception_s": 0.204,
+    "capture_mode": 0,
+    "captured_speed_m_s": 3.364378790763902,
+    "resume_jump_along_axis_m": 0.5470907020317328,
+    "resume_velocity_jump_m_s": 2.1500000424198773
+   }
+  ]
+ },
+ "parameters": {
+  "MC_RAPTOR_RREC": 0.0,
+  "planned_rrec": 0.0,
+  "research_recovery_rows": 0
+ },
+ "time_origin": {
+  "px4_us": 67128000,
+  "definition": "last setpoint reception before the first interruption"
+ },
+ "events": [
+  {
+   "event": "capture",
+   "px4_us": 67332000,
+   "t_s": 0.204,
+   "gap": 0,
+   "mode": 0,
+   "after_last_reception_s": 0.204,
+   "captured_speed_m_s": 2.1469311181079465,
+   "state_before": {
+    "t_s": 0.2,
+    "target_mode": "external",
+    "ep_u": 0.3126781088148031,
+    "ev_u": 0.0029250271417446136,
+    "ep_w": 0.0005266916630125087,
+    "ev_w": -0.009543880607935906,
+    "a_u": -0.5631781089909933,
+    "a_w": -0.04308603732983542,
+    "ep_u_clip": 0.31267811242038146,
+    "ev_u_clip": 0.002925026769343222,
+    "ep_w_clip": 0.0005266708211380392,
+    "ev_w_clip": -0.009543881211815122,
+    "tilt_deg": 3.320711816883759,
+    "alt_loss_m": 0.0009670257568359375,
+    "v_u": 2.152925069561622,
+    "alt_m": 3.0370774269104004,
+    "v_z": 0.0291790459305048,
+    "action_mean": 0.39848552644252777
+   },
+   "state_at_or_after": {
+    "t_s": 0.204,
+    "target_mode": "t0_capture",
+    "ep_u": 0.0,
+    "ev_u": 2.1469069461480315,
+    "ep_w": 0.0,
+    "ev_w": -0.010187563156816884,
+    "a_u": -0.6815673540230175,
+    "a_w": -0.043211087196491374,
+    "ep_u_clip": 0.0,
+    "ev_u_clip": 1.4114119340822087,
+    "ep_w_clip": 0.0,
+    "ev_w_clip": -0.0889738758175626,
+    "tilt_deg": 3.692205449796846,
+    "alt_loss_m": 0.0012309551239013672,
+    "v_u": 2.1469069461480315,
+    "alt_m": 3.036813497543335,
+    "v_z": 0.0322873480618,
+    "action_mean": 0.13763277977705002
+   }
+  },
+  {
+   "event": "resume",
+   "px4_us": 67432107,
+   "t_s": 0.304107,
+   "gap": 0,
+   "silence_s": 0.304107,
+   "planned_D_s": 0.29,
+   "jump_along_axis_m": 0.3322869842407522,
+   "velocity_jump_along_axis_m_s": 2.1500000424198773,
+   "prediction_exact_m": 0.33231061006030277,
+   "state_before": {
+    "t_s": 0.304,
+    "target_mode": "t0_capture",
+    "ep_u": 0.19130725570965623,
+    "ev_u": 1.9864946792980918,
+    "ep_w": -0.005504821511994842,
+    "ev_w": -0.012645800080754329,
+    "a_u": -3.203297563878477,
+    "a_w": 0.10929310276369296,
+    "ep_u_clip": 0.19130725850613436,
+    "ev_u_clip": 1.4114119340822087,
+    "ep_w_clip": -0.005504824441696459,
+    "ev_w_clip": -0.0889738758175626,
+    "tilt_deg": 21.389973308666164,
+    "alt_loss_m": 0.011171340942382812,
+    "v_u": 1.9864946792980918,
+    "alt_m": 3.0268731117248535,
+    "v_z": 0.17500998079776764,
+    "action_mean": 0.4745873510837555
+   },
+   "state_at_or_after": {
+    "t_s": 0.308,
+    "target_mode": "external",
+    "ep_u": -0.1260504874395871,
+    "ev_u": -0.19284315815517902,
+    "ep_w": -0.005899679292797561,
+    "ev_w": -0.011795363509369848,
+    "a_u": -3.591500673753183,
+    "a_w": 0.14022961908770176,
+    "ep_u_clip": -0.12605048470853897,
+    "ev_u_clip": -0.19284316632161355,
+    "ep_w_clip": -0.005899672640580394,
+    "ev_w_clip": -0.011795355012076247,
+    "tilt_deg": 22.372911577226336,
+    "alt_loss_m": 0.012568235397338867,
+    "v_u": 1.9571568842646985,
+    "alt_m": 3.0254762172698975,
+    "v_z": 0.17778871953487396,
+    "action_mean": 0.25159187614917755
+   }
+  },
+  {
+   "event": "capture",
+   "px4_us": 68212000,
+   "t_s": 1.084,
+   "gap": 1,
+   "mode": 0,
+   "after_last_reception_s": 0.204,
+   "captured_speed_m_s": 3.364378790763902,
+   "state_before": {
+    "t_s": 1.08,
+    "target_mode": "external",
+    "ep_u": 0.18258895268028066,
+    "ev_u": 1.2217517802257332,
+    "ep_w": 0.027973501485009183,
+    "ev_w": -0.10956104253011752,
+    "a_u": -1.0159927989828903,
+    "a_w": -0.07044119399434493,
+    "ep_u_clip": 0.18258894859908614,
+    "ev_u_clip": 1.2217518178636428,
+    "ep_w_clip": 0.027973484934944646,
+    "ev_w_clip": -0.10956109617070554,
+    "tilt_deg": 6.267870870780325,
+    "alt_loss_m": 0.445575475692749,
+    "v_u": 3.371751822645611,
+    "alt_m": 2.5924689769744873,
+    "v_z": 0.21825112402439117,
+    "action_mean": 0.6891789585351944
+   },
+   "state_at_or_after": {
+    "t_s": 1.084,
+    "target_mode": "t0_capture",
+    "ep_u": 0.0,
+    "ev_u": 3.3625678278252793,
+    "ep_w": 0.0,
+    "ev_w": -0.11037319012815096,
+    "a_u": -1.4266325833754812,
+    "a_w": -0.002590963350049463,
+    "ep_u_clip": 0.0,
+    "ev_u_clip": 1.396324065978656,
+    "ep_w_clip": 0.0,
+    "ev_w_clip": -0.2242300180986337,
+    "tilt_deg": 7.237138889080181,
+    "alt_loss_m": 0.44712352752685547,
+    "v_u": 3.3625678278252793,
+    "alt_m": 2.590920925140381,
+    "v_z": 0.19955295324325562,
+    "action_mean": 0.31909915432333946
+   }
+  },
+  {
+   "event": "resume",
+   "px4_us": 68360143,
+   "t_s": 1.232143,
+   "gap": 1,
+   "silence_s": 0.352143,
+   "planned_D_s": 0.35,
+   "jump_along_axis_m": 0.5470907020317328,
+   "velocity_jump_along_axis_m_s": 2.1500000424198773,
+   "prediction_exact_m": 0.5471221781659363,
+   "state_before": {
+    "t_s": 1.232,
+    "target_mode": "t0_capture",
+    "ep_u": 0.49453052840578265,
+    "ev_u": 2.8499811512235906,
+    "ep_w": -0.023491071436800487,
+    "ev_w": -0.05090895888891022,
+    "a_u": -6.548564856734441,
+    "a_w": 1.0113504552251682,
+    "ep_u_clip": 0.4945305539072129,
+    "ev_u_clip": 1.396324065978656,
+    "ep_w_clip": -0.02349106976436567,
+    "ev_w_clip": -0.2242300180986337,
+    "tilt_deg": 42.99951388309091,
+    "alt_loss_m": 0.4825294017791748,
+    "v_u": 2.8499811512235906,
+    "alt_m": 2.5555150508880615,
+    "v_z": 0.42487096786499023,
+    "action_mean": 0.4573821648955345
+   },
+   "state_at_or_after": {
+    "t_s": 1.236,
+    "target_mode": "external",
+    "ep_u": -0.028762683224698302,
+    "ev_u": 0.6467540379032474,
+    "ep_w": 0.0022070177857434754,
+    "ev_w": -0.0429405367683463,
+    "a_u": -6.78372079856101,
+    "a_w": 1.0636585331430188,
+    "ep_u_clip": -0.028762683272443617,
+    "ev_u_clip": 0.6467540323078056,
+    "ep_w_clip": 0.0022070193630953474,
+    "ev_w_clip": -0.04294056884265342,
+    "tilt_deg": 43.946155857647945,
+    "alt_loss_m": 0.485776424407959,
+    "v_u": 2.796754080323125,
+    "alt_m": 2.5522680282592773,
+    "v_z": 0.4436631500720978,
+    "action_mean": 0.32685481011867523
+   }
+  },
+  {
+   "event": "runner_abort",
+   "px4_us": 68448000,
+   "t_s": 1.32,
+   "reason": "safety: flight envelope exceeded",
+   "time": "last RAPTOR inference in the window",
+   "state_before": {
+    "t_s": 1.316,
+    "target_mode": "external",
+    "ep_u": 0.04910330858291197,
+    "ev_u": 0.11622018691443872,
+    "ep_w": -0.0009700938065838825,
+    "ev_w": 0.0412786832182498,
+    "a_u": -6.176586353256254,
+    "a_w": 0.9752912453055972,
+    "ep_u_clip": 0.04910331156575373,
+    "ev_u_clip": 0.11622019145771055,
+    "ep_w_clip": -0.0009700965038355419,
+    "ev_w_clip": 0.04127868091337872,
+    "tilt_deg": 53.874537194343105,
+    "alt_loss_m": 0.5323612689971924,
+    "v_u": 2.266220229334316,
+    "alt_m": 2.505683183670044,
+    "v_z": 0.7869191765785217,
+    "action_mean": 0.18540243059396744
+   },
+   "state_at_or_after": {
+    "t_s": 1.32,
+    "target_mode": "external",
+    "ep_u": 0.04910330858291197,
+    "ev_u": 0.11622018691443872,
+    "ep_w": -0.0009700938065838825,
+    "ev_w": 0.0412786832182498,
+    "a_u": -6.176586353256254,
+    "a_w": 0.9752912453055972,
+    "ep_u_clip": 0.04910331156575373,
+    "ev_u_clip": 0.11622019145771055,
+    "ep_w_clip": -0.0009700965038355419,
+    "ev_w_clip": 0.04127868091337872,
+    "tilt_deg": 53.810745655490415,
+    "alt_loss_m": 0.5323612689971924,
+    "v_u": 2.266220229334316,
+    "alt_m": 2.505683183670044,
+    "v_z": 0.7869191765785217,
+    "action_mean": 0.18685392290353775
+   }
+  }
+ ],
+ "reconstruction": {
+  "position_max_abs": 4.513516443926946e-08,
+  "velocity_max_abs": 7.819216796267625e-08,
+  "components_over_1e-4": 0,
+  "components_checked": 30788,
+  "rows": 5156,
+  "rows_unmatched": 0,
+  "rows_with_clipping": 84
+ },
+ "reconstruction_rows_in_trace_unmatched": 0,
+ "trace": {
+  "file": "trace.csv.gz",
+  "rows": 541,
+  "rows_in_window_full_rate": 581,
+  "bytes": 34199,
+  "window_s": [
+   -1.0,
+   7.232143
+  ],
+  "rule": "native rate within +-1.0 s of each capture and resume, 50 Hz elsewhere",
+  "columns": [
+   "t_s",
+   "px4_us",
+   "ep_u",
+   "ep_w",
+   "ev_u",
+   "ev_w",
+   "ep_u_clip",
+   "ep_w_clip",
+   "ev_u_clip",
+   "ev_w_clip",
+   "ep_f_clip",
+   "ep_l_clip",
+   "ev_f_clip",
+   "ev_l_clip",
+   "ep_f",
+   "ep_l",
+   "ev_f",
+   "ev_l",
+   "ep_z",
+   "ev_z",
+   "a_u",
+   "a_w",
+   "a_z",
+   "v_u",
+   "v_w",
+   "tilt_deg",
+   "alt_loss_m",
+   "target_yaw_rad",
+   "target_mode",
+   "gap_active",
+   "recon_ok",
+   "alt_m",
+   "v_z",
+   "action_mean",
+   "motor_cmd_mean"
+  ],
+  "number_format": ".6g",
+  "size_fallback": null
+ },
+ "sources": {
+  "columns": "as the A export (tools/p6_export.py definitions plus altitude, vertical velocity, network action and motor command means)",
+  "metrics": "p8-metrics.json"
+ }
+}

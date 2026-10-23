@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Read-only P8 evidence audit. No model reconstruction; missing predictions stay NA.
-Run: MPLCONFIGDIR=/tmp/p8-mpl uav_lab/.local/venv/bin/python tools/p8_frozen_check.py
+Run: MPLCONFIGDIR=/tmp/p8-mpl uav_lab/.local/venv/bin/python tools/p8_frozen_check.py --output NEW_DIRECTORY
 Inputs and pre-fixed choices: data/p8-frozen-check-20261024/{plan,input-manifest}.json.
 """
-import csv, hashlib, json, math, sys
+import argparse, csv, hashlib, json, math, sys
 from collections import Counter, defaultdict
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools/p8'))
 import p8_space as S
 OUT=ROOT/'data/p8-frozen-check-20261024'
+INPUT=OUT
 def load(p): return json.loads((ROOT/p).read_text())
 def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
 def dump(n,d): (OUT/n).write_text(json.dumps(d,indent=2,ensure_ascii=False,allow_nan=False)+'\n')
@@ -28,7 +29,7 @@ def same(a,b):
     return abs(float(a)-float(b))<1e-8
 
 def main():
-    manifest=load(str(OUT.relative_to(ROOT)/'input-manifest.json'))
+    manifest=json.loads((INPUT/'input-manifest.json').read_text())
     for e in manifest['files']:assert sha(ROOT/e['path'])==e['sha256'],e['path']
     batches=[load(f'data/p8-20261022-batch-b{i}/results.json')['runs'] for i in [1,2]]
     runs=sum(batches,[]);assert len(runs)==900
@@ -63,6 +64,11 @@ def main():
             if i+1<len(rec):real.append((rec[i+1]['last_reception_px4_us']-g['first_reception_px4_us'])/1e6)
         row=dict(id=r['id'],method=r['method'],sut=r['sut'],search_seed=r['seed'],sim_seed=r['sim_seed'],round=r['k'],stage=r['stage'],b2_segment=('preserved376' if r in old else 'continuation74') if r['stage']=='b2' else 'b1',name=r['name'],case=c,windows_s=r['windows_s'],n=len(c['durs']),speed=c['v'],heading=c['heading_deg'],planned_restored=c['restored'],realized_restored_observed=real,pre_gap_s=actual[0],post_gap_s=actual[1],closed_pre_s=closed[0],closed_post_s=closed[1],offline_list_match=bool(entry),budget_status='different_horizon_exclude_prediction_comparison' if mismatch else 'same_historical_budget_prediction_still_missing',prediction_status='missing_frozen_and_original_model',predicted_tilt='NA',original_skip='NA',split=split.get(r['id'],'evaluation_only'),tilt=r['max_tilt_deg'],alt_loss=r['max_altitude_loss_m'],tilt_fail=r['max_tilt_deg']>=45,alt_fail=r['max_altitude_loss_m']>1,primary=r['fail_primary'],task=r['fail_task'],aborted=summ['aborted'],planned_gaps=len(c['durs']),observed_gaps=len(rec),phase_any=any(.4-1e-9<=g<=.6+1e-9 for g in c['restored']),post_segment_observation='aborted_horizon_censored' if summ['aborted'] else 'completed_profile', summary='export/'+Path(r['directory']).name+'/summary.json',config=r['directory']+'/config.json')
         ledger.append(row)
+        row.update(prior_prediction_status='offline_frozen_file_missing' if entry else 'online_no_verified_prior_prediction',
+                   strict_comparison_candidate=bool(entry) and not mismatch,
+                   posthoc_prediction_status='NA_original_frozen_model_not_reproducible',
+                   original_skip_tilt_fail='NA',original_skip_alt_fail='NA',original_skip_primary_fail='NA',
+                   predicted_alt_loss='NA',predicted_primary='NA')
         for e in summ['events']:
             state=e.get('state_at_or_after') or {}
             events.append(dict(id=r['id'],sut=r['sut'],method=r['method'],event=e['event'],gap=e.get('gap'),t_s=e['t_s'],tilt=state.get('tilt_deg'),alt_loss=state.get('alt_loss_m'),speed=state.get('v_u'),ev_u=state.get('ev_u'),a_u=state.get('a_u'),velocity_jump=e.get('velocity_jump_along_axis_m_s'),jump=e.get('jump_along_axis_m')))
@@ -80,8 +86,29 @@ def main():
         for f in ['tilt_fail','alt_fail','primary','task']:
             k=sum(r[f] for r in rs);row.update({f:k,f+'_rate':k/n,f+'_95wilson':wilson(k,n)})
         row.update(alt_only=sum(r['alt_fail'] and not r['tilt_fail'] for r in rs),task_extra_over_primary=sum(r['task'] and not r['primary'] for r in rs),tilt_min=min(r['tilt'] for r in rs),tilt_median=sorted(r['tilt'] for r in rs)[n//2],tilt_max=max(r['tilt'] for r in rs),max_alt_loss=max(r['alt_loss'] for r in rs),prediction_n=0,spearman='NA',error='NA',underestimation='NA',skip_n='NA',skip_failure='NA',conformal_coverage='NA')
+        row.update(strict_comparison_candidates=sum(r['strict_comparison_candidate'] for r in rs),
+                   online_without_prior_prediction=sum(not r['offline_list_match'] for r in rs),
+                   calibration_assigned=sum(r['split']=='calibration' for r in rs),
+                   test_assigned=sum(r['split']=='test' for r in rs),
+                   evaluation_only_assigned=sum(r['split']=='evaluation_only' for r in rs))
+        for field in ['tilt_mae','tilt_bias','tilt_rmse','tilt_error_quantiles','dangerous_underestimate_n',
+                      'dangerous_underestimate_rate','dangerous_underestimate_95wilson',
+                      'altitude_prediction_error','primary_prediction_error',
+                      'original_skip_fraction','conformal_skip_fraction','conformal_skip_n']:
+            row[field]='NA'
+        for layer in ['original_skip','conformal_skip']:
+            for criterion in ['tilt','altitude','primary','task']:
+                for metric in ['fail_n','fail_rate','fail_95wilson']:
+                    row[f'{layer}_{criterion}_{metric}']='NA'
         stats.append(row)
     table('group-summary.csv',stats)
+    table('conformal-status.csv',[dict(sut=sut,calibration_assigned=45,test_assigned=45,
+          evaluation_only_assigned=360,calibration_with_verified_prediction=0,
+          test_with_verified_prediction=0,nominal_coverage=.9,residual_order_if_complete=42,
+          residual_quantile='NA',coverage='NA',coverage_95wilson='NA',skip_n='NA',skip_fraction='NA',
+          skip_tilt_failure_rate='NA',skip_altitude_failure_rate='NA',skip_primary_failure_rate='NA',
+          skip_task_failure_rate='NA',status='blocked_original_frozen_file_model_and_rules_missing')
+          for sut in ['T0','T1']])
     phase=[]
     for group in ['all']+sorted({r['method'] for r in ledger})+['n2','n3','n4']+[m+'/n'+str(n) for m in sorted({r['method'] for r in ledger}) for n in [2,3,4]]:
         for exposed in [False,True]:
@@ -94,6 +121,12 @@ def main():
     discrepancies=[r for r in ledger if r['closed_post_s']!=r['post_gap_s'] or r['closed_pre_s']!=r['pre_gap_s']]
     assert sum(r['primary'] for r in ledger)==432 and sum(r['task'] for r in ledger)==511
     results={'runs':900,'prediction_matches':0,'prediction_missing':900,'duplicate_identity':0,'unique_event_cases':len({r['name'] for r in ledger}),'repeated_case_groups':sum(v>1 for v in Counter(r['name'] for r in ledger).values()),'repeated_case_extra_rows':900-len({r['name'] for r in ledger}),'offline_matched_executed':sum(r['offline_list_match'] for r in ledger),'offline_unexecuted':sum(r['status'].startswith('unexecuted') for r in offline),'budget_discrepancies':[{k:r[k] for k in ['id','pre_gap_s','post_gap_s','closed_pre_s','closed_post_s','budget_status']} for r in discrepancies],'b2_preserved':376,'b2_continued':74,'primary':432,'task':511,'tilt_fail':sum(r['tilt_fail'] for r in ledger),'alt_fail':sum(r['alt_fail'] for r in ledger),'alt_only':sum(r['alt_fail'] and not r['tilt_fail'] for r in ledger),'task_extra_over_primary':sum(r['task'] and not r['primary'] for r in ledger),'exploration':{'n':24,'domain':18,'out':6,'seeds':len({r['sim_seed'] for r in ex})},'split':dict(Counter((r['sut']+'/'+r['split']) for r in ledger)),'worst_tilt':[{'id':r['id'],'tilt':r['tilt'],'alt_loss':r['alt_loss']} for r in sorted(ledger,key=lambda r:r['tilt'],reverse=True)[:10]],'worst_alt':[{'id':r['id'],'tilt':r['tilt'],'alt_loss':r['alt_loss']} for r in sorted(ledger,key=lambda r:r['alt_loss'],reverse=True)[:10]],'input_files_verified':len(manifest['files'])}
+    results.update(strict_offline_comparison_candidates=sum(r['strict_comparison_candidate'] for r in ledger),
+                   online_without_verified_prior_prediction=sum(not r['offline_list_match'] for r in ledger),
+                   frozen_actual_sha256=None,original_model_reproducible=False,
+                   prediction_statistics_status='NA_missing_original_inputs',
+                   original_input_manifest_sha256=sha(INPUT/'input-manifest.json'),
+                   original_plan_sha256=sha(INPUT/'plan.json'))
     dump('results.json',results)
     import matplotlib;matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -114,4 +147,10 @@ def main():
     # Protect the immutable evidence both before and after all computations.
     for e in manifest['files']:assert sha(ROOT/e['path'])==e['sha256'],e['path']
     print(json.dumps(results,indent=2,ensure_ascii=False))
-if __name__=='__main__':main()
+if __name__=='__main__':
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output',type=Path,required=True,help='new directory; preserves all historical analysis outputs')
+    args=parser.parse_args()
+    OUT=args.output.resolve()
+    OUT.mkdir(parents=True,exist_ok=False)
+    main()

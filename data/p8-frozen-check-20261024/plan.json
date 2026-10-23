@@ -1,0 +1,17 @@
+{
+  "fixed_before_computation": true,
+  "analysis": "P8 frozen prediction versus existing measured outcomes; no flights, no model refit",
+  "remote_main": "bc188c2591a6fa22c9d5fb4d97a1801f51e016b4",
+  "expected_frozen_sha256": "fe784e62aa5ee8c1ea5cb29fc2ec2d44169c2d02a084130c31342d28d25ba7d4",
+  "frozen_search": "find repository and /home/car -name p8_frozen.json; no file found in accessible paths; unreadable directories not claimed searched",
+  "unit": "900 unique campaign/method/sut/search-seed/round identities; full case and realized config budgets cross-checked; aborts retained",
+  "exploration": "24 T1 runs separate; 18 in-domain and 6 restored<0.1s out-of-domain; reused seeds not independent",
+  "split": "random baseline only; within each SUT sort sha256('P8-frozen-check-v1|'+run_id), first 45 calibration, remaining 45 test; all other methods evaluation only",
+  "conformal": "only with verified original model and original error rule; one-sided 90% residual bound quantile ceil((n+1)*0.9); no computation when frozen source missing; coverage, skip fraction and skip-set failure rate separate",
+  "groups": ["sut", "sut/method", "sut/interruption_count", "sut/method/interruption_count"],
+  "intervals": "two-sided nominal 95% Wilson binomial intervals, descriptive only under dependent/adaptive observations; no causal or simultaneous claims",
+  "phase_hypothesis": "T0 run-level any planned restored interval in inclusive [0.4,0.6]s versus none in [0.1,0.8]s; stratify method and interruption count; realized adjacent resume-to-next-last-reception durations audited separately; no outcome-driven cutoffs",
+  "prediction_blockers": "if missing/hash mismatch: all prediction/error/underestimation/skip/conformal results NA, not zero; do not fabricate or reconstruct frozen predictions",
+  "budget": "each execution compare historical closed-form, offline list, recorded budget and actual run config; any difference excludes frozen horizon comparison until original predictor horizon known",
+  "checks": "input hashes before and after, counts 900/432/511, CSV rounding, identity uniqueness, 1080 offline list execution status, 376 preserved prefix, exploration domain counts, links, deterministic regeneration"
+}

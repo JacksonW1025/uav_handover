@@ -1,0 +1,37 @@
+{
+  "status": "pre-freeze development notes; no formal flights",
+  "preserved_drafts": [
+    "design-v1",
+    "predictions-v1",
+    "design-v2",
+    "predictions-v2"
+  ],
+  "corrections": [
+    {
+      "draft": "predictions-v1",
+      "issue": "zero-second vehicle catch-up was evaluated using (value or 11), falsely marking zero as >10; corrected before predictions-v2",
+      "consequence": "v1 repair feasibility is obsolete; preserve as diagnostic, do not use for freeze"
+    },
+    {
+      "draft": "design-v1",
+      "issue": "model forecasts did not sufficiently cover >45-degree point predictions",
+      "change": "v2 event span2.6, T0 duration0.36/T1 duration0.58, adjusted C durations; all domains, path lengths, horizons rechecked before formal"
+    },
+    {
+      "draft": "search implementation",
+      "issue": "Python chained >=45 != bool precedence",
+      "change": "explicit parenthesized boolean comparison before any formal use; tests passed"
+    },
+    {
+      "development": "p9-20261024-dev-01",
+      "result": "SUCCESS; infrastructure pass; first new P9 window analysis measured35.6403deg, altitude loss0.724935m; max command age4ms; 105.14s attempt cost",
+      "note": "pilot only, not independent validation; first technical attempt used RREC0 arm; final selected repair RREC1 applies to later R/CR technical checks"
+    }
+  ],
+  "remaining_methodological_limits": [
+    "attitude-force surrogate omits height/thrust/drag coupling",
+    "empirical error band14.2996deg, no statistical coverage",
+    "unvalidated reset sequences abstain for tilt-safety and all overall safety",
+    "formal audit/review and remaining development/equivalence pending"
+  ]
+}

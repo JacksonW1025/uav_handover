@@ -43,6 +43,9 @@ P6_GAP_TREATMENTS=['T1a0.75','T1a1.5']
 P6_TREATMENT_KINDS={'p6_ident':['T0']}
 # P7: rate-limited recovery treatment for p5_gap (config/p7.json p5.treatments: T1a3 capture with MC_RAPTOR_RREC 2.0).
 P7_GAP_TREATMENTS=['T1a3r2']
+# P9 factorial controls use existing RTGT/RTDEC/RREC parameters, with explicit
+# names and a P9-only config gate. No PX4/policy/safety-threshold change.
+P9_GAP_TREATMENTS=['P9-Z','P9-C','P9-R','P9-CR']
 
 def p5_profile(p5,spec):
     """P5 gap runs: merged reference profile (pure function of the config). Cruise = pre_gap_s + count*D +
@@ -116,7 +119,9 @@ class Experiment:
             if spec is None and args.condition and 'p8' in self.cfg:spec=p8_conditions.case_spec(self.cfg,args.condition)
             if spec is None:raise RuntimeError('p5_gap needs --condition from config p5.conditions')
             if spec.get('cancelled'):raise RuntimeError('condition cancelled by the pre-registered safety budget: '+args.condition)
-            if args.treatment not in P5_TREATMENT_KINDS[args.kind]+P6_GAP_TREATMENTS+P7_GAP_TREATMENTS or args.treatment not in p5['treatments']:raise RuntimeError(f'p5_gap needs --treatment in {P5_TREATMENT_KINDS[args.kind]+P6_GAP_TREATMENTS+P7_GAP_TREATMENTS}')
+            allowed=P5_TREATMENT_KINDS[args.kind]+P6_GAP_TREATMENTS+P7_GAP_TREATMENTS
+            if 'p9' in self.cfg:allowed=allowed+P9_GAP_TREATMENTS
+            if args.treatment not in allowed or args.treatment not in p5['treatments']:raise RuntimeError(f'p5_gap needs --treatment in {allowed}')
             # The P2 treatment and profile keys are reused so apply_treatment, the stream and the analyzers work unchanged.
             self.pcfg=p5_profile(p5,spec);self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(spec['speed_m_s'])
             self.cfg['p2_treatment']=args.treatment;self.cfg['p2_treatment_parameters']=p5['treatments'][args.treatment];self.cfg['p2_profile']=self.pcfg

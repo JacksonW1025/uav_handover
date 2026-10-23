@@ -56,3 +56,7 @@ cat data/verified-raptor_hover/validation.json
 ## 2026-10-15 P3
 
 接受批次：`p3-20261015-batch-01`（39/39，运行目录 `p3-20261015-b01-*`）、候选等价性 `p3-20261015-equivalence`（运行 `p3-20261015-eq-*`）、冻结前尾延迟检查 `p3-20261015-dev-10b`（运行 `p3-20261015-dev10b-*`）。未达到 8 ms 余量的 `p3-20261015-dev-10`（运行 `p3-20261015-dev10-*`）原样保留并附 `diagnosis.json`。开发运行 `p3-20261015-dev0{1..6}-*` 保留。每轮新增 `p3-metrics.json`（三个事件与记忆证据）和 `p3-memory.json`（策略精确回放与记忆长度）；批次目录有 `p3-table.md`。见 [P3 报告](../docs/THOR_P3_REPORT.md)。
+
+## 2026-10-23 P8-B2 收尾与 T1 探索
+
+`p8-20261022-batch-b2/` 保存完成结果、预算身份修订、旧停止诊断/失败现场以及 `export-revalidation-20261023/` 最终900次复验。当前汇总为 `final-summary.json`，旧 `b1-b2-summary.json` 的导出失败状态属于历史。`p8-20261023-t1-boundary/` 是独立24次探索（18域内、6域外），不计入原900次。小型配置、指标、文本日志与结果随仓库保存；新24次原始ULog只在Thor原工作目录，见该目录 `LOCAL_RAW_DATA.md`。全部解释见 [P8报告](../docs/THOR_P8_REPORT.md)。

@@ -79,7 +79,7 @@ def campaigns_check(state,order,rounds,audited):
         ks=[x['k'] for x in st['runs']]
         if ks!=list(range(1,len(ks)+1)):res['problems'].append('counted rounds not 1..N')
         if st['method'] in ['fuzz','bo']:
-            m={'fuzz':p8_methods.Fuzz,'bo':p8_methods.BO}[st['method']](st['sut'],st['seed'],p8_space.fits);hist=[]
+            m={'fuzz':p8_methods.Fuzz,'bo':p8_methods.BO}[st['method']](st['sut'],st['seed'],p8_conditions.runner_fits);hist=[]
             for x,h in zip(st['runs'],st['history']):
                 c=m.propose(hist)
                 if c!=x['case'] or h[0]!=x['case']:res['problems'].append(f"round {x['k']}: replayed proposal differs");break
@@ -152,6 +152,17 @@ def main():
         out['passed']=bool(not uncounted_bad and all(not c['problems'] for c in out['campaigns'].values()) and out['output_chain']['fraction_gate_met']
                            and results.get('status')=='PASS' and results.get('complete') and results.get('candidate_unchanged') and out['independence']['distinct_seeds']==len(runs)
                            and all(r['passed'] for r in runs if r.get('counted')) and all((r.get('budget_check') or {}).get('equal',True) for r in runs))
+        if results.get('identity_revision'):
+            from p8_campaign import rows_sha
+            rev=json.loads((ROOT/results['identity_revision']['file']).read_text())
+            old=json.loads((batch/'before-budget-revision/results.json').read_text())['runs']
+            original=json.loads((batch/'candidate.json').read_text())
+            changed=[p for p in set(original['files'])|set(rev['revised_candidate']['files']) if original['files'].get(p)!=rev['revised_candidate']['files'].get(p)]
+            ok=(rows_sha(results['runs'][:rev['preserved_runs']])==rev['preserved_rows_sha256']==rows_sha(old)
+                and original==rev['original_candidate'] and sorted(changed)==sorted(rev['changed_files'])
+                and all(original[k]==rev['revised_candidate'][k] for k in original if k!='files'))
+            out['identity_revision']={'verified':ok,'changed_files':changed,'preserved_runs':len(old),'note':'Original candidate retained; explicit budget-adapter amendment, not one unchanged tools identity.'}
+            out['passed']=out['passed'] and ok
     else:
         out['all_runs_passed']=bool(runs) and all(r['passed'] for r in runs)
         out['passed']=bool(out['all_runs_passed'] and out['output_chain']['fraction_gate_met'] and results.get('status')=='PASS' and results.get('complete') and results.get('candidate_unchanged')

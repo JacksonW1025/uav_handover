@@ -194,7 +194,7 @@ def export_gap_run(run,out,batch,row,stage):
     p8=m6.get('p8') or {};res=p8.get('result') or {};spec=cfg.get('p5_condition_spec') or {}
     resid_rows=ok[idx]
     summary={'run':run.name,'run_directory':os.path.relpath(run,ROOT),'batch':batch,'stage':stage,'kind':'p5_gap',
-        'campaign':row.get('campaign'),'method':row.get('method'),'sut':row.get('sut'),'seed':row.get('seed'),'k':row.get('k'),'infra_rerun':bool(row.get('infra_rerun')),
+        'campaign':row.get('campaign'),'method':row.get('method'),'sut':row.get('sut'),'seed':row.get('seed'),'k':row.get('k'),'infra_rerun':bool(row.get('infra_rerun')),'identity_revision':row.get('identity_revision'),
         'name':row.get('name') or f"{cfg.get('p1_condition')}:{cfg.get('p2_treatment')}",'case':row.get('case'),'condition':cfg.get('p1_condition'),'treatment':cfg.get('p2_treatment'),
         'treatment_parameters':cfg.get('p2_treatment_parameters'),'windows_s':(spec.get('gaps') or {}).get('windows_s') or [[0.0,(spec.get('gaps') or {}).get('duration_s')]],
         'budget':{'pre_gap_s':spec.get('pre_gap_s'),'post_gap_s':spec.get('post_gap_s'),'safety_budget_m':spec.get('safety_budget_m'),'budget_check':(row.get('budget_check') or None)},
@@ -243,7 +243,7 @@ def main():
                 'treatment':row['treatment'],'sim_seed':row.get('sim_seed'),'outcome':sm['outcome'],'accepted':row.get('accepted'),'flight_failure':row.get('flight_failure'),
                 'task_criterion_exceeded':(sm.get('task_criterion') or {}).get('exceeded') if row['kind']=='p6_ident' else sm.get('fail_task'),
                 **({k:row.get(k) for k in ['campaign','k','infra_rerun']} if row.get('campaign') else {}),
-                'candidate_project_commit':cand['project_head'],'trace_bytes':sm['trace']['bytes'],'reconstruction_components_over_1e-4':r['components_over_1e-4'],'export_script':'tools/p8_export.py'}
+                'candidate_project_commit':cand['project_head'],'identity_revision':row.get('identity_revision'),'trace_bytes':sm['trace']['bytes'],'reconstruction_components_over_1e-4':r['components_over_1e-4'],'export_script':'tools/p8_export.py'}
             added.append(run.name)
             print(run.name,sm['outcome'],sm['trace']['bytes'],r['position_max_abs'],r['velocity_max_abs'],r['components_over_1e-4'],flush=True)
     if brows:write_b_table(out,sorted(brows,key=lambda r:(r['k'],r['campaign'],r['id'])))  # rebuilt from all B batches passed (B2: pass B1 too)

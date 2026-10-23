@@ -45,6 +45,32 @@ MAX_BYTES=1_000_000;THIN_HZ=50;EVENT_KEEP_S=3.0
 
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
+def associate_targets(samples,spt,sts,flag,stat,read_time,trow,captures=None):
+    """Associate logged targets using read-clock evidence and capture precedence."""
+    captures=set(trow) if captures is None else captures
+    cycles=sorted(set(samples.tolist())|set(stat)|set(trow));cur=-1;src=None;assign={}
+    def latest_at(t):return int(np.searchsorted(spt,t,side='right'))-1
+    for c in cycles:
+        latest=latest_at(c)
+        if c in stat:
+            if stat[c]:
+                # timestamp_last_trajectory_setpoint is current_time at the read,
+                # not the message's timestamp or the older inference sample.
+                j=latest_at(read_time[c])
+                if j>=0 and j>=cur:cur=j;src=('sp',cur)
+        elif latest>cur:
+            k=int(np.searchsorted(sts,c,side='right'));kp=k-1
+            read_later=k<len(sts) and flag[k] and latest_at(read_time[int(sts[k])])==latest
+            missed=kp>=0 and sts[kp]>=spt[latest]+10000
+            if not read_later and not missed:cur=latest;src=('sp',cur)
+        if c in trow:
+            src=('tg',trow[c])
+            # Capture replaces the held external target. A missing status row
+            # must not resurrect a pre-capture message on the following cycle.
+            if c in captures:cur=max(cur,latest)
+        assign[c]=src
+    return assign
+
 def reconstruct(T):
     """Per active RAPTOR inference: vehicle state used, RAPTOR target used, clipped inputs, unclipped errors (target frame)."""
     m=T['research_memory'];tm=T['research_timing'];tg=T['research_target'];sp=T['trajectory_setpoint'];lp=T['vehicle_local_position'];st=T['raptor_status']
@@ -56,24 +82,14 @@ def reconstruct(T):
     pos=X(lp,['x','y','z'],il);vel=X(lp,['vx','vy','vz'],il);acc=X(lp,['ax','ay','az'],il)
     spt=np.asarray(sp['timestamp'],np.int64)
     sts=np.asarray(st['timestamp_sample'],np.int64);flag=np.asarray(st['subscription_update_trajectory_setpoint'])==1
-    order=np.argsort(sts,kind='stable');sts,flag=sts[order],flag[order];stat=dict(zip(sts.tolist(),flag.tolist()))
+    # A read happens at current_time, which can be later than the angular-velocity
+    # sample identifying the inference. Never use policy_input to choose a target.
+    receipt=np.asarray(st['timestamp_last_trajectory_setpoint'],np.int64)
+    order=np.argsort(sts,kind='stable');sts,flag,receipt=sts[order],flag[order],receipt[order]
+    stat=dict(zip(sts.tolist(),flag.tolist()));read_time=dict(zip(sts.tolist(),receipt.tolist()))
     tgs=np.asarray(tg['timestamp_sample'],np.int64);tk=np.asarray(tg['kind'])
     trow={int(tgs[i]):int(i) for i in np.flatnonzero((tk==1)|(tk==2))}
-    cycles=sorted(set(s.tolist())|set(stat)|set(trow));cur=-1;src=None;assign={}
-    for c in cycles:
-        latest=int(np.searchsorted(spt,c,side='right'))-1
-        if c in stat:
-            if stat[c] and latest>cur:cur=latest;src=('sp',cur)
-        elif latest>cur:
-            # No raptor_status row for this cycle: the setpoint counts as read here unless the next status row reads it.
-            # A status row >= 10 ms after the arrival (setpoints are stamped up to a few ms before they can be read) that
-            # did not read it means it is an old setpoint that RAPTOR never took (e.g. the pre-arming DDS check).
-            k=int(np.searchsorted(sts,c,side='right'));kp=k-1
-            read_later=k<len(sts) and flag[k] and int(np.searchsorted(spt,sts[k],side='right'))-1==latest
-            missed=kp>=0 and sts[kp]>=spt[latest]+10000
-            if not read_later and not missed:cur=latest;src=('sp',cur)
-        if c in trow:src=('tg',trow[c])
-        assign[c]=src
+    assign=associate_targets(s,spt,sts,flag,stat,read_time,trow,set(int(t) for t in tgs[tk==1]))
     n=len(s);P=np.full((n,3),np.nan);V=np.full((n,3),np.nan);Y=np.full(n,np.nan);mode=np.array(['none']*n,dtype=object)
     for q,c in enumerate(s.tolist()):
         a=assign.get(c)

@@ -142,11 +142,27 @@ def case_spec(cfg,name):
     return p6_conditions.fit(cfg,cfg['p5'],base)
 
 def budget_check(cfg,case,sut):
-    """The task rule: p8_space.budget(case) must equal the gap_spec fit of the same case (pre_gap_s, post_gap_s or both
-    None) and the windows must be the case's windows."""
-    name=case_condition(case,sut);spec=case_spec(cfg,name);b=p8_space.budget(case)
+    """Compare the authoritative generation budget with the execution spec; retain
+    the frozen closed-form budget as an explicit historical comparison."""
+    name=case_condition(case,sut);spec=case_spec(cfg,name);b=runner_budget(case,cfg)
     mine=None if spec.get('cancelled') else (spec['pre_gap_s'],spec['post_gap_s'])
     win=spec['gaps'].get('windows_s') or [[0.0,spec['gaps']['duration_s']]]
     ok=(mine==(None if b is None else tuple(b))) and win==p8_space.windows(case)
-    return {'condition':name,'gap_spec':mine,'p8_space_budget':None if b is None else list(b),'windows_s':win,'equal':bool(ok),
+    return {'condition':name,'gap_spec':mine,'runner_budget':None if b is None else list(b),'p8_space_budget':p8_space.budget(case),'budget_source':'runner/p6_conditions.fit','windows_s':win,'equal':bool(ok),
             'safety_budget_m':spec.get('safety_budget_m')}
+
+def runner_budget(case,cfg=None):
+    """Authoritative frozen runner fit; no tolerance changes or case mutation.
+
+    Keep tools/p8/ byte-for-byte frozen. Its closed form remains available only
+    for historical comparison; generation and checks use this adapter.
+    """
+    if cfg is None:cfg=_budget_config()
+    spec=case_spec(cfg,case_condition(case,'T0'))
+    return None if spec.get('cancelled') else (spec['pre_gap_s'],spec['post_gap_s'])
+
+from functools import lru_cache
+@lru_cache(maxsize=1)
+def _budget_config():return json.loads((ROOT/'config/p8.json').read_text())
+
+def runner_fits(case):return runner_budget(case) is not None

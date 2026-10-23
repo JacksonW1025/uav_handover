@@ -20,7 +20,7 @@ identity (tools/, research/, config/, Lab, binaries) is re-hashed before every r
 No run starts while a ToDesk remote-desktop session is connected (the orchestrator waits and logs it); the session state at
 the start and end of every run is recorded in its row.
 """
-import argparse,json,subprocess,sys,time,traceback
+import argparse,json,subprocess,sys,time,traceback,copy,hashlib
 from pathlib import Path
 import p2_batch,p8_conditions,p8_batch
 from p2_batch import identity,write,now,host_state,ROOT
@@ -59,9 +59,15 @@ def propose(st,lists):
     k=st['k_done']+1
     if st['pending'] and st['pending']['k']==k:return st['pending']
     if st['method'] in ONLINE:
-        m=ONLINE[st['method']](st['sut'],st['seed'],p8_space.fits)
+        m=ONLINE[st['method']](st['sut'],st['seed'],p8_conditions.runner_fits)
         if st['rng_state'] is not None:m.rng.bit_generator.state=st['rng_state']
-        c=m.propose([(h[0],h[1],h[2]) for h in st['history']]);st['rng_state']=m.rng.bit_generator.state
+        legacy=ONLINE[st['method']](st['sut'],st['seed'],p8_space.fits)
+        legacy.rng.bit_generator.state=copy.deepcopy(m.rng.bit_generator.state)
+        hist=[(h[0],h[1],h[2]) for h in st['history']]
+        c=m.propose(hist);old=legacy.propose(hist)
+        if c!=old or m.rng.bit_generator.state!=legacy.rng.bit_generator.state:
+            raise RuntimeError('runner budget changes frozen online proposal or RNG state; continuation refused')
+        st['rng_state']=m.rng.bit_generator.state
         st['pending']={'k':k,'case':c,'source':'propose'}
     else:
         lst=lists[st['campaign']];i=st['next_index']
@@ -77,6 +83,7 @@ def run_case(args,cfg,st,pend,rerun,out,candidate,plan):
          'campaign':st['campaign'],'method':st['method'],'sut':sut,'seed':st['seed'],'k':k,'name':cond+':'+sut,'case':pend['case'],'windows_s':p8_space.windows(pend['case']),
          'infra_rerun':bool(rerun),'stage':args.stage,'budget_check':pend['budget_check']}
     plan.append(row)
+    if getattr(args,'revision',None):row['identity_revision']=str(args.revision)
     row['waited_for_host_s']=wait_host(args)
     if identity()!=candidate:row['status']='IDENTITY_DRIFT';return row
     row['remote_desktop_session_at_start']=remote_session()
@@ -101,13 +108,14 @@ def execute(args,cfg,out,candidate,plan,order,rounds):
             st=load_state(args.state,cid)
             if st['k_done']>=k:continue
             if st['k_done']!=k-1:return stop(out,plan,'campaign out of step',campaign=cid,k_done=st['k_done'],round=k)
-            pend=propose(st,lists)
+            try:pend=propose(st,lists)
+            except Exception as e:return stop(out,plan,'proposal rejected',campaign=cid,round=k,error=repr(e))
             chk=p8_conditions.budget_check(cfg,pend['case'],st['sut']);pend['budget_check']=chk;save_state(args.state,st)
-            if not chk['equal']:return stop(out,plan,'p8_space.budget differs from gap_spec',campaign=cid,round=k,case=pend['case'],budget_check=chk)
+            if not chk['equal']:return stop(out,plan,'authoritative generation budget differs from execution spec',campaign=cid,round=k,case=pend['case'],budget_check=chk)
             if chk['gap_spec'] is None:
-                # both agree that the case does not fit: offline lists skip it (not counted); online methods only propose fitting cases
+                # Reject without changing the frozen list position or pending case.
                 if st['method'] in ONLINE:return stop(out,plan,'online method proposed a case outside the budget',campaign=cid,round=k,case=pend['case'])
-                st['skipped'].append(pend);st['next_index']+=1;st['pending']=None;save_state(args.state,st);return stop(out,plan,'unexpected cancelled list case',campaign=cid,round=k)
+                return stop(out,plan,'unexpected cancelled list case; state retained without skipping',campaign=cid,round=k,case=pend['case'])
             for rerun in range(MAX_RERUNS+1):
                 row=run_case(args,cfg,st,pend,rerun,out,candidate,plan);write(out/'results.json',{'runs':plan,'complete':False})
                 if row['status']=='IDENTITY_DRIFT':return stop(out,plan,'IDENTITY_DRIFT',run=row['id'])
@@ -129,6 +137,7 @@ def main():
     p.add_argument('--stage',required=True,choices=['dev','b1','b2']);p.add_argument('--prefix',default='p8-20261022-b')
     p.add_argument('--campaigns',help='dev only: comma-separated campaign ids');p.add_argument('--rounds',nargs=2,type=int,help='dev only: first and last round')
     p.add_argument('--resume',action='store_true',help='continue an interrupted batch directory on the same candidate');p.add_argument('--purpose',default='')
+    p.add_argument('--revision',type=Path,help='explicit user-approved identity amendment for resume; original candidate retained')
     p.add_argument('--development',action='store_true',help='development only: never results')
     args=p.parse_args();out=args.output.resolve();args.state=args.state.resolve();cfg=json.loads((ROOT/'config/p8.json').read_text());b=cfg['p8']['b']
     order=b['rotation']['order'];rounds={'b1':(1,b['b1_rounds']),'b2':(b['b1_rounds']+1,b['rounds'])}.get(args.stage)
@@ -138,6 +147,12 @@ def main():
     elif args.development:p.error('b1/b2 are never development')
     if args.resume:
         candidate=json.loads((out/'candidate.json').read_text());plan=json.loads((out/'results.json').read_text())['runs']
+        if args.revision:
+            rev=json.loads(args.revision.read_text())
+            if rev['original_candidate']!=candidate:raise SystemExit('revision original candidate differs')
+            n=rev['preserved_runs']
+            if len(plan)<n or rows_sha(plan[:n])!=rev['preserved_rows_sha256']:raise SystemExit('preserved results changed')
+            candidate=rev['revised_candidate']
         if identity()!=candidate:raise SystemExit('candidate changed; resume refused')
         doc=json.loads((out/'plan.json').read_text());doc.setdefault('resumed_at',[]).append(now());write(out/'plan.json',doc)
     else:
@@ -154,7 +169,10 @@ def main():
     result=p2_batch.summary(plan,candidate,failed)
     result.update({'stage':args.stage,'rounds':list(rounds),'infra_reruns':[r['id'] for r in plan if r.get('infra_rerun')],
                    'complete':bool(not failed and all(load_state(args.state,c)['k_done']>=rounds[1] for c in order))})
+    if args.revision:result['identity_revision']={'file':str(args.revision.relative_to(ROOT) if args.revision.is_absolute() else args.revision),'preserved_runs':rev['preserved_runs'],'original_candidate_retained':True}
     if args.development:result['status']='DEVELOPMENT'
     write(out/'results.json',result);print(result['status'],out,flush=True)
     return 1 if failed else 0
+def rows_sha(rows):return hashlib.sha256(json.dumps(rows,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+
 if __name__=='__main__':raise SystemExit(main())

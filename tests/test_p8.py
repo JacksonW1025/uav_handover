@@ -87,9 +87,36 @@ def test_b_budget_check_lists_preregistered():
     for k,lst in L.items():
         for i,e in enumerate(lst,1):
             r=pc.budget_check(CFG,e['case'],k.split('/')[1]);assert pc.case_condition(e['case'],k.split('/')[1])+':'+k.split('/')[1]==e['name']
-            if not r['equal']:bad.append((k,i,e['name']))
+            assert r['equal']
+            if r['gap_spec']!=(None if r['p8_space_budget'] is None else tuple(r['p8_space_budget'])):bad.append((k,i,e['name']))
     want=[(m['list'],m['position'],m['name']) for m in B['budget_check']['preflight_check_of_the_offline_lists']['mismatches']]
     assert sorted(bad)==sorted(want)
+
+def test_b_28_degree_exact_radius_boundary():
+    import math,copy
+    c={'v':2.4000000000000004,'heading_deg':28.,'durs':[.32,.27],'restored':[.46]}
+    original=copy.deepcopy(c)
+    assert math.hypot(*pc.axis_of(28)[:2])>1
+    assert p8_space.budget(c)==(1.,2.6)
+    assert pc.runner_budget(c)==(1.,2.55) and pc.runner_fits(c)
+    spec=pc.case_spec(CFG,pc.case_condition(c,'T0'))
+    assert not p6_conditions.budget(CFG,CFG['p5'],{**spec,'post_gap_s':2.6})['inside']
+    assert p6_conditions.budget(CFG,CFG['p5'],spec)['inside']
+    assert pc.runner_budget({**c,'v':2.4})==(1.,2.55)
+    assert pc.runner_budget({**c,'heading_deg':0.})==(1.,2.6)
+    assert pc.budget_check(CFG,c,'T0')['equal'] and c==original
+
+def test_b_cancelled_case_not_clipped():
+    import copy
+    c={'v':2.5,'heading_deg':28.,'durs':[10.,10.],'restored':[.5]};old=copy.deepcopy(c)
+    assert pc.runner_budget(c) is None and not pc.runner_fits(c) and c==old
+
+def test_b_online_budget_revision_refuses_changed_proposal(monkeypatch):
+    st={'method':'fuzz','sut':'T0','seed':0,'k_done':0,'rng_state':None,'history':[],'pending':None}
+    monkeypatch.setattr(pc,'runner_fits',lambda c:False)
+    import pytest
+    with pytest.raises(RuntimeError):p8_campaign.propose(st,{})
+    assert st['pending'] is None and st['rng_state'] is None
 
 def fake_run(row,out):
     """Dry run: deterministic outcome from the case; the third run of bo/T1/0 round 2 is an infrastructure failure once."""

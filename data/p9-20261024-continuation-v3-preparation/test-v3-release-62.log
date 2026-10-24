@@ -1,0 +1,107 @@
+............................................................FF           [100%]
+=================================== FAILURES ===================================
+_____ test_actual_campaign_full9_or_stops_without_remaining_queries[False] _____
+
+stop_second = False
+tmp_path = PosixPath('/tmp/pytest-of-car/pytest-54/test_actual_campaign_full9_or_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff78b197c0>
+
+    @pytest.mark.parametrize('stop_second',[False,True])
+    def test_actual_campaign_full9_or_stops_without_remaining_queries(stop_second,tmp_path,monkeypatch):
+     row,cfg,model,prep,out,f,order=setup_transaction(tmp_path,monkeypatch);fake=r.ROOT;out.rmdir()
+     (fake/'config').mkdir();write(fake/'config/p9.json',cfg)
+     (fake/'data/p9-20261024-formal').mkdir();write(fake/'data/p9-20261024-formal/candidate.json',{})
+     shutil.copy2(ROOT/'data/p9-20261024-formal/searches-sealed-before-reference.json',fake/'data/p9-20261024-formal/searches-sealed-before-reference.json')
+     def read_only_process(cmd,*a,**kw):
+      assert cmd==['pgrep','-x','ToDesk_Session'];return subprocess.CompletedProcess(cmd,1)
+     monkeypatch.setattr(r.subprocess,'run',read_only_process)
+     original=r.measure_row;calls=[]
+     def measurement(row,attempt,out):
+      calls.append(row['id']);original(row,attempt,out)
+      if stop_second and len(calls)==2:row['opportunity_v3']['state']='UNKNOWN'
+     monkeypatch.setattr(r,'measure_row',measurement)
+     if stop_second:
+      with pytest.raises(RuntimeError,match='evidence failure'):r.campaign(prep,f,out)
+      assert len(calls)==2
+     else:
+>     r.campaign(prep,f,out);assert len(calls)==9
+
+data/p9-20261024-continuation-v3-preparation/test_v3.py:232: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+preparation = PosixPath('/tmp/pytest-of-car/pytest-54/test_actual_campaign_full9_or_0/root/prep')
+frozen = PosixPath('/tmp/pytest-of-car/pytest-54/test_actual_campaign_full9_or_0/root/freeze')
+out = PosixPath('/tmp/pytest-of-car/pytest-54/test_actual_campaign_full9_or_0/root/out')
+
+    def campaign(preparation,frozen,out):
+        verify_freeze(frozen)
+        if out.exists():raise RuntimeError('continuation output exists; no automatic resume/retry')
+        cfg=json.loads((ROOT/'config/p9.json').read_text());plan=json.loads((frozen/'plan.json').read_text())
+        model=json.loads((frozen/'model.json').read_text())
+        items=[json.loads(x) for x in (preparation/'attempts.jsonl').read_text().splitlines()]
+        if budget_counts(items)!={'development':10,'formal':164}:raise RuntimeError('unexpected pre-continuation budget')
+        if len(plan['runs'])!=9 or any(r['stage']!='D' for r in plan['runs']):raise RuntimeError('invalid continuation rows')
+        started={x['id'] for x in items if x['event']=='START_INTENT'}
+        if any(r['id'] in started for r in plan['runs']):raise RuntimeError('plan attempts an already-started id')
+        candidate=p2_batch.identity();old=json.loads((ROOT/'data/p9-20261024-formal/candidate.json').read_text())
+        if {k:v for k,v in candidate.items() if k!='project_head'}!={k:v for k,v in old.items() if k!='project_head'}:
+            raise RuntimeError('flight implementation/Lab/policy differs from original epoch')
+        host_gate();out.mkdir(parents=True,exist_ok=False)
+        (out/'searches-sealed-before-reference.json').write_bytes((ROOT/'data/p9-20261024-formal/searches-sealed-before-reference.json').read_bytes())
+>       write(out/'candidate.json',candidate);write(out/'candidate-equivalence.json',{'status':'PASS','only_project_head_differs':True,'old_head':old['project_head'],'new_head':candidate['project_head']})
+E       KeyError: 'project_head'
+
+data/p9-20261024-continuation-v3-preparation/run_v3.py:157: KeyError
+_____ test_actual_campaign_full9_or_stops_without_remaining_queries[True] ______
+
+stop_second = True
+tmp_path = PosixPath('/tmp/pytest-of-car/pytest-54/test_actual_campaign_full9_or_1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffff78b18fb0>
+
+    @pytest.mark.parametrize('stop_second',[False,True])
+    def test_actual_campaign_full9_or_stops_without_remaining_queries(stop_second,tmp_path,monkeypatch):
+     row,cfg,model,prep,out,f,order=setup_transaction(tmp_path,monkeypatch);fake=r.ROOT;out.rmdir()
+     (fake/'config').mkdir();write(fake/'config/p9.json',cfg)
+     (fake/'data/p9-20261024-formal').mkdir();write(fake/'data/p9-20261024-formal/candidate.json',{})
+     shutil.copy2(ROOT/'data/p9-20261024-formal/searches-sealed-before-reference.json',fake/'data/p9-20261024-formal/searches-sealed-before-reference.json')
+     def read_only_process(cmd,*a,**kw):
+      assert cmd==['pgrep','-x','ToDesk_Session'];return subprocess.CompletedProcess(cmd,1)
+     monkeypatch.setattr(r.subprocess,'run',read_only_process)
+     original=r.measure_row;calls=[]
+     def measurement(row,attempt,out):
+      calls.append(row['id']);original(row,attempt,out)
+      if stop_second and len(calls)==2:row['opportunity_v3']['state']='UNKNOWN'
+     monkeypatch.setattr(r,'measure_row',measurement)
+     if stop_second:
+>     with pytest.raises(RuntimeError,match='evidence failure'):r.campaign(prep,f,out)
+
+data/p9-20261024-continuation-v3-preparation/test_v3.py:229: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+preparation = PosixPath('/tmp/pytest-of-car/pytest-54/test_actual_campaign_full9_or_1/root/prep')
+frozen = PosixPath('/tmp/pytest-of-car/pytest-54/test_actual_campaign_full9_or_1/root/freeze')
+out = PosixPath('/tmp/pytest-of-car/pytest-54/test_actual_campaign_full9_or_1/root/out')
+
+    def campaign(preparation,frozen,out):
+        verify_freeze(frozen)
+        if out.exists():raise RuntimeError('continuation output exists; no automatic resume/retry')
+        cfg=json.loads((ROOT/'config/p9.json').read_text());plan=json.loads((frozen/'plan.json').read_text())
+        model=json.loads((frozen/'model.json').read_text())
+        items=[json.loads(x) for x in (preparation/'attempts.jsonl').read_text().splitlines()]
+        if budget_counts(items)!={'development':10,'formal':164}:raise RuntimeError('unexpected pre-continuation budget')
+        if len(plan['runs'])!=9 or any(r['stage']!='D' for r in plan['runs']):raise RuntimeError('invalid continuation rows')
+        started={x['id'] for x in items if x['event']=='START_INTENT'}
+        if any(r['id'] in started for r in plan['runs']):raise RuntimeError('plan attempts an already-started id')
+        candidate=p2_batch.identity();old=json.loads((ROOT/'data/p9-20261024-formal/candidate.json').read_text())
+        if {k:v for k,v in candidate.items() if k!='project_head'}!={k:v for k,v in old.items() if k!='project_head'}:
+            raise RuntimeError('flight implementation/Lab/policy differs from original epoch')
+        host_gate();out.mkdir(parents=True,exist_ok=False)
+        (out/'searches-sealed-before-reference.json').write_bytes((ROOT/'data/p9-20261024-formal/searches-sealed-before-reference.json').read_bytes())
+>       write(out/'candidate.json',candidate);write(out/'candidate-equivalence.json',{'status':'PASS','only_project_head_differs':True,'old_head':old['project_head'],'new_head':candidate['project_head']})
+E       KeyError: 'project_head'
+
+data/p9-20261024-continuation-v3-preparation/run_v3.py:157: KeyError
+=========================== short test summary info ============================
+FAILED data/p9-20261024-continuation-v3-preparation/test_v3.py::test_actual_campaign_full9_or_stops_without_remaining_queries[False]
+FAILED data/p9-20261024-continuation-v3-preparation/test_v3.py::test_actual_campaign_full9_or_stops_without_remaining_queries[True]
+2 failed, 60 passed in 18.72s

@@ -1,0 +1,35 @@
+{
+  "name": "p9-horizontal-delay-v1",
+  "version": 1,
+  "dt_s": 0.02,
+  "delay_s": 0.088,
+  "tau_s": 0.08,
+  "kp": [
+    8.790378768672879,
+    9.221169165107131
+  ],
+  "kv": [
+    5.453065498984149,
+    5.868822102037157
+  ],
+  "position_clip_m": 0.5,
+  "velocity_clip_m_s": 1.0,
+  "command_limit_per_axis_m_s2": [
+    9.848254883320589,
+    10.479406684590723
+  ],
+  "plant": "pdot=v; vdot=q (attitude force proxy); qdot=(-q-kp*clip(ep(t-delay)) -kv*clip(ev(t-delay)))/tau",
+  "height_prediction": null,
+  "overall_safety": "ABSTAIN_HEIGHT_UNMODELLED",
+  "strict_guarantee": false,
+  "error_rule": {
+    "empirical_peak_abs_band_deg": 14.299575326305835,
+    "rule": "maximum absolute peak error in 26 grouped development predictions; no coverage claim",
+    "calibration_n_runs": 26,
+    "calibration_n_groups": 23,
+    "statistics": "related manoeuvres; no IID/conformal guarantee",
+    "tilt_screen": "upper=point+band; tilt-only skip if upper<45 and domain supported; never global skip",
+    "unvalidated_reset_sequences": "ABSTAIN_FOR_SAFETY; numerical forecasts allowed for independent testing"
+  },
+  "fit_source_manifest_sha256": "21e928a25e72292b7aba1436b82059f0bfef71fafd8bb8e8c3066aedd361b145"
+}

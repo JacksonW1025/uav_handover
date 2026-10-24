@@ -1,0 +1,13 @@
+{
+  "scope": "offline unit-test development, not flight or protocol execution",
+  "command": "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uav_lab/.local/venv/bin/python -m pytest -q tests/test_p10_a.py",
+  "result": "1 failed, 9 passed in 3.02s",
+  "failed_test": "test_reject_tampered_certificate[deleted_resume]",
+  "error": "Failed: DID NOT RAISE (<class 'AssertionError'>, <class 'ValueError'>)",
+  "diagnosis": "fixture replaced resume e/dv by zero, but actual nominal resume e/dv are already zero. No-op mutation; checker correctly accepted an unchanged state.",
+  "correction": "fixture continues T1 deceleration instead: e=.0016, dv=.08; checker must reject the resulting exact transition residual",
+  "acceptance_rule_changed": false,
+  "flight_or_infrastructure_anomaly": false,
+  "new_flights": 0,
+  "old_outputs_preserved": ["construction/certificate.json", "audit-01/audit.json", "history-audit/historical-evidence.json"]
+}

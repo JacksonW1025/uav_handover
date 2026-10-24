@@ -1,0 +1,44 @@
+{
+  "stage": "P10-A_OFFLINE_ONLY",
+  "gate": "NOT_PASSED",
+  "artifact_status": "offline derivation delivery; not prospective SITL preregistration",
+  "baseline_commit": "84d74d9aaf95b09304a636d2db76133fc44c5aee",
+  "model_sha256": "474509c9192ce270b897fdc1cbd69796be180c6a5a73b9f091678dbbca256b4a",
+  "new_SITL_or_real_flights": 0,
+  "execute_B_C_D": false,
+  "proxy": {
+    "h": "1/125",
+    "delay_steps": 11,
+    "tau": "2/25",
+    "state_dimension": 50,
+    "P_lower": "1/2",
+    "P_upper": "10000",
+    "dissipation_Q_lower": "1/2",
+    "output_square_constants": {"e": "1/2000", "dv": "21/10000", "q": "67/100"},
+    "total_V_max": 49,
+    "intersample_completion": "exponential q with constant command per sample; p/v only trapezoid endpoints"
+  },
+  "local_witness": {
+    "horizon_s": 2,
+    "resume_s": "1/25",
+    "nominal_initial_actual_speed_m_s": "9/5",
+    "initial_P_radius": "1/10",
+    "model_residual_P_radius_per_tick": "1/10000",
+    "model_residual_support": "current e,dv,q; never historical slots",
+    "resume_uncertainty_P_radius": "1/20",
+    "resume_uncertainty_support": "current e,dv only",
+    "strict_residual_source": "DESIGN_ASSUMPTION_ONLY_NOT_ESTABLISHED_FOR_SITL",
+    "initial_history_reachability": "NOT_ESTABLISHED_FOR_RUNNER",
+    "full_source_hybrid_coverage": false
+  },
+  "claim_boundary": {
+    "proxy_local_theorem": "EXACT_RATIONAL_CHECKED",
+    "conditional_real_tilt": "requires justified model, clock and intersample error envelopes",
+    "real_SITL_validation": "NONE_NEW",
+    "height": "UNMODELLED_OVERALL_ABSTAIN",
+    "outside_certificate": "UNKNOWN_NEVER_CERTAIN_FAILURE",
+    "cost_or_repair_advantage": "NOT_DEMONSTRATED"
+  },
+  "stop_rule": "Any new protocol/infrastructure anomaly stops; preserve outputs, no auto retry, no acceptance relaxation or new version to bypass the stop.",
+  "next_stage": "Parent review only; no B/C/D execution authority from this delivery."
+}

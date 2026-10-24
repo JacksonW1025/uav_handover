@@ -1,0 +1,27 @@
+{
+  "P9_prediction": {
+    "step_s": "1/125",
+    "initial_queue": "empty",
+    "first_update": "append current e/d, then max(0,k-delay) repeats earliest available sample during startup",
+    "delay_s": "11/125",
+    "full_delay_intervals": 11,
+    "reposition_before_minus_5": "omitted by original forecast too; omission is not a source guarantee"
+  },
+  "A2_proxy": {
+    "step_s": "1/250",
+    "initial_queue": "22 explicitly prefilled e/d pairs before first step",
+    "history": "two-parameter kinematically consistent polynomial with constant external target",
+    "physical_history_relations": "p_dot=v and v_dot=q only; preceding controller/GRU/action dynamics not established",
+    "new_model": true,
+    "exact_resampling_of_P9": false
+  },
+  "native": {
+    "explicit_equivalent_error_FIFO_established": false,
+    "interpretation": "native uses current observations plus GRU/previous action and latest-value actuator path; the proxy FIFO is not a native state field",
+    "source_to_proxy_queue_initialization_relation": "UNPROVEN_NONEMPTY_SOURCE_IMAGE",
+    "source_to_proxy_step_simulation": "UNPROVEN",
+    "actual_initial_controller": "RAPTOR already active before start_stream/reposition; earlier classic label was unsupported"
+  },
+  "diagnosis": "kinematic history is a legitimate abstract initial set but does not prove any actual runner state maps into it",
+  "decision": "REJECT_IDENTICAL_INITIALIZATION_OR_COMPLETE_SOURCE_SEQUENCE_CLAIM"
+}

@@ -1,0 +1,49 @@
+{
+  "portable_native_input_sha256": "fcaa1227dee506009fe7386bb75d1dcd01b4ed8e865d9dc2d3f1233ae68e5885",
+  "checked_relations": [
+    {
+      "source": "uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/mc_raptor.cpp",
+      "lines": "731-756",
+      "checked_token": "timestamp_last_trajectory_setpoint = current_time;",
+      "relation": "valid read updates native age origin; publication stamp is not age origin",
+      "status": "INDIVIDUAL_RELATION_ONLY"
+    },
+    {
+      "source": "uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/mc_raptor.cpp",
+      "lines": "918-958",
+      "checked_token": "current_time - timestamp_last_trajectory_setpoint",
+      "relation": "strict native age guard and stale capture branch",
+      "status": "INDIVIDUAL_RELATION_ONLY"
+    },
+    {
+      "source": "uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/mc_raptor.cpp",
+      "lines": "1311-1355",
+      "checked_token": "if (!enabled || !(rate>0.f)) return;",
+      "relation": "RREC=0 excludes START under inactive initial recovery; does not cover an already active virtual target",
+      "status": "INDIVIDUAL_RELATION_ONLY"
+    },
+    {
+      "source": "uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/mc_raptor.cpp",
+      "lines": "959-988",
+      "checked_token": "research_recovery_transition",
+      "relation": "capture/profile/recovery transition occurs before sample-clock rejection",
+      "status": "INDIVIDUAL_RELATION_ONLY"
+    }
+  ],
+  "runner_relation": "profile formulas, gap skips, immediate gap-exit emit; pump is callback based and period is a minimum interval, not proof of exact 20ms calls",
+  "source_guard_times_conditional": [
+    204000,
+    520000,
+    11704000
+  ],
+  "guard_time_scope": "correct for the manually fixed read/publish schedule after its assumed initialization; does not repair the false first held reference",
+  "RREC0_scope": "initial inactive recovery plus constant RREC0 excludes START; prior mode and guard relations still need an initialization image",
+  "unclosed": [
+    "mapping of actual controller/GRU/action to proxy p,v,q and delayed error history",
+    "stream/reposition warmup reachable set into first A2 history",
+    "step relation covering actual reads, gyro samples and action cadence",
+    "strict model error and intersample q-output conformance"
+  ],
+  "no_FIFO_claim": "native source has no identified corresponding 22-slot clipped-e/d FIFO; no proof derives one from GRU or motor chain",
+  "not_claimed": "complete event graph simulation, binary equivalence, or formal absence of every possible queue in the native binary"
+}

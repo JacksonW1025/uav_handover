@@ -1,0 +1,23 @@
+{
+  "profile_cfg": {
+    "lines": [
+      373,
+      374
+    ],
+    "text": "    def profile_cfg(self):\n        return getattr(self,'pcfg',None) or self.cfg['p1']"
+  },
+  "reposition": {
+    "lines": [
+      376,
+      385
+    ],
+    "text": "    def reposition(self,t):\n        # Optional P2 move to start_offset_m along the axis (trapezoidal speed) before the hold. (s,v,a,duration)\n        p=Experiment.profile_cfg(self);d=float(p.get('start_offset_m',0.))\n        if not d:return 0.,0.,0.,0.\n        r=p['reposition'];vm,am=float(r['speed_m_s']),float(r['accel_m_s2']);sign=1. if d>0 else -1.;d=abs(d)\n        ta=min(vm/am,(d/am)**.5);vp=am*ta;tc=(d-am*ta*ta)/vp;total=2*ta+tc\n        if t>=total:return sign*d,0.,0.,total\n        if t<ta:return sign*.5*am*t*t,sign*am*t,sign*am,total\n        if t<ta+tc:return sign*(.5*am*ta*ta+vp*(t-ta)),sign*vp,0.,total\n        tau=total-t;return sign*(d-.5*am*tau*tau),sign*am*tau,-sign*am,total"
+  },
+  "p1_profile": {
+    "lines": [
+      402,
+      416
+    ],
+    "text": "    def p1_profile(self,t):\n        # [Reposition,] hold, linear velocity ramp, cruise. Returns path length, speed, acceleration along the motion axis.\n        # Class-qualified helpers keep this a pure function of cfg (unit-tested without an Experiment).\n        p=Experiment.profile_cfg(self);v=self.cfg['p1_speed_m_s'];hold,acc=p['reference_hold_s'],p['accel_s']\n        s0,v0,a0,tr=Experiment.reposition(self,t)\n        if t<tr:return s0,v0,a0\n        t-=tr\n        if t<hold:return s0,0.,0.\n        if t<hold+acc:\n            tau=t-hold;return s0+.5*v*tau*tau/acc,v*tau/acc,v/acc\n        vd=p.get('decel_to_m_s')\n        if vd is None or t<hold+acc+p['cruise_s']:return s0+.5*v*acc+v*(t-hold-acc),v,0.\n        # P4 M2: linear deceleration after the cruise down to decel_to_m_s (the event point), then that speed.\n        a=float(p['decel_m_s2']);td=(v-float(vd))/a;r=t-hold-acc-p['cruise_s'];tau=min(r,td)\n        return s0+.5*v*acc+v*p['cruise_s']+v*tau-.5*a*tau*tau+float(vd)*max(0.,r-td),v-a*tau,(-a if r<=td+1e-9 else 0.)"
+  }
+}

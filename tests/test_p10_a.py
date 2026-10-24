@@ -18,6 +18,9 @@ def test_frozen_local_certificate():
     assert result['P10_A_operational_gate'] == 'NOT_PASSED'
     assert result['witness']['prefixes_checked'] == 251
     assert result['domain']['height'] == 'UNMODELLED_OVERALL_ABSTAIN'
+    assert 'discrete' in result['proof_scope']
+    assert 'excludes continuous/discrete' in result['quantization_residual_scope']
+    assert all(not j['complete_sequence_repair_guarantee'] for j in result['jump_constraints'])
 
 
 @pytest.mark.parametrize('mutation', ['negative_P', 'reset_queue', 'deleted_resume',
@@ -71,3 +74,19 @@ def test_non_markov_current_state():
     two[-2:] = [F(1, 10), F(1, 5)]
     assert one[:3] == two[:3]
     assert verify.mv(a, one)[2] != verify.mv(a, two)[2]
+
+
+def test_instant_jump_budget_covers_pre_ball_and_event_error_only():
+    from fractions import Fraction as F
+    doc = json.loads(CERT.read_text())
+    p = [[F(x, doc['P_scale']) for x in row] for row in doc['axes'][0]['P_integer']]
+    bound = verify.instant_jump_constraint(p, F(1, 10))
+    full = verify.instant_jump_constraint(p, F(1))
+    assert F(bound['pre_P_radius'])**2 == F(1, 100)
+    assert F(bound['event_error_P_radius']) == F(1, 20)
+    assert F(bound['remaining_squared_nominal_budget']) == (7-F(1, 10)-F(1, 20))**2
+    assert F(bound['post_event_center_V']) == F(full['post_event_center_V'])/100
+    assert bound['decision'] == 'PROXY_ADMISSIBLE'
+    assert full['decision'] == 'UNKNOWN_TEST_REQUIRED'
+    assert not bound['subsequent_prefixes_verified']
+    assert not bound['complete_sequence_repair_guarantee']

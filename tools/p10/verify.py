@@ -107,6 +107,36 @@ def target(k):
     return F(9, 5)*F((2*k)//5, 50), F(9, 5)
 
 
+def instant_jump_constraint(p, alpha):
+    """One instantaneous exogenous reference jump, NOT a repaired sequence.
+
+    For every ||Xpre||_P <= .1 and every event error ||zeta||_P <= .05,
+    ||Xpost||_P <= .1 + alpha*||j(1)||_P + .05. History is unchanged;
+    zeta has support only in the current e,d coordinates. The scalar-alpha
+    dependence is exactly quadratic, so the endpoint bound covers [0,alpha].
+    No later reference, time-step input or prefix budget is checked here.
+    """
+    assert 0 <= alpha <= 1
+    unit = [-F(1, 5), -F(1, 5)]+[F(0)]*(N-2)
+    j = [alpha*x for x in unit]
+    unit_v = quadratic(p, unit)
+    v = quadratic(p, j)
+    assert unit_v > 0 and v == alpha*alpha*unit_v
+    pre_radius, event_radius = F(1, 10), F(1, 20)
+    budget = (7-pre_radius-event_radius)**2
+    admissible = v < budget
+    return {'alpha': str(alpha), 'post_event_center_V': str(v),
+            'decision': 'PROXY_ADMISSIBLE' if admissible else 'UNKNOWN_TEST_REQUIRED',
+            'claim_scope': 'INSTANTANEOUS_EXOGENOUS_REFERENCE_RESET_ONLY',
+            'pre_state_set': 'entire 50-D ball Vpre <= 1/100; nominal center zero',
+            'pre_P_radius': str(pre_radius), 'event_error_P_radius': str(event_radius),
+            'event_error_support': 'current e,d only; q and history unchanged',
+            'remaining_squared_nominal_budget': str(budget),
+            'whole_interval_proof': 'V(j(alpha)) = alpha^2 V(j(1)); triangle inequality covers every pre-state and event error in their balls',
+            'subsequent_prefixes_verified': False,
+            'complete_sequence_repair_guarantee': False}
+
+
 def verify(path):
     started = time.perf_counter()
     doc = json.loads(path.read_text())
@@ -177,6 +207,8 @@ def verify(path):
                 residual = [centers[axis][k+1][i]-predicted[i]-b[i] for i in range(N)]
                 err_sq[axis] = max(err_sq[axis], sum(x*x for x in residual))
         # Convexity extends endpoint checks to every rho in its interval.
+        # This is center quantization residual against the specified DISCRETE
+        # map, not trapezoid truncation error relative to a continuous plant.
         residual_p_sq_upper = 10000*sum(err_sq)
         assert residual_p_sq_upper <= F(1, 10**12), 'center rounding exceeds 1e-6 P-norm'
         max_round = max(max_round, residual_p_sq_upper)
@@ -185,17 +217,12 @@ def verify(path):
             radius += F(1, 20)
     # Initial history clipping: P > .5 I and radius .1 -> all coordinates < .15.
     assert 2*F(1, 10)**2 < F(1, 2)**2
-    # Current bounds and tilt proxy between ALL samples, via exponential q arc.
+    # Discrete-state output bounds, extended only by the stipulated q output
+    # interpolation. They do not certify a continuous full-state flow.
     assert coord[0]*49 < F(1, 2)**2 and coord[1]*49 < 1
     assert coord[2]*49 < F('9.80665')**2
-    # Constraint actually chooses a target-jump attenuation range, not ranking.
-    jumps = []
-    for alpha in [F(1, 10), F(1)]:
-        j = [-alpha/5, -alpha/5]+[F(0)]*(N-2)
-        v = quadratic(ps[0], j)
-        admissible = v < (7-F(1, 10)-F(1, 20))**2
-        jumps.append({'alpha': str(alpha), 'post_event_center_V': str(v),
-                      'decision': 'PROXY_ADMISSIBLE' if admissible else 'UNKNOWN_TEST_REQUIRED'})
+    # Instantaneous reset demo, separate from the 251-prefix T1 witness.
+    jumps = [instant_jump_constraint(ps[0], alpha) for alpha in [F(1, 10), F(1)]]
     assert jumps[0]['decision'] == 'PROXY_ADMISSIBLE'
     assert jumps[1]['decision'] == 'UNKNOWN_TEST_REQUIRED'
     # Deliberately different queue with the same current p/v/q: no reset allowed.
@@ -209,7 +236,13 @@ def verify(path):
                'event_from_zero_deltaE_for_dr_0.2_dv_0.2': str(F(1, 2)*model['kp'][0]*F(1, 5)**2+F(1, 2)*F(1, 5)**2)}
     return {'status': 'EXACT_LOCAL_PROXY_CERTIFICATE_VERIFIED',
             'P10_A_operational_gate': 'NOT_PASSED',
-            'reason': 'no justified real-model/timing bounds or runner-reachable initial tube; height absent',
+            'reason': 'full P9 guard/reset/queue mapping and runner-reachable initial tube not closed; real-error envelopes remain conditional',
+            'proof_scope': 'discrete proxy difference inequalities plus stipulated q output interpolation, not an exact continuous full-state model',
+            'quantization_residual_scope': '1e-6 P-norm bounds center rounding against the discrete recurrence only; excludes continuous/discrete integration discrepancy',
+            'continuous_proxy_extension': 'not claimed; any future extension needs a separately justified discrepancy bound charged to w',
+            'next_priority': 'close guards, state-dependent resets and queue maps, then runner 200 ms timeout-reachable histories; no blanket demand for hardware guarantees or unnecessary variable-step generalization',
+            'counterexample_scope': 'omitting this queue or jump loses the stated certificate; does not rule out every history-free Lyapunov method; outside certificate is UNKNOWN',
+            'external_review_scope': 'parent reported a summary review only; no claim that an external reviewer executed the repository verifier',
             'disturbance_support': 'model input: current e,dv,q only; resume input: current e,dv only; histories always shift exactly',
             'model_sha256': doc['model_sha256'],
             'certificate_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),

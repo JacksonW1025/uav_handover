@@ -16,7 +16,8 @@
     "dissipation_Q_lower": "1/2",
     "output_square_constants": {"e": "1/2000", "dv": "21/10000", "q": "67/100"},
     "total_V_max": 49,
-    "intersample_completion": "exponential q with constant command per sample; p/v only trapezoid endpoints"
+    "intersample_completion": "q output interpolation only, not continuous full-state flow; p/v only trapezoid endpoints",
+    "center_quantization_residual_scope": "1e-6 P-norm against the discrete recurrence; excludes continuous/discrete integration discrepancy"
   },
   "local_witness": {
     "horizon_s": 2,
@@ -37,8 +38,11 @@
     "real_SITL_validation": "NONE_NEW",
     "height": "UNMODELLED_OVERALL_ABSTAIN",
     "outside_certificate": "UNKNOWN_NEVER_CERTAIN_FAILURE",
-    "cost_or_repair_advantage": "NOT_DEMONSTRATED"
+    "cost_or_repair_advantage": "NOT_DEMONSTRATED",
+    "alpha_demo": "instantaneous exogenous reset only; whole Vpre<=.01 ball and event-error P-radius .05 covered; no subsequent prefixes or sequence repair guarantee",
+    "external_review": "parent-reported summary review, not a claim of external verifier execution"
   },
+  "next_derivation_priority": "complete guard/reset/queue maps and runner 200 ms timeout-reachable histories; add variable-step or real-system envelopes only when the chosen claim requires them",
   "stop_rule": "Any new protocol/infrastructure anomaly stops; preserve outputs, no auto retry, no acceptance relaxation or new version to bypass the stop.",
   "next_stage": "Parent review only; no B/C/D execution authority from this delivery."
 }

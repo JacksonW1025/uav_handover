@@ -1,0 +1,45 @@
+{
+  "status": "NEW_V2_EVIDENCE_GATE_STOP_NOT_FLIGHT_RETRY",
+  "id": "D-07-P9-R",
+  "attempt_number": 164,
+  "primary_flight_outcome": "FAILURE",
+  "frozen_p7_status": "INCOMPLETE",
+  "frozen_p7_problems": [
+    "no research_recovery rows with MC_RAPTOR_RREC > 0"
+  ],
+  "measurement_v2_kind": "OPEN_GAP_CENSORED",
+  "measurement_v2_status": "MEASURED",
+  "infrastructure_ok": false,
+  "failed_checks": [
+    "execution",
+    "p7_measured",
+    "subject_measured"
+  ],
+  "research_recovery_raw_datasets": 0,
+  "ulog_dropout_records": 0,
+  "last_reception_native_us": 66364000,
+  "capture_native_us": 66568000,
+  "ownership_end_native_us": 66888000,
+  "later_reception": false,
+  "recovery_status": "NO_OBSERVED_RESUME_OR_RECOVERY_START; do not claim successful or attempted rate-limited recovery",
+  "source_logic": {
+    "tools/p7_metrics.py:71": "unconditional missing-topic problem for rrec>0",
+    "tools/apply_research.py:852-867": "while stale, only arm then return; START publication only when fresh again",
+    "research/state/RecoveryTarget.hpp:5": "virtual target starts when setpoint becomes fresh again"
+  },
+  "meaning": "absence is consistent with never reaching resume, not evidence of failed convergence; existing P7 gate remains FAIL, no reinterpretation into accepted protocol",
+  "test_gap": "prefreeze tests covered open-gap numerical adapter and160 compatible records but not the integration of first-open RREC>0 absence with the inherited unconditional P7 gate",
+  "no_automatic_fourth_batch": true,
+  "remaining_original_rows": 9,
+  "new_start_total": 164,
+  "development": 10,
+  "input_hashes": {
+    "data/p9-20261024-continuation-v2-formal/D-07-P9-R/run/flight.ulg": "56b5345b8c0707de0eef5d88fc4ffa8286a2b11705311a40cbadd2a2d4919636",
+    "data/p9-20261024-continuation-v2-formal/D-07-P9-R/run/p7-metrics.json": "476c2936ab3091e6e6db8adab3bccd74e8fac1e72fa0480c52a110eb8187041c",
+    "data/p9-20261024-continuation-v2-formal/D-07-P9-R/run/p9-v2-assessment.json": "3ffaacc26675297b7c5d18d44b876011c1a71594cd5c52662aaa56565247eada",
+    "data/p9-20261024-continuation-v2-formal/D-07-P9-R/result.json": "715f9d0cd8489ae809e82867a1c62073c8dab73de589515c4a680007578ca7ae",
+    "tools/p7_metrics.py": "28de38f75bb3ad4b5bc6f3800a0fe6138be5009081e7ca6b55aa1d64e7046635",
+    "tools/apply_research.py": "8398bd48e0fe2fed0372f0b784f31e51a7c95a2866359a0624601f56159e49f6",
+    "research/state/RecoveryTarget.hpp": "94464a36d00b1e7cb658ac9ab68a24dcdbd9fcea421bf37be3af0a91b71c8a75"
+  }
+}

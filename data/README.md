@@ -80,3 +80,7 @@ cat data/verified-raptor_hover/validation.json
 `p9-20261024-continuation-v1-audit-stopped-v1/`为59/59逐条原始重算通过、全批完整性FAIL；`...-report-stopped-v1/`和`...-postanalysis-stopped-v1/`保存两执行版本的描述性分析、图、成本和预算，并非拼接验收PASS。`...-stopped-analysis/`保存第162次独立诊断、162条全部启动索引、后续事件段风险、任务代价、校正说明和只读复现脚本。原批808证据哈希、原27＋新59冻结输入均未漂移。
 
 详情见[P9续接报告](../docs/THOR_P9_CONTINUATION_REPORT.md)。大体积原始数据含失败ULog仍只在Thor；远端不是完整原始数据。此前中断章节及原报告保留为历史状态，不覆盖。
+
+## 2026-10-24 P9获批v2及P7证据门停止
+
+`p9-20261024-continuation-v2-freeze/`为0050ecee事前冻结81项；`...-preparation/`保存独立首开口适配器、24项测试、160条字节兼容和11行原清单。新托管单元执行D07-C163通过及D07-R164后按P7证据门失败停止，余9条未启动；没有第四批或重跑。`...-audit-stopped-v1/`为C PASS/R FAIL/整批FAIL；`...-report-stopped-v1/`主分母161，`...-postanalysis-stopped-v1/`保存图/账本，`...-delivery/`保存源码诊断、全部164启动、D25主代价、Z07/R07分离记录及只读复现。原102缺失、162事后诊断和原FAIL不变。详见[P9 v2报告](../docs/THOR_P9_CONTINUATION_V2_REPORT.md)。原始数据仍只在Thor。

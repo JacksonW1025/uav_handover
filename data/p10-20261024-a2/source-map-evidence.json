@@ -1,0 +1,55 @@
+{
+  "scope": "read-only source mapping excerpts; not a compiler/binary equivalence proof",
+  "tracked_and_instruction_inputs": {
+    "AGENTS.md": "adee7f95e50e04042599411ea95bc063ea9ae3d62aaed59a0c8427ce2104ca46",
+    "CLAUDE.md": "e4c264f5f4a70cfc5538cd335a4abbb69a8cd2a0b9145a873c5907c3f095032c",
+    "config/p10_a.json": "753229e08a5e72ca71469f2dbc99a75e5bb00197e42e49ab2471732fdec83b83",
+    "config/p10_a2_events.json": "9ba35b25986a9ef45d5b1054f9c00e0d9b2eea15945a97a973ea3550c3649e51",
+    "docs/THOR_P10_A_REPORT.md": "c1a3fc5c645669ec06ca4bea244908d501e5a200b25716b72a3a143d73d5907e",
+    "tools/p10/verify.py": "ed64fee91cf5b0f844306d676dbe99d6e37192f71dc054999964e14ee9175cfd",
+    "tools/p10/certificate.py": "d56caffc894fdfe3fc32a5261897db1f8da9716235c6559e92fd7c09a52b0293",
+    "tools/p9_model.py": "5e1e75cb055e710b1344c37192eed46be32f5454cb65f5bd746908bf166f0855",
+    "tools/p9_predict.py": "090dbfc3e58495d7f865d8b242eea0c902343f9e0587227df5cf699abe684acf",
+    "tools/run_experiment.py": "93078287c8fa9452ef928f98ea5620dbb3888386f0b6d2c7f030b75b2e9cfaf5",
+    "tools/apply_research.py": "8398bd48e0fe2fed0372f0b784f31e51a7c95a2866359a0624601f56159e49f6",
+    "research/state/TargetProfile.hpp": "9b677a381fde02cdc2bc7794f73a88e03a7eb02d40a14b64820259802b0bbe7c",
+    "research/state/RecoveryTarget.hpp": "94464a36d00b1e7cb658ac9ab68a24dcdbd9fcea421bf37be3af0a91b71c8a75",
+    "data/p9-20261024-freeze/model.json": "474509c9192ce270b897fdc1cbd69796be180c6a5a73b9f091678dbbca256b4a",
+    "environment.lock": "dacfa5d24dad23606c3bcfa33db97b3b700cf6ef378df64093e5b94d4ac162a6",
+    "data/p10-20261024-a/construction/certificate.json": "b27e38c56acbeea71a8e62bbb15003fc44bdeb16acd5e47b0a5379af45bd8dce",
+    "data/p10-20261024-a/clarification-20261024/audit/audit.json": "8dc95b6fbae1e2450e34fb5d90c2ea0df9853be6046950458a7660564f20c950"
+  },
+  "native_source": {
+    "path": "uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/mc_raptor.cpp",
+    "sha256": "09f79a6f5074a849fad2ee97b5dc57fde9f39922200bd52da7b34559e546cd50",
+    "checkout_HEAD": "4ae21a5e569d3d89c2f6366688cbacb3e93437c9",
+    "header_sha256": "3cb1e94eb91250550ba403805e3a80c358ff834a7b70352d701a2b845d8145e2"
+  },
+  "excerpts": {
+    "599-605": {
+      "first_line": 599,
+      "text": "\n\tperf_count(_loop_interval_perf);\n\n\tperf_begin(_loop_perf);\n\thrt_abstime current_time = hrt_absolute_time();\n\n\traptor_status_s status{};"
+    },
+    "731-756": {
+      "first_line": 731,
+      "text": "\t\t\tPX4_ISFINITE(temp_trajectory_setpoint.position[2]) &&\n\t\t\tPX4_ISFINITE(temp_trajectory_setpoint.yaw) &&\n\t\t\tPX4_ISFINITE(temp_trajectory_setpoint.velocity[0]) &&\n\t\t\tPX4_ISFINITE(temp_trajectory_setpoint.velocity[1]) &&\n\t\t\tPX4_ISFINITE(temp_trajectory_setpoint.velocity[2]) &&\n\t\t\tPX4_ISFINITE(temp_trajectory_setpoint.yawspeed)\n\t\t) {\n\t\t\tif (timestamp_last_trajectory_setpoint_set) {\n\t\t\t\ttrajectory_setpoint_dts[trajectory_setpoint_dt_index] = current_time - timestamp_last_trajectory_setpoint;\n\t\t\t\ttrajectory_setpoint_dt_index++;\n\n\t\t\t\tif (trajectory_setpoint_dt_index == NUM_TRAJECTORY_SETPOINT_DTS) {\n\t\t\t\t\tif (next_active && !trajectory_setpoint_dts_full) {\n\t\t\t\t\t\tPX4_INFO(\"trajectory_setpoint_dts_full\");\n\t\t\t\t\t}\n\n\t\t\t\t\ttrajectory_setpoint_dts_full = true;\n\t\t\t\t\ttrajectory_setpoint_dt_index = 0;\n\t\t\t\t}\n\t\t\t}\n\n\t\t\ttimestamp_last_trajectory_setpoint_set = true;\n\t\t\tstatus.timestamp_last_trajectory_setpoint = current_time;\n\t\t\ttimestamp_last_trajectory_setpoint = current_time;\n\t\t\t_trajectory_setpoint = temp_trajectory_setpoint;\n"
+    },
+    "918-958": {
+      "first_line": 918,
+      "text": "\n\tif (!timestamp_last_trajectory_setpoint_set || use_internal_reference\n\t    || (current_time - timestamp_last_trajectory_setpoint) > TRAJECTORY_SETPOINT_TIMEOUT) {\n\t\tstatus.trajectory_setpoint_stale = true;\n\n\t\tif (!previous_trajectory_setpoint_stale || (!previous_active && next_active)) {\n\t\t\t_trajectory_setpoint.position[0] = position[0];\n\t\t\t_trajectory_setpoint.position[1] = position[1];\n\t\t\t_trajectory_setpoint.position[2] = position[2];\n\t\t\tauto &q = _vehicle_attitude.q;\n\t\t\t_trajectory_setpoint.yaw = atan2f(2.0f * (q[1] * q[2] + q[0] * q[3]), 1.0f - 2.0f * (q[2] * q[2] + q[3] * q[3]));\n\t\t\t_trajectory_setpoint.velocity[0] = 0;\n\t\t\t_trajectory_setpoint.velocity[1] = 0;\n\t\t\t_trajectory_setpoint.velocity[2] = 0;\n\t\t\t_trajectory_setpoint.yawspeed = 0;\n#ifdef __PX4_POSIX\n\t\t\tresearch_target_capture(!previous_active && next_active, next_active);\n#endif\n\n\t\t\tif (!previous_trajectory_setpoint_stale) {\n\t\t\t\tPX4_WARN(\"trajectory_setpoint turned stale at: %f %f %f, yaw: %f %llu / %llu us\", (double)position[0], (double)position[1],\n\t\t\t\t\t (double)position[2],\n\t\t\t\t\t (double)_trajectory_setpoint.yaw, (unsigned long long)(current_time - timestamp_last_trajectory_setpoint),\n\t\t\t\t\t (unsigned long long)(TRAJECTORY_SETPOINT_TIMEOUT));\n\n\t\t\t} else {\n\t\t\t\tPX4_WARN(\"trajectory_setpoint reset due to activation at: %f %f %f, yaw: %f\", (double)position[0], (double)position[1], (double)position[2],\n\t\t\t\t\t (double)_trajectory_setpoint.yaw);\n\t\t\t}\n\t\t}\n\n\t\tprevious_trajectory_setpoint_stale = true;\n\n\t} else {\n\t\tif (previous_trajectory_setpoint_stale) {\n\t\t\tPX4_WARN(\"trajectory_setpoint turned non-stale at: %f %f %f\", (double)position[0], (double)position[1], (double)position[2]);\n\t\t\tprevious_trajectory_setpoint_stale = false;\n\t\t}\n\n\t\tstatus.trajectory_setpoint_stale = false;\n\t}"
+    },
+    "1311-1355": {
+      "first_line": 1311,
+      "text": "void Raptor::research_recovery_transition(bool active, bool stale, bool activation) {\n    const bool was_stale=_research_recovery_previous_stale;\n    _research_recovery_previous_stale=stale;\n    if (!active) {\n        _research_recovery_armed=false;\n        if (_research_recovery.active) {_research_recovery.active=false;research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_INACTIVE);}\n        return;\n    }\n    if (stale) {\n        if (activation) _research_recovery_armed=false;\n        else if (!was_stale) _research_recovery_armed=true;\n        if (_research_recovery.active) {_research_recovery.active=false;research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_STALE);}\n        return;\n    }\n    if (!was_stale || !_research_recovery_armed) return;\n    _research_recovery_armed=false;\n    static const param_t rsh=param_find(\"MC_RAPTOR_RSH\"),rrec=param_find(\"MC_RAPTOR_RREC\");\n    int32_t enabled=0;float rate=0.f;param_get(rsh,&enabled);param_get(rrec,&rate);\n    if (!enabled || !(rate>0.f)) return;\n    const float p[3]={position[0],position[1],position[2]},v[3]={linear_velocity[0],linear_velocity[1],linear_velocity[2]};\n    if (!_research_recovery.start(_vehicle_angular_velocity.timestamp_sample,p,v,rate)) {PX4_ERR(\"Research recovery NOT started (rate %.3f)\",(double)rate);return;}\n    for (TI i=0;i<3;i++) {_research_recovery_vehicle_position[i]=p[i];_research_recovery_vehicle_velocity[i]=v[i];}\n    _research_recovery_last=handover_research::RecoveryStep{};\n    research_recovery_publish(research_recovery_s::KIND_START,0);\n    PX4_INFO(\"Research recovery: virtual target, rate %.2f m/s^2\",(double)rate);\n}\n// Inside observe(): one step of the virtual target against the external setpoint in force; the network then observes it.\nbool Raptor::research_recovery_apply(float saved[4]) {\n    if (!_research_recovery.active) return false;\n    const float sp_p[2]={_trajectory_setpoint.position[0],_trajectory_setpoint.position[1]};\n    const float sp_v[2]={_trajectory_setpoint.velocity[0],_trajectory_setpoint.velocity[1]};\n    _research_recovery_last=_research_recovery.step(_vehicle_angular_velocity.timestamp_sample,sp_p,sp_v);\n    if (!_research_recovery.active) {research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_CONVERGED);return false;}\n    research_recovery_publish(research_recovery_s::KIND_STEP,0);\n    for (TI i=0;i<2;i++) {\n        saved[i]=sp_p[i];saved[2+i]=sp_v[i];\n        _trajectory_setpoint.position[i]=float(_research_recovery.p[i]);_trajectory_setpoint.velocity[i]=float(_research_recovery.v[i]);\n    }\n    return true;\n}\nvoid Raptor::research_recovery_restore(const float saved[4]) {\n    for (TI i=0;i<2;i++) {_trajectory_setpoint.position[i]=saved[i];_trajectory_setpoint.velocity[i]=saved[2+i];}\n}\nvoid Raptor::research_recovery_publish(uint8_t kind, uint8_t end_reason) {\n    research_recovery_s m{};"
+    }
+  },
+  "timeout_constant": [
+    {
+      "line": 139,
+      "text": "\tstatic constexpr TI TRAJECTORY_SETPOINT_TIMEOUT = 200 * 1000;"
+    }
+  ],
+  "event_map": "config/p10_a2_events.json",
+  "Lab_writes": 0,
+  "new_flights": 0
+}

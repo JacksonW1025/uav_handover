@@ -1,0 +1,91 @@
+{
+  "status": "VERIFIED_SOURCE_EVENT_DISCRETE_PROXY_CLASS",
+  "gate": "A2_DECLARED_PROXY_SUBCLASS_MEETS_REQUESTED_GATE_PENDING_PARENT_REVIEW",
+  "B_C_D_authorized_or_started": false,
+  "new_flights": 0,
+  "proof_object": "47-D one-axis physical-state/error tube; other axis exactly zero; source guard/reset clock machine; q interpolation only",
+  "source_class_conditions": "RSH1, active throughout, initially inactive capture/recovery and valid fresh stream; every unique gyro/read tick at 4 ms; publisher at -2 ms mod 20 ms; RREC0, RTGT2, RTDEC2; no invalid or missed samples",
+  "events": [
+    {
+      "kind": "CAPTURE",
+      "native_us": 204000,
+      "age_us": 204000,
+      "captured_velocity_center": "2801885311/1562500000",
+      "captured_velocity_total_halfwidth": "36508280896397/256000000000000000",
+      "reset_relation": "pcap=fl32(body_position),vcap=fl32(body_velocity); same captured variables retained"
+    },
+    {
+      "kind": "RESUME",
+      "native_us": 520000,
+      "last_pub_us": 518000,
+      "history_reset": false,
+      "profile_ended": true,
+      "recovery_start": false
+    },
+    {
+      "kind": "CAPTURE",
+      "native_us": 11704000,
+      "age_us": 204000,
+      "captured_velocity_center": "16700181/1000000000000",
+      "captured_velocity_total_halfwidth": "777561066193037/256000000000000000",
+      "reset_relation": "pcap=fl32(body_position),vcap=fl32(body_velocity); same captured variables retained"
+    }
+  ],
+  "strict_equality_guards_verified": [
+    {
+      "native_us": 200000,
+      "stale": false
+    },
+    {
+      "native_us": 11700000,
+      "stale": false
+    }
+  ],
+  "matrix_evidence": {
+    "P_bounds": ".5 I < P < 30000 I",
+    "Q_lower": "1/2",
+    "output_square_constants": [
+      "3/20000",
+      "1/1250",
+      "2/5"
+    ],
+    "rho_interval": [
+      "606666221710081176553669273489209354535579/637770664031457116160000000000000000000000",
+      "12771920457054340559024616283983354832327979/13426750821714886656000000000000000000000000"
+    ],
+    "exact_Q_margins": [
+      "49825832920351439474521398350459398843652947015254970131798530686193245837/99651666254915174400000000000000000000000000000000000000000000000000000000",
+      "1048964903586346094200450491588618923024303260976113532009332058603400583037/2097929815892951040000000000000000000000000000000000000000000000000000000000"
+    ],
+    "rank_one_positive_LMIs": 3,
+    "dimension": 47
+  },
+  "prefixes": 5251,
+  "initial_set": {
+    "position_m": "[-.01,.01] offset",
+    "q": "[-.1,.1]",
+    "history": "kinematically consistent polynomial p,v prehistory; same two parameters; source float32 enclosures",
+    "residual_P_radius": "1/2000"
+  },
+  "max_abs_e_upper": "832770458205077/2560000000000000",
+  "max_abs_d_upper": "25207714032316137/51200000000000000",
+  "max_q_upper": "2543384023927701/500000000000000",
+  "certified_q_output_limit": 6,
+  "tilt_bound": "atan(6/9.80665) < 45 degrees for stipulated q interpolation",
+  "intersample_residual_allowance": "sqrt(.4)*1e-7 extra if discrete q residual applied at sample endpoint; still <45",
+  "max_center_generator_rounding_P_upper": "712996652353729884438482316898642629367655138943821844423542029/239763407530622976000000000000000000000000000000000000000000000000000000",
+  "final_error_P_radius": "4017984204197/500000000000",
+  "old_raw_certificate_entire_set_counterexample": {
+    "native_us": -1800000,
+    "e_abs_lower": "89100092801643/2560000000000000",
+    "d_abs_lower": "3483005169204331/10240000000000000",
+    "scope": "entire propagated set violates an original necessary raw-V<=49 coordinate bound"
+  },
+  "decision": "ADMIT_DECLARED_COMPLETE_EVENT_SEQUENCE_FOR_PROXY_TILT; other inputs UNKNOWN; no overall safety or test-saving claim",
+  "actual_SITL_claim": "none; w<=1e-7 is a strict conditional input assumption, not an empirical residual guarantee",
+  "float_scope": "binary32 rounding within verified |position|<16, |velocity|<4 plus declared 1e-12 double-arithmetic envelope; actual machine conformance remains a condition",
+  "height_and_task_cost": "not certified; overall ABSTAIN",
+  "certificate_sha256": "7960222b6ced010f283dee78dbabefdd17f86cd90a8090c0ea6e92dbbbb52aa6",
+  "trace_sha256": "7a92bbeaaa9e4db50b5d7ba5f1ac173c515732259527ca1706ecf6bec5e7bcfe",
+  "elapsed_s": 1.4119123740820214
+}

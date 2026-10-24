@@ -60,3 +60,15 @@ cat data/verified-raptor_hover/validation.json
 ## 2026-10-23 P8-B2 收尾与 T1 探索
 
 `p8-20261022-batch-b2/` 保存完成结果、预算身份修订、旧停止诊断/失败现场以及 `export-revalidation-20261023/` 最终900次复验。当前汇总为 `final-summary.json`，旧 `b1-b2-summary.json` 的导出失败状态属于历史。`p8-20261023-t1-boundary/` 是独立24次探索（18域内、6域外），不计入原900次。小型配置、指标、文本日志与结果随仓库保存；新24次原始ULog只在Thor原工作目录，见该目录 `LOCAL_RAW_DATA.md`。全部解释见 [P8报告](../docs/THOR_P8_REPORT.md)。
+
+## 2026-10-24 P9 冻结验证与执行中断
+
+`p9-20261024-preparation/` 保存新模型、26条普通辨识的可移植trace/输入哈希、草案版本、误差、种子/预算/成本、开发账本与检查点；`p9-20261024-dev-01`至`-10`为十次新开发/等价性尝试。
+`p9-20261024-freeze/` 为正式前提交的27项冻结输入、预测、搜索/修复规则及回执。P8遗失模型没有补造，旧900与24次不进P9分母。
+
+`p9-20261024-formal/`有102次启动，其中101条完成（B48、C搜索53）。第102次首参考样本因父进程/会话失联中断，无有效测量。
+原aggregate最后RUNNING及等待状态是保留的中断现场；当前状态见`p9-20261024-interruption-v1/interruption-assessment.json`。
+`p9-20261024-audit-interrupted-v1/`保存101条逐条原始重测PASS及全批102/101完整性FAIL，`p9-20261024-report-interrupted-v1/`保存明确分离的部分结果、CSV、搜索史、图与输入输出manifest。
+参考有效0/36、D0/36；71条静态任务NOT_RUN、7个未用搜索槽不挪用，没有自动补跑。
+
+全部原始数据只在Thor本地，尤其未完成样本的ULog来源、保全副本与哈希见[LOCAL_RAW_DATA](p9-20261024-interruption-v1/LOCAL_RAW_DATA.md)。远端不含完整原始遥测。详见[P9报告](../docs/THOR_P9_REPORT.md)。

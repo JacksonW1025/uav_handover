@@ -1,0 +1,273 @@
+{
+  "id": "C-CZ15-ledger-q02",
+  "stage": "C-search",
+  "family": "CZ15",
+  "method": "ledger",
+  "query": 2,
+  "sim_seed": 160793863,
+  "treatment": "P9-Z",
+  "status": "FAIL",
+  "information_boundary": "own history + frozen model/candidate data only",
+  "kind": "p5_gap",
+  "condition": "p9-C-CZ15-g0.65",
+  "case": {
+    "speed_m_s": 1.8,
+    "heading_deg": 15.0,
+    "windows_s": [
+      [
+        0.0,
+        0.4
+      ],
+      [
+        1.05,
+        1.45
+      ],
+      [
+        2.2,
+        2.6
+      ]
+    ]
+  },
+  "phase_s": 0.65,
+  "config": "config/p9.json",
+  "directory": "data/p9-20261024-formal/C-CZ15-ledger-q02/run",
+  "repetition": 1,
+  "extra_args": [
+    "--sim-seed",
+    "160793863",
+    "--initial-yaw-deg",
+    "0"
+  ],
+  "prediction_compute_s": 0.12597297597676516,
+  "command": [
+    "/home/car/uav_handover/tools/experiment",
+    "p5_gap",
+    "--config",
+    "/home/car/uav_handover/config/p9.json",
+    "--output",
+    "/home/car/uav_handover/data/p9-20261024-formal/C-CZ15-ledger-q02/run",
+    "--condition",
+    "p9-C-CZ15-g0.65",
+    "--treatment",
+    "P9-Z",
+    "--sim-seed",
+    "160793863",
+    "--initial-yaw-deg",
+    "0"
+  ],
+  "started_at": "2026-10-24T07:43:48.010451+08:00",
+  "exit_code": 1,
+  "finished_at": "2026-10-24T07:45:00.898179+08:00",
+  "reason": "safety: flight envelope exceeded",
+  "px4_exit_codes": [
+    0
+  ],
+  "crash_markers": [],
+  "trace_exit_code": 0,
+  "output_chain_exit_code": 0,
+  "output_chain_errors": [],
+  "output_chain_errors_attributed_to_abort": [
+    "missing overwrite counter"
+  ],
+  "output_chain_max_age_us": 4000.0,
+  "checks": {
+    "px4_exit": true,
+    "no_crash_markers": true,
+    "trace": true,
+    "output_chain": true,
+    "execution": false,
+    "p7_measured": true,
+    "subject_measured": false,
+    "p9_measured": true,
+    "p9_reconstruction": true,
+    "remote_disconnected": true,
+    "candidate_unchanged": true
+  },
+  "infrastructure_ok": true,
+  "accepted": false,
+  "flight_failure": true,
+  "p7_exit_code": 0,
+  "p7_problems": [],
+  "flight_outcome": "FAILURE",
+  "flight_failure_reasons": [
+    "safety_envelope:tilt_safety_deg",
+    "runner_safety_abort"
+  ],
+  "p9": {
+    "status": "MEASURED",
+    "run": "/home/car/uav_handover/data/p9-20261024-formal/C-CZ15-ledger-q02/run",
+    "clock_origin_native_us": 66592459.01695025,
+    "clock_origin_spread_us": 24.630987584590912,
+    "clock_origin_method": "median native read time minus cruise setpoint geometric phase; no UTC clock",
+    "window_planned_s": [
+      0.0,
+      16.0
+    ],
+    "window_observed_s": [
+      0.007540983049750328,
+      1.5115409830497504
+    ],
+    "complete_window": false,
+    "aborted": true,
+    "censored": true,
+    "max_tilt_deg": 54.910850524902344,
+    "max_altitude_loss_m": 0.6134426593780518,
+    "planned_interruptions": 3,
+    "closed_observed_interruptions": 2,
+    "open_gap": false,
+    "tilt_ge_45_failure": true,
+    "altitude_failure": false,
+    "tilt_full_window_outcome": "FAILURE",
+    "task_failure": true,
+    "task_reasons": [
+      "tilt_gt_45"
+    ],
+    "task_outcome": "FAILURE",
+    "frozen_primary_outcome": "FAILURE",
+    "frozen_primary_reasons": [
+      "safety_envelope:tilt_safety_deg",
+      "runner_safety_abort"
+    ],
+    "frozen_primary_source": "p7-metrics.json (frozen p6/p5 analysis; original first-actual-gap window)",
+    "max_lag_m": 0.8230049973956874,
+    "max_horizontal_distance_m": 0.8230467556799047,
+    "integrated_abs_lag_m_s": 0.6005302950451815,
+    "recoveries": [
+      {
+        "index": 0,
+        "resume_from_base_s": 0.4000559830497503,
+        "max_lag_6s_m": 0.8230049973956874,
+        "lag_at_6s_m": null,
+        "window_6s_complete": false,
+        "observed_6s_until_s": 1.111485,
+        "vehicle_catch_up_10s_s": null,
+        "vehicle_catch_up_censored": true,
+        "catch_up_observed_until_s": 1.111485,
+        "within_task_cost": false
+      },
+      {
+        "index": 1,
+        "resume_from_base_s": 1.4517719830497504,
+        "max_lag_6s_m": 0.1303029116211278,
+        "lag_at_6s_m": null,
+        "window_6s_complete": false,
+        "observed_6s_until_s": 0.05976899999999996,
+        "vehicle_catch_up_10s_s": null,
+        "vehicle_catch_up_censored": true,
+        "catch_up_observed_until_s": 0.05976899999999996,
+        "within_task_cost": false
+      }
+    ],
+    "final_task_cost_outcome": "UNOBSERVED_FINAL_RESUME",
+    "source_hashes": {
+      "flight.ulg": "f7a6e9ce1d131f2d4da885322cded4c8bbc00fed1045174c57aa8dba20a2cbfb",
+      "config.json": "02f56b17aa5d29436874f4a173959d28c7ed14bad1c88dafbdd0ff8dd58000cd",
+      "p7-metrics.json": "968d21ea2309e87df7b52dd4f6b6cd9d65448727561ae497fb121211cdda8ba3",
+      "events.jsonl": "85fbec7b4168eb0f465d1f200cb2ec7284f22ec2f9e82685472d499b73d210d6"
+    }
+  },
+  "reconstruction": {
+    "position_max_abs": 3.3836408230847326e-08,
+    "velocity_max_abs": 1.5555166621439298e-07,
+    "components_over_1e-4": 0,
+    "components_checked": 29304,
+    "rows": 4963,
+    "rows_unmatched": 0,
+    "rows_with_clipping": 310,
+    "rows_on_virtual_target": 0,
+    "virtual_target_components_over_1e-4": 0
+  },
+  "candidate_unchanged": true,
+  "host_after": {
+    "cpu": {
+      "cpu0": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu1": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu2": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu3": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu4": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu5": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu6": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu7": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu8": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu9": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu10": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu11": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu12": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      },
+      "cpu13": {
+        "cur": "2601000",
+        "min": "2601000",
+        "max": "2601000",
+        "governor": "schedutil"
+      }
+    },
+    "loadavg": "1.17 2.39 2.26 2/2077 2008856",
+    "affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+    "remote_desktop_session_running": false
+  },
+  "elapsed_s": 76.8713424160378
+}

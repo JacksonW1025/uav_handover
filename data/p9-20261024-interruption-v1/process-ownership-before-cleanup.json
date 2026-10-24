@@ -1,0 +1,177 @@
+{
+  "checked_at": "2026-10-24T00:42:55.271124+00:00",
+  "registered_processes": [
+    {
+      "event": "process_started",
+      "monotonic_ns": 753924274549986,
+      "wall_time_ns": 1792802201200655944,
+      "name": "agent",
+      "pid": 2063336,
+      "command": [
+        "taskset",
+        "-c",
+        "6-7",
+        "/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent",
+        "udp4",
+        "-p",
+        "18888",
+        "-v",
+        "4"
+      ]
+    },
+    {
+      "event": "process_started",
+      "monotonic_ns": 753924275608004,
+      "wall_time_ns": 1792802201201713378,
+      "name": "gazebo",
+      "pid": 2063337,
+      "command": [
+        "taskset",
+        "-c",
+        "12-13",
+        "gz",
+        "sim",
+        "-r",
+        "-s",
+        "-v",
+        "3",
+        "--seed",
+        "1077966346",
+        "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf"
+      ]
+    },
+    {
+      "event": "process_started",
+      "monotonic_ns": 753924276118809,
+      "wall_time_ns": 1792802201202223887,
+      "name": "gz-stats",
+      "pid": 2063338,
+      "command": [
+        "gz",
+        "topic",
+        "-e",
+        "-t",
+        "/world/default/stats"
+      ]
+    },
+    {
+      "event": "process_started",
+      "monotonic_ns": 753924277380392,
+      "wall_time_ns": 1792802201203485655,
+      "name": "tegrastats",
+      "pid": 2063339,
+      "command": [
+        "/usr/bin/tegrastats",
+        "--interval",
+        "1000"
+      ]
+    },
+    {
+      "event": "process_started",
+      "monotonic_ns": 753924539573868,
+      "wall_time_ns": 1792802201465679492,
+      "name": "px4",
+      "pid": 2063375,
+      "command": [
+        "taskset",
+        "-c",
+        "8-11",
+        "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4",
+        "-d",
+        "-i",
+        "21",
+        "-w",
+        "/home/car/uav_handover/data/p9-20261024-formal/C-CZ15-g0.1-reference-P9-Z/run/rootfs",
+        "/home/car/uav_handover/data/p9-20261024-formal/C-CZ15-g0.1-reference-P9-Z/run/rootfs/etc"
+      ]
+    },
+    {
+      "event": "process_started",
+      "monotonic_ns": 753939157322712,
+      "wall_time_ns": 1792802216083428216,
+      "name": "agent-reconnected",
+      "pid": 2063906,
+      "command": [
+        "taskset",
+        "-c",
+        "6-7",
+        "/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent",
+        "udp4",
+        "-p",
+        "18888",
+        "-v",
+        "4"
+      ]
+    }
+  ],
+  "current_group_members": {
+    "2063336": [],
+    "2063337": [
+      {
+        "pid": 2063337,
+        "ppid": 2422,
+        "state": "S",
+        "start_boot_s": 753924.27,
+        "registered_monotonic_s": 753924.275608004,
+        "cmdline": "gz sim -r -s -v 3 --seed 1077966346 /home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf                                             ",
+        "comm": "ruby"
+      }
+    ],
+    "2063338": [
+      {
+        "pid": 2063338,
+        "ppid": 2422,
+        "state": "S",
+        "start_boot_s": 753924.27,
+        "registered_monotonic_s": 753924.276118809,
+        "cmdline": "/opt/ros/jazzy/opt/gz_transport_vendor/libexec/gz/transport13/gz-transport-topic -e -t /world/default/stats ",
+        "comm": "gz-transport-to"
+      }
+    ],
+    "2063339": [
+      {
+        "pid": 2063339,
+        "ppid": 2422,
+        "state": "S",
+        "start_boot_s": 753924.27,
+        "registered_monotonic_s": 753924.277380392,
+        "cmdline": "/usr/bin/tegrastats --interval 1000 ",
+        "comm": "tegrastats"
+      }
+    ],
+    "2063375": [
+      {
+        "pid": 2063375,
+        "ppid": 2422,
+        "state": "S",
+        "start_boot_s": 753924.53,
+        "registered_monotonic_s": 753924.539573868,
+        "cmdline": "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4 -d -i 21 -w /home/car/uav_handover/data/p9-20261024-formal/C-CZ15-g0.1-reference-P9-Z/run/rootfs /home/car/uav_handover/data/p9-20261024-formal/C-CZ15-g0.1-reference-P9-Z/run/rootfs/etc ",
+        "comm": "px4"
+      }
+    ],
+    "2063906": [
+      {
+        "pid": 2063906,
+        "ppid": 2422,
+        "state": "S",
+        "start_boot_s": 753939.15,
+        "registered_monotonic_s": 753939.157322712,
+        "cmdline": "/home/car/uav_handover/uav_lab/.local/runtime/xrce-agent/bin/MicroXRCEAgent udp4 -p 18888 -v 4 ",
+        "comm": "MicroXRCEAgent"
+      }
+    ]
+  },
+  "boot_id": "ce293fd5-d6be-4a6c-af7d-5d0790fdac6b",
+  "campaign_pid1883772_exists": false,
+  "postworker_pid1895708_exists": false,
+  "sessions_unrecognized": [
+    78214,
+    32153,
+    25329,
+    67467
+  ],
+  "observed_interruption": "campaign/runner/monitor no longer available; PX4/Agent adopted by user systemd; source of termination unknown; no kernel OOM entries in checked window",
+  "no_simulations_restarted": true,
+  "cleanup_not_yet_performed": true
+}

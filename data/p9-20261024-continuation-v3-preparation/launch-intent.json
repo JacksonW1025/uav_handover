@@ -1,0 +1,26 @@
+{
+  "time": "2026-10-24T10:12:11.612108+00:00",
+  "unit": "p9-continuation-v3.service",
+  "command": [
+    "systemd-run",
+    "--user",
+    "--unit=p9-continuation-v3",
+    "--property=Type=exec",
+    "--property=WorkingDirectory=/home/car/uav_handover",
+    "--property=CPUAffinity=0-3",
+    "--property=KillMode=control-group",
+    "--property=KillSignal=SIGINT",
+    "--property=TimeoutStopSec=20",
+    "--property=SendSIGKILL=no",
+    "--property=Restart=no",
+    "--property=RuntimeMaxSec=2h",
+    "--property=RemainAfterExit=yes",
+    "--property=Environment=PYTHONUNBUFFERED=1",
+    "--property=Environment=MPLCONFIGDIR=/tmp/p9-continuation-v3-mpl",
+    "--property=StandardOutput=append:/home/car/uav_handover/data/p9-20261024-continuation-v3-session.log",
+    "--property=StandardError=inherit",
+    "/home/car/uav_handover/uav_lab/.local/venv/bin/python",
+    "/home/car/uav_handover/data/p9-20261024-continuation-v3-preparation/run_pipeline.py"
+  ],
+  "warning": "launch intent, not a flight start; per-flight START_INTENT stays in original shared ledger"
+}

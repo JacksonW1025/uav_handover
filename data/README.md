@@ -72,3 +72,11 @@ cat data/verified-raptor_hover/validation.json
 参考有效0/36、D0/36；71条静态任务NOT_RUN、7个未用搜索槽不挪用，没有自动补跑。
 
 全部原始数据只在Thor本地，尤其未完成样本的ULog来源、保全副本与哈希见[LOCAL_RAW_DATA](p9-20261024-interruption-v1/LOCAL_RAW_DATA.md)。远端不含完整原始遥测。详见[P9报告](../docs/THOR_P9_REPORT.md)。
+
+## 2026-10-24 P9续接停止与完整现有证据交付
+
+`p9-20261024-continuation-v1-freeze/`绑定冻结提交95f424b和59项输入；唯一systemd单元完成35参考＋24D，随后第162次D07-Z飞行安全中止，首开口中断的冻结P9分析异常，按规则停止，无第三批/补跑。累计162启动、160冻结测量；原102缺失不变，D余11未启动，搜索余7不用。
+
+`p9-20261024-continuation-v1-audit-stopped-v1/`为59/59逐条原始重算通过、全批完整性FAIL；`...-report-stopped-v1/`和`...-postanalysis-stopped-v1/`保存两执行版本的描述性分析、图、成本和预算，并非拼接验收PASS。`...-stopped-analysis/`保存第162次独立诊断、162条全部启动索引、后续事件段风险、任务代价、校正说明和只读复现脚本。原批808证据哈希、原27＋新59冻结输入均未漂移。
+
+详情见[P9续接报告](../docs/THOR_P9_CONTINUATION_REPORT.md)。大体积原始数据含失败ULog仍只在Thor；远端不是完整原始数据。此前中断章节及原报告保留为历史状态，不覆盖。

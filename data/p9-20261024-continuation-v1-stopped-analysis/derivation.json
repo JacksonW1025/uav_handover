@@ -1,0 +1,61 @@
+{
+  "source": "data/p9-20261024-continuation-v1-preparation/postanalysis_continuation.py",
+  "source_sha256": "a814162cec92b7cb9e333734e87eb48f3662e057f1a453dd099e65a5dea7f338",
+  "derived": "data/p9-20261024-continuation-v1-stopped-analysis/postanalysis_stopped.py",
+  "derived_sha256": "1694007613b63e656c58a806ff11b47a7956257a1891c6b12dceb86ba8427d27",
+  "changes": [
+    [
+      "if formal['status']!='COMPLETE_WITH_ORIGINAL_INFRA_MISSING' or report['execution_status']!='COMPLETE_WITH_ORIGINAL_INFRA_MISSING':",
+      "if formal['status']!='CONTINUATION_INCOMPLETE' or report['execution_status']!='CONTINUATION_INCOMPLETE':"
+    ],
+    [
+      "raise SystemExit('Continuation complete with original missing102 required')",
+      "raise SystemExit('Stopped continuation required; no completion claim')"
+    ],
+    [
+      "report['attempts']!={'development':10,'formal':173}",
+      "report['attempts']!={'development':10,'formal':162}"
+    ],
+    [
+      "'ORIGINAL_INFRA_MISSING' if r['id']=='C-CZ15-g0.1-reference-P9-Z' and started else",
+      "'ORIGINAL_INFRA_MISSING' if r['id']=='C-CZ15-g0.1-reference-P9-Z' and started else ('FROZEN_ANALYSIS_EXCEPTION_AFTER_FLIGHT_FAILURE' if r['id']=='D-07-P9-Z' and started else"
+    ],
+    [
+      "('STARTED_UNRESOLVED' if started else 'NOT_STARTED_FROZEN_SEARCH_STOP'))",
+      "('STARTED_UNRESOLVED' if started else 'NOT_STARTED_FROZEN_SEARCH_STOP')))"
+    ],
+    [
+      "if r['stage']!='C-search':budget_errors.append('required static run missing: '+r['id']);state='MISSING_REQUIRED_START'",
+      "if r['stage']!='C-search':state='NOT_RUN_AFTER_MEASUREMENT_EXCEPTION'"
+    ],
+    [
+      "r['id']!='C-CZ15-g0.1-reference-P9-Z':budget_errors",
+      "r['id'] not in ['C-CZ15-g0.1-reference-P9-Z','D-07-P9-Z']:budget_errors"
+    ],
+    [
+      "'ACCOUNTING_CLOSED_WITH_KNOWN_INFRA_MISSING'",
+      "'ACCOUNTING_ENUMERATED_INCOMPLETE_NO_ACCEPTANCE'"
+    ],
+    [
+      "'reference_missing_n':1",
+      "'reference_missing_n':1,'new_frozen_measurement_exception_id':'D-07-P9-Z','D_not_run':11"
+    ],
+    [
+      "\u7eed\u63a571\u6761\u539f\u59cb\u6570\u636e\u5ba1\u8ba1",
+      "\u7eed\u63a559\u6761\u5b8c\u6210\u8bb0\u5f55\u539f\u59cb\u6570\u636e\u91cd\u6d4b\uff08\u5168\u6279\u5b8c\u6574\u6027FAIL\uff09"
+    ],
+    [
+      "nine paired sequence clusters",
+      "six completed paired sequence clusters; three planned clusters incomplete"
+    ],
+    [
+      "\u4e5d\u4e2a\u914d\u5bf9\u5e8f\u5217\u7c07",
+      "\u516d\u4e2a\u5df2\u5b8c\u6210\u914d\u5bf9\u5e8f\u5217\u7c07\uff08\u539f\u8ba1\u5212\u4e5d\u7c07\uff09"
+    ],
+    [
+      "'D has nine related sequence clusters, not 36 independent samples'",
+      "'D planned nine clusters; only six four-arm clusters measured, one extra original arm aborted before closed gap and 11 arms not run'"
+    ]
+  ],
+  "scope": "display and enumerate partial evidence only; no acceptance or frozen input changes"
+}

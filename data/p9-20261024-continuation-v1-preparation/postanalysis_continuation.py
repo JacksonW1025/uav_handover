@@ -101,7 +101,7 @@ def main():
                 ax.scatter(val(q,'phase_s'),s['final']['counted_queries'],color='gray',marker='s')
             if s['final'].get('bracket'):
                 lo,hi=s['final']['bracket'];ax.axvspan(.1+.05*lo,.1+.05*hi,color='#009E73',alpha=.1)
-            
+
             measured_phases={val(r,'phase_s') for r in ref}
             for phase in [round(.1+.05*k,2) for k in range(12)]:
                 if phase not in measured_phases:ax.scatter(phase,0,c='gray',marker='$?$',s=40)

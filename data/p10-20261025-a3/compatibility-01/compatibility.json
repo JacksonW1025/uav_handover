@@ -1,0 +1,283 @@
+{
+  "schema": "p10-a3-development-interface-diagnostic-1",
+  "status": "MAPPED_P9_DATA_REFUTES_A2_W_BOUND",
+  "raw_file": "data/p9-20261024-dev-01/run/flight.ulg",
+  "raw_sha256": "375a9287d64a70791329cbbaabf01d943cde91d96db41accd992c2bae4422f1b",
+  "inputs": {
+    "data/p9-20261024-dev-01/run/config.json": "2859cb80cb988ae4662188dd5cfb598b5fef4946cac6d65ba5d986603a65e15d",
+    "data/p9-20261024-dev-01/run/events.jsonl": "3f7ac09bf1ea552aa65e8dfce4559ba303acfb91cee56b511248b2ad7b7810ac",
+    "tools/p6_export.py": "e68e85a0b2ecbb86ff178eb363ea8856a5135951455c94af164f751eec7e49ba",
+    "data/p9-20261024-freeze/model.json": "474509c9192ce270b897fdc1cbd69796be180c6a5a73b9f091678dbbca256b4a"
+  },
+  "mapping": "p/v/errors from research_timing named local position sample and reconstructed actual active target; q=-g R_body_z_xy/Rzz rotated into target-yaw frame, using EXACT named attitude_sample",
+  "clock_alignment": "native gyro sample time, not DDS UTC or line-profile seconds; require all 24 rows 4ms and fixed yaw",
+  "model_step": "q_next=rho*q-(1-rho)*(kp*clip(e[k-22])+kv*clip(d[k-22]))+w_q",
+  "necessary_bound": "|w_q| <= sqrt(.4)*1e-7 < .633e-7 if ||w||_P<=1e-7",
+  "state_mapping_scope": "refutes this specified logged estimator/attitude-proxy mapping; not a statement about unobserved true acceleration",
+  "rows": 8739,
+  "unmatched_attitude_or_state_rows": 0,
+  "reconstruction": {
+    "position_max_abs": 3.52229150984984e-08,
+    "velocity_max_abs": 1.2724162573585218e-07,
+    "components_over_1e-4": 0,
+    "components_checked": 51817,
+    "rows": 8739,
+    "rows_unmatched": 0,
+    "rows_with_clipping": 535
+  },
+  "tested_aligned_steps": 7196,
+  "q_coordinate_violations": 7196,
+  "max_abs_q_residual": 0.14499322687658459,
+  "first_violation_index": 1381,
+  "portable_counterexamples": [
+    {
+      "index": 1381,
+      "sample_us": 53800000,
+      "next_sample_us": 53804000,
+      "profile_bound_offset_us": 84000,
+      "attitude_sample_us": 53796000,
+      "next_attitude_sample_us": 53800000,
+      "yaw_rad": 1.6767029762268066,
+      "yaw_constant_24_samples": true,
+      "quaternion": [
+        [
+          0.6689073443412781,
+          0.0022572646848857403,
+          -0.001189047354273498,
+          0.7433415055274963
+        ],
+        [
+          0.6689128875732422,
+          0.0024164661299437284,
+          -0.0011171072255820036,
+          0.7433361411094666
+        ]
+      ],
+      "cos_yaw": -0.10570878174597352,
+      "sin_yaw": 0.9943971306584619,
+      "q": [
+        0.048517093158193414,
+        0.04989637139524809
+      ],
+      "delayed_clipped_position": 0.00952804120943304,
+      "delayed_clipped_velocity": -0.018169238421605925,
+      "kp": 8.790378768672879,
+      "kv": 5.453065498984149,
+      "residual_q": 0.0029981754082312293
+    },
+    {
+      "index": 1382,
+      "sample_us": 53804000,
+      "next_sample_us": 53808000,
+      "profile_bound_offset_us": 88000,
+      "attitude_sample_us": 53800000,
+      "next_attitude_sample_us": 53804000,
+      "yaw_rad": 1.6767029762268066,
+      "yaw_constant_24_samples": true,
+      "quaternion": [
+        [
+          0.6689128875732422,
+          0.0024164661299437284,
+          -0.0011171072255820036,
+          0.7433361411094666
+        ],
+        [
+          0.6689175367355347,
+          0.0025838033761829138,
+          -0.0010313175152987242,
+          0.7433314919471741
+        ]
+      ],
+      "cos_yaw": -0.10570878174597352,
+      "sin_yaw": 0.9943971306584619,
+      "q": [
+        0.04989637139524809,
+        0.0512127852344699
+      ],
+      "delayed_clipped_position": 0.00917175940930642,
+      "delayed_clipped_velocity": -0.018127726064416462,
+      "kp": 8.790378768672879,
+      "kv": 5.453065498984149,
+      "residual_q": 0.002860877156567345
+    },
+    {
+      "index": 1383,
+      "sample_us": 53808000,
+      "next_sample_us": 53812000,
+      "profile_bound_offset_us": 92000,
+      "attitude_sample_us": 53804000,
+      "next_attitude_sample_us": 53812000,
+      "yaw_rad": 1.6767029762268066,
+      "yaw_constant_24_samples": true,
+      "quaternion": [
+        [
+          0.6689175367355347,
+          0.0025838033761829138,
+          -0.0010313175152987242,
+          0.7433314919471741
+        ],
+        [
+          0.6689209938049316,
+          0.002945436630398035,
+          -0.0008205593912862241,
+          0.7433273196220398
+        ]
+      ],
+      "cos_yaw": -0.10570878174597352,
+      "sin_yaw": 0.9943971306584619,
+      "q": [
+        0.0512127852344699,
+        0.053725185188541635
+      ],
+      "delayed_clipped_position": 0.00917175940930642,
+      "delayed_clipped_velocity": -0.018127726064416462,
+      "kp": 8.790378768672879,
+      "kv": 5.453065498984149,
+      "residual_q": 0.0041210655319513494
+    },
+    {
+      "index": 4836,
+      "sample_us": 67620000,
+      "next_sample_us": 67624000,
+      "profile_bound_offset_us": 13904000,
+      "attitude_sample_us": 67620000,
+      "next_attitude_sample_us": 67620000,
+      "yaw_rad": 1.7036365270614624,
+      "yaw_constant_24_samples": true,
+      "quaternion": [
+        [
+          0.6709060668945312,
+          0.04055670648813248,
+          0.03879592567682266,
+          0.7394154071807861
+        ],
+        [
+          0.6709060668945312,
+          0.04055670648813248,
+          0.03879592567682266,
+          0.7394154071807861
+        ]
+      ],
+      "cos_yaw": -0.1324498503262859,
+      "sin_yaw": 0.9911897079512804,
+      "q": [
+        0.11755435062579984,
+        0.11755435062579984
+      ],
+      "delayed_clipped_position": 0.037281491962637886,
+      "delayed_clipped_velocity": 0.46353605667796033,
+      "kp": 8.790378768672879,
+      "kv": 5.453065498984149,
+      "residual_q": 0.14499322687658459
+    },
+    {
+      "index": 4834,
+      "sample_us": 67612000,
+      "next_sample_us": 67616000,
+      "profile_bound_offset_us": 13896000,
+      "attitude_sample_us": 67608000,
+      "next_attitude_sample_us": 67612000,
+      "yaw_rad": 1.7036365270614624,
+      "yaw_constant_24_samples": true,
+      "quaternion": [
+        [
+          0.6720815896987915,
+          0.02510177716612816,
+          0.013395526446402073,
+          0.739930272102356
+        ],
+        [
+          0.6717540621757507,
+          0.030301408842206,
+          0.02191365696489811,
+          0.7398297786712646
+        ]
+      ],
+      "cos_yaw": -0.1324498503262859,
+      "sin_yaw": 0.9911897079512804,
+      "q": [
+        0.20725343446875943,
+        0.17751051052088643
+      ],
+      "delayed_clipped_position": 0.03316438142101793,
+      "delayed_clipped_velocity": 0.45908512697266923,
+      "kp": 8.790378768672879,
+      "kv": 5.453065498984149,
+      "residual_q": 0.11667620393010977
+    },
+    {
+      "index": 4832,
+      "sample_us": 67604000,
+      "next_sample_us": 67608000,
+      "profile_bound_offset_us": 13888000,
+      "attitude_sample_us": 67600000,
+      "next_attitude_sample_us": 67604000,
+      "yaw_rad": 1.7036365270614624,
+      "yaw_constant_24_samples": true,
+      "quaternion": [
+        [
+          0.6725348830223083,
+          0.014592062681913376,
+          -0.003781865583732724,
+          0.7399119138717651
+        ],
+        [
+          0.6723417639732361,
+          0.019863920286297798,
+          0.004829214885830879,
+          0.7399585843086243
+        ]
+      ],
+      "cos_yaw": -0.1324498503262859,
+      "sin_yaw": 0.9911897079512804,
+      "q": [
+        0.266743759624415,
+        0.23698165187948744
+      ],
+      "delayed_clipped_position": 0.029204184504652345,
+      "delayed_clipped_velocity": 0.45447465344754295,
+      "kp": 8.790378768672879,
+      "kv": 5.453065498984149,
+      "residual_q": 0.11663446277371409
+    }
+  ],
+  "inference_sample_deltas_us": {
+    "4000": 8738
+  },
+  "read_clock": {
+    "rows": 3940,
+    "distinct_native_read_intervals_us": [
+      -29300000,
+      0,
+      4000,
+      8000,
+      12000,
+      16000,
+      20000,
+      24000,
+      28000,
+      32000,
+      40000,
+      44000,
+      48000,
+      52000,
+      64000,
+      108000,
+      188000,
+      364000,
+      380000,
+      396000,
+      5112000,
+      5124000,
+      5436000,
+      36820000
+    ],
+    "exact_A3_publish_read_schedule_verified": false,
+    "reason": "profile-start bound and callback/receive phase are not an exact timing identity"
+  },
+  "target_float_envelope": "binary32 cast envelope may be checked for finite magnitudes; EP/EV are not bounds on stream timing or source reference mismatch",
+  "unobserved_fields": "GRU influence is not assigned zero; this residual diagnostic does not identify each causal component",
+  "no_new_empirical_bound": true,
+  "new_flights": 0,
+  "B_C_D_started": false
+}

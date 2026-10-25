@@ -1,0 +1,59 @@
+{
+  "path": "data/p9-20261024-dev-01/run/config.json",
+  "sha256": "2859cb80cb988ae4662188dd5cfb598b5fef4946cac6d65ba5d986603a65e15d",
+  "speed": 1.8,
+  "profile": {
+    "motion_axis_ned": [
+      0.965925826,
+      0.258819045,
+      0.0
+    ],
+    "reference_hold_s": 3.0,
+    "accel_s": 1.0,
+    "pre_gap_s": 1.0,
+    "post_gap_s": 2.0,
+    "decel_to_m_s": 0.0,
+    "decel_m_s2": 2.0,
+    "end_hold_s": 6.0,
+    "post_stream_s": 5.0,
+    "return_hold_s": 5.0,
+    "setpoint_period_s": 0.02,
+    "reposition": {
+      "speed_m_s": 1.0,
+      "accel_m_s2": 0.5
+    },
+    "motor_saturation": {
+      "upper": 0.999,
+      "lower": 0.001,
+      "note": "actuator_motors control in [0,1]; upper/lower limit within 1e-3"
+    },
+    "note": "Profile time: reposition from RAPTOR's hover capture to the start offset (-L/2 along the axis, trapezoid 1.0 m/s, 0.5 m/s^2), hold 3 s, 1 s linear ramp to 2.0 m/s, cruise = pre_gap_s + count*D + (count-1)*recover + post_gap_s, linear deceleration to rest at decel_m_s2, then end_hold_s of stationary setpoints. Gap k covers profile times [cruise start + pre_gap_s + k*(D + recover), + D); no setpoint is published inside a gap; the trajectory time keeps running.",
+    "cruise_s": 5.6,
+    "start_offset_m": -5.895,
+    "path_length_m": 11.790000000000001,
+    "gaps": {
+      "windows_s": [
+        [
+          0.0,
+          0.36
+        ],
+        [
+          0.66,
+          1.02
+        ],
+        [
+          2.24,
+          2.6
+        ]
+      ],
+      "count": 3
+    }
+  },
+  "parameters": {
+    "rini": 4,
+    "rtgt": 0,
+    "rtdec": 2.0,
+    "rrec": 0.0,
+    "description": "P9 original capture; one-step resume"
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "schema": "p10-a4-frozen-offline-1",
+  "baseline": "5b6dc8c4aa021e06de5fcc853b734cf222d94cfd",
+  "input": "data/p10-20261025-a4/inputs-interface",
+  "diagnosis": "data/p10-20261025-a4/diagnosis-fixed",
+  "model_limit": {
+    "baseline": "M0 literal4ms A3 fixed-origin-FLU dynamics, gains from20ms P9 fit",
+    "M1": "named sensor clock hold/advance, historical yaw transport, refit only tau/delay/kp/kv",
+    "M2": "M1 plus observed LP acceleration AR, 3 shared coefficients at8ms",
+    "q_grid_tau_s": [
+      0.04,
+      0.08,
+      0.16
+    ],
+    "q_grid_delay_steps": [
+      0,
+      11,
+      22,
+      33
+    ],
+    "q_gain_bounds": [
+      0,
+      50
+    ],
+    "acc_bounds": [
+      [
+        0,
+        0,
+        -100
+      ],
+      [
+        0.999,
+        100,
+        0
+      ]
+    ],
+    "split": "whole semantic conditions fit01,03,05,06 check02,04,07,08; all previously seen",
+    "choice_evidence": "LP advances0/8ms at4ms native steps, attitude0/4/8ms; P7 recovery target correction removes10086/10020 component mismatches; acc-q RMSE .08-.30 before attribution"
+  },
+  "theory": {
+    "state_per_axis": [
+      "p",
+      "v",
+      "q",
+      "22 pairs clipped errors",
+      "cap_p",
+      "cap_v"
+    ],
+    "N_per_axis": 49,
+    "same_error_metric": "blockdiag(P_A2_forward47,P_A3_lateral47,I4 captured-state); deterministic queue+capture residuals explicitly verified; physical p/v/q cross terms retained",
+    "initial": "A3 observed center, lateral p +/- .01m q +/- .1, full unchanged warmup/3 events/poststream",
+    "epsilon_checked_grid": [
+      0,
+      1e-07,
+      1e-06,
+      1e-05,
+      0.001,
+      0.1
+    ],
+    "no_binary_search_or_global_max_claim": true,
+    "repair_candidates": [
+      {
+        "id": "T0",
+        "alpha": 0,
+        "brake_s": 0.4,
+        "resume_s": 0
+      },
+      {
+        "id": "C04",
+        "alpha": 1,
+        "brake_s": 0.4,
+        "resume_s": 0
+      },
+      {
+        "id": "C08",
+        "alpha": 1,
+        "brake_s": 0.8,
+        "resume_s": 0
+      },
+      {
+        "id": "R02",
+        "alpha": 0,
+        "brake_s": 0.4,
+        "resume_s": 0.2
+      },
+      {
+        "id": "CR02",
+        "alpha": 1,
+        "brake_s": 0.4,
+        "resume_s": 0.2
+      },
+      {
+        "id": "CR06",
+        "alpha": 1,
+        "brake_s": 0.4,
+        "resume_s": 0.6
+      },
+      {
+        "id": "C05R02",
+        "alpha": 0.5,
+        "brake_s": 0.4,
+        "resume_s": 0.2
+      }
+    ],
+    "repair_semantics": "counterfactual timed braking: cap_v_target=alpha*v_cap*(1-t/T)+, cap_position exact integral; at resume smoothstep-blend p/v fields independently with held external trajectory over resume_s; not existing RTGT2 norm-fixed deceleration, no PX4 implementation change",
+    "limits": {
+      "proxy_q_norm": 9.80665,
+      "max_lag_m": 4.5,
+      "terminal_position_error_m": 0.2,
+      "terminal_velocity_error_m_s": 0.1
+    },
+    "fixed_point_covariance_scale": 1000000000000000000000000,
+    "center_generator_scale": 1000000000000,
+    "rounding_L2_per_step": 1e-08,
+    "capture_position_round_bound": 2e-06,
+    "capture_velocity_round_bound": 5e-07
+  },
+  "prediction_evaluation": "native common output NED p/v/q; .5s,2s and full hindsight logged-target+sensor-clock conditioned rolls; not prospective risk forecasting",
+  "new_diagnostic_SITL_limit": 12,
+  "new_SITL_starts": 0,
+  "new_flights_frozen": false,
+  "new_flight_gate": "only if key observation absent, freeze question/variables/fields/criteria/budget before any start; none needed so far",
+  "B_C_D_started": false,
+  "A5_authorized": false
+}

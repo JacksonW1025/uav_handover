@@ -1,0 +1,68 @@
+{
+  "schema": "p10-a4-final-1",
+  "route": "B",
+  "overall_gate": "NOT_PASSED",
+  "source_reference_and_initialization": "A3 source-08 bindings preserved; fixed allowed clock subclass, not all native timing",
+  "model_internal_full_set_proofs": {
+    "T0": {
+      "epsilon": "0",
+      "rows": 7350,
+      "audit": "audits-final/T0/audit.json",
+      "sha256": "865d30718faf99175f9c2440e7f7c8ba7c7ef2501c2624bf95cbd4af58f5eb41"
+    },
+    "C04": {
+      "epsilon": "1/1000",
+      "rows": 7350,
+      "audit": "audits-final/C04/audit.json",
+      "sha256": "0f820eeb2b7a09ea40b00f4809a9bc2219ce253932c599b137e6451b0eb74df9"
+    },
+    "CR06": {
+      "epsilon": "1/100000",
+      "rows": 7350,
+      "audit": "audits-final/CR06/audit.json",
+      "sha256": "656d4bfa45b346b030c516929a8eb51fc21d79948906fc39cbd9005e6aa8319f"
+    }
+  },
+  "actual_error_interface": "REFUTED_FOR_COMPLETE_UNSTRUCTURED_PHYSICAL_STEP_BALL",
+  "basis": {
+    "record_lower": 3.240511006595714,
+    "unsafe_ball_radius": "3",
+    "largest_exactly_audited_epsilon": 0.001,
+    "not_maximum_tolerance": true,
+    "counterexample_scope": "no sound 45deg proxy guarantee over the COMPLETE uniform per-step epsilon>=3 physical-support ball for this M0/startup/horizon; not impossibility for that ball intersected with actual observation-hold/colored-error constraints, other interfaces/dynamics, or all Lyapunov methods"
+  },
+  "disturbance_support": "98-state metric, but arbitrary per-step model-error injection ONLY in current p/v/q (6 physical coordinates). Queue shifts are deterministic, capture resets constrained with separate cast budgets. This is NOT a certificate for arbitrary98-dimensional disturbance balls",
+  "actual_test_or_repair_admission": "NONE; proxy conditional decisions retained, no permission to skip real safety tests",
+  "conditional_decision": "at epsilon .001 direct point replay accepts T0 and C04; full covariance candidate for T0 is UNKNOWN, C04 has exact full-set certificate. This is conditional model admission, not permission to skip real safety tests",
+  "first_capture_instant_only_alpha": {
+    "profile_us": 13096000,
+    "velocity_component_upper": [
+      "655091313346378027507301/2199023255552000000000000",
+      "54689820907462248676396209755981189/30223145490365729367654400000000000"
+    ],
+    "velocity_norm_upper": "1833891957049/1000000000000",
+    "capture_velocity_vector_error_upper": "1/1000000",
+    "alpha_sufficient_lower": "277963985683/611296985683",
+    "formula": "(1-alpha)*L+alpha*E<=1, alpha in[0,1]; prevents first instantaneous velocity clipping in any orthonormal yaw frame",
+    "scope": "first reset only. Before this reset all seven cases share the same dynamics; not a full continuous-alpha repair family guarantee",
+    "alpha_sufficient_lower_display": 0.4547118539647824
+  },
+  "data_scope": "all8 old dev logs;4 retrospective check flights/3 groups/16 event windows; no observed>45deg window; false_low0 not a miss-rate validation",
+  "M1_M2_scope": "future actual target and observation clocks used; retrospective output-P projection only, not complete M1/M2 certificates",
+  "no_query_saving_claim": true,
+  "no_global_method_impossibility_claim": true,
+  "height_and_actual_intersample_output": "NOT_COVERED",
+  "next": "stop expanding the current unstructured per-step ball construction. If separately authorized, first derive a source-clock observation/storage interface and defensible colored/mode-dependent error constraints; do not autonomously start A5/B/C/D",
+  "new_SITL_starts": 0,
+  "new_development_or_formal_flights": 0,
+  "new_real_flights": 0,
+  "diagnostic_budget_used": 0,
+  "diagnostic_budget_cap": 12,
+  "B_C_D_started": false,
+  "A5_started": false,
+  "historical_files_preserved": 61534,
+  "canonical_summary": "summary-final/study-summary.json",
+  "report": "../../docs/THOR_P10_A4_REPORT.md",
+  "tests": "tests-final.log:77 passed; reproduction/reproduction.json:input/refit/exact cores/history checked",
+  "publication": "publication.json records remote and CI separately; tests != theory gate != CI"
+}

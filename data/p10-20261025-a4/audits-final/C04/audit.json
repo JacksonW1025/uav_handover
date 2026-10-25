@@ -1,0 +1,78 @@
+{
+  "schema": "p10-a4-exact-storage-audit-1",
+  "case": {
+    "id": "C04",
+    "alpha": 1,
+    "brake_s": 0.4,
+    "resume_s": 0
+  },
+  "epsilon_P": "1/1000",
+  "status": "VERIFIED_CONDITIONAL_PROXY_SEQUENCE",
+  "full_rows": 7350,
+  "failure": null,
+  "max_q_squared_upper": "9302268017116587065098569551836244606661245597969934646756680154373/713623846352979940529142984724747568191373312000000000000000000000",
+  "max_q_upper_display": 3.610436800046,
+  "max_lag_upper": "274390529493929282776209240999812031208171739169361/1361129467683753853853498429727072845824000000000000",
+  "max_lead_upper": "282593911916563899110339695596116919631922898341741/1361129467683753853853498429727072845824000000000000",
+  "cross_boundary_remainder_groups": 0,
+  "saturated_axis_samples": 0,
+  "terminal_position_squared_upper": "10309907933944587873291469968498850122139658731865145702852711656001/22835963083295358096932575511191922182123945984000000000000000000000000",
+  "terminal_velocity_squared_upper": "597059689243577969324210662931746243279254643769889585043189186001/356811923176489970264571492362373784095686656000000000000000000000000",
+  "max_center_generator_L2_rounding": "4114308587290420474767405174268186586600471/174224571863520493293247799005065324265472000000000000",
+  "rho_enclosure": [
+    "1902458849/2000000000",
+    "951229424501/1000000000000"
+  ],
+  "proof": "Snext PSD-dominates both rho endpoint A S A^T plus full-metric input covariance and nonlinear clip remainders, by exact integer row-sum enclosure; V=eta^T S^-1 eta gives energy budget recursion. No scan is used as region proof",
+  "input_metric": "fixed blockdiag(A2 forward P47,A3 lateral P47,I4 capture); current p/v/q support with all physical cross terms; deterministic queue and capture residual assumptions explicit",
+  "output_scope": "stipulated q interpolation and pure geometric tilt proxy only; no actual SITL skip, height or whole-task safety",
+  "events": [
+    [
+      13096000,
+      "CAPTURE"
+    ],
+    [
+      13256000,
+      "RESUME"
+    ],
+    [
+      13748000,
+      "CAPTURE"
+    ],
+    [
+      13916000,
+      "RESUME"
+    ],
+    [
+      15332000,
+      "CAPTURE"
+    ],
+    [
+      15496000,
+      "RESUME"
+    ],
+    [
+      24596000,
+      "CAPTURE"
+    ]
+  ],
+  "initial_set": "unchanged A3 actual startup center + lateral p +/- .01m and q +/- .1; same captured variables and old queues retained",
+  "first_capture_parameter_constraint": {
+    "profile_us": 13096000,
+    "velocity_component_upper": [
+      "655091313346378027507301/2199023255552000000000000",
+      "54689820907462248676396209755981189/30223145490365729367654400000000000"
+    ],
+    "velocity_norm_upper": "1833891957049/1000000000000",
+    "capture_velocity_vector_error_upper": "1/1000000",
+    "alpha_sufficient_lower": "277963985683/611296985683",
+    "formula": "(1-alpha)*L+alpha*E<=1, alpha in[0,1]; prevents first instantaneous velocity clipping in any orthonormal yaw frame",
+    "scope": "first reset only. Before this reset all seven cases share the same dynamics; not a full continuous-alpha repair family guarantee"
+  },
+  "max_fixedpoint_padding_units": 3565483,
+  "elapsed_s": 66.56779091700446,
+  "candidate_sha256": "ffff0bed204810d7fe88ef1a9bec97583015b5ac984f5900a91bb1dd105c640e",
+  "verifier_sha256": "248fd736d314386f2289537e55f7ce6cb42668e50a2f31b7c90640ad79b5393a",
+  "new_flights": 0,
+  "B_C_D_started": false
+}

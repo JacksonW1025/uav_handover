@@ -1,0 +1,19 @@
+..F...........                                                           [100%]
+=================================== FAILURES ===================================
+____ test_clock_conditioned_prediction_holds_observations_and_integrates_q _____
+
+    def test_clock_conditioned_prediction_holds_observations_and_integrates_q():
+        a=toy();m={**m4.baseline(),'sensor_clocks':True,'yaw_transport':'delayed_frame'};k=np.array([40,41])
+        pn,vn,qn,_=m4.predict_rows(a,m,k)
+        assert np.array_equal(pn[0],a['p'][40]) and np.array_equal(vn[0],a['v'][40])
+        assert np.array_equal(qn[0],a['q'][40])
+        rho=np.exp(-.004/m['tau']);u=-np.array(m['kp'])*.1-np.array(m['kv'])*.2
+>       assert np.allclose(qn[1],(1-rho**2)*u,rtol=0,atol=1e-14)
+E       assert False
+E        +  where False = <function allclose at 0xffff83a478f0>(array([-0.18743707,  0.19944948]), ((1 - (0.951229424500714 ** 2)) * array([-1.96965098, -2.09588134])), rtol=0, atol=1e-14)
+E        +    where <function allclose at 0xffff83a478f0> = np.allclose
+
+tests/test_p10_a4.py:60: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_p10_a4.py::test_clock_conditioned_prediction_holds_observations_and_integrates_q
+1 failed, 13 passed in 4.17s

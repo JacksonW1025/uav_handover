@@ -1,0 +1,516 @@
+{
+  "schema": "p11-observation-acceptance-1",
+  "created_utc": "2026-10-25T20:53:06.130362+00:00",
+  "status": "PASS",
+  "gates": {
+    "budget": true,
+    "same_binary_final_off_on": true,
+    "all_observation_gates": true,
+    "full_cycle_timing": true,
+    "whole_publication_measured": true,
+    "sidecar_complete": true,
+    "send_read_intervals": true,
+    "target_module_latest": true,
+    "target_RTGT": true,
+    "target_RREC": true,
+    "normal_path": true,
+    "old_behavior_equivalence": true,
+    "current_off_on_equivalence": true,
+    "no_missed_duplicate_regressed": true,
+    "capacity_72_with_reserve": true,
+    "dev09-final-protocol_hardlink_preserved": true,
+    "dev10-complete-timing-off_hardlink_preserved": true,
+    "dev11-complete-timing-on_hardlink_preserved": true
+  },
+  "development_starts": 11,
+  "formal_starts": 0,
+  "final_binary_sha256": "965fd9fd9d30eef544593706c076e7ad0a1e375a3bf748efe360eb64d9e54cb4",
+  "observation": {
+    "schema": "p11-observation-1",
+    "run": "data/p11-20261025-development/dev11-complete-timing-on/run",
+    "baseline": {
+      "inference_duration_us": {
+        "n": 8739,
+        "min": 1.0,
+        "p50": 2.0,
+        "p95": 4.0,
+        "p99": 13.0,
+        "max": 70.0
+      },
+      "control_sample_dt_us": {
+        "n": 8738,
+        "min": 4000.0,
+        "p50": 4000.0,
+        "p95": 4000.0,
+        "p99": 4000.0,
+        "max": 4000.0
+      },
+      "native_sample_dt_us": {
+        "n": 4369,
+        "min": 8000.0,
+        "p50": 8000.0,
+        "p95": 8000.0,
+        "p99": 8000.0,
+        "max": 8000.0
+      },
+      "sample_missed_total": 0,
+      "duplicate_total": 0,
+      "regressed_total": 0,
+      "max_tilt_deg_whole_log": 36.660189692926934,
+      "ulog_sha256": "b518a1dd48ee626cac61a15c984ba49c88fdd4d7c02c9d206da321a933c5b945",
+      "whole_observation_cycle_us": {
+        "n": 8739,
+        "min": 5.296,
+        "p50": 9.686,
+        "p95": 22.601,
+        "p99": 44.76636000000003,
+        "max": 89.646
+      },
+      "p11_setup_ns": {
+        "n": 8739,
+        "min": 0.093,
+        "p50": 0.213,
+        "p95": 0.5,
+        "p99": 1.3205800000000072,
+        "max": 51.999
+      },
+      "p11_pre_ns": {
+        "n": 8739,
+        "min": 0.027,
+        "p50": 0.093,
+        "p95": 0.204,
+        "p99": 0.297,
+        "max": 20.416
+      },
+      "p11_post_copy_ns": {
+        "n": 8739,
+        "min": 0.028,
+        "p50": 0.093,
+        "p95": 0.102,
+        "p99": 0.102,
+        "max": 37.147
+      },
+      "p11_publication_ns": {
+        "n": 8739,
+        "min": 0.166,
+        "p50": 0.5,
+        "p95": 0.75,
+        "p99": 0.861,
+        "max": 22.056
+      },
+      "units_p11_parts": "microseconds; exact observed parts include full publication; full span also includes ordinary controller work"
+    },
+    "problems": [],
+    "tolerances": {
+      "single_h": 1e-05,
+      "single_action": 1e-05,
+      "continuous_h": 0.0001,
+      "continuous_action": 0.0001,
+      "input": 0.0001
+    },
+    "scope": "all contiguous active logged control calls; exogenous18 inputs and schedule known; no future-free plant claim",
+    "executor_action_field": "CLIPPED executor output before (a+1)/2; unclipped Dense output reconstructed from exact prestate/input/weights and verified clipped output",
+    "missing_truth": "never filled with zeros; gz angular topic contains finite-difference Euler rates, not body angular velocity",
+    "policy_matches_run": true,
+    "example_max_abs_error": 6.914603389862606e-07,
+    "single_step": {
+      "rows": 8739,
+      "native": 4370,
+      "h_max": 5.348297061891216e-07,
+      "action_max": 6.294299808584647e-07,
+      "previous_action_write_max": 0.0,
+      "unclipped_peak": 1.5788036493139208
+    },
+    "input_reconstruction": {
+      "max_abs": 1.243844316434206e-07,
+      "components_over_1e-4": 0
+    },
+    "continuous": {
+      "rows": 8739,
+      "total_active_rows": 8739,
+      "complete_active_interval": true,
+      "h_max": 8.478362709118947e-07,
+      "action_max": 1.0130312960709986e-06,
+      "input_history_max": 1.0130312960709986e-06,
+      "seconds": 34.952,
+      "compute_s": 0.365421109017916,
+      "initialization": "first active pre-GRU and previous_action exactly once; history counter reset by original activation",
+      "missing_call_boundaries": []
+    },
+    "coverage": {
+      "observed_control_calls": 8739,
+      "timing_control_calls": 8739,
+      "missing": 0,
+      "extra": 0,
+      "unique": true,
+      "non4ms_edges": 0,
+      "native_commit_mismatch": 0
+    },
+    "local_position_sample": {
+      "advance_us": {
+        "n": 8738,
+        "min": 0.0,
+        "p50": 4000.0,
+        "p95": 8000.0,
+        "p99": 8000.0,
+        "max": 8000.0
+      },
+      "age_us": {
+        "n": 8739,
+        "min": 4000.0,
+        "p50": 8000.0,
+        "p95": 12000.0,
+        "p99": 12000.0,
+        "max": 12000.0
+      }
+    },
+    "attitude_sample": {
+      "advance_us": {
+        "n": 8738,
+        "min": 0.0,
+        "p50": 4000.0,
+        "p95": 4000.0,
+        "p99": 8000.0,
+        "max": 8000.0
+      },
+      "age_us": {
+        "n": 8739,
+        "min": 4000.0,
+        "p50": 8000.0,
+        "p95": 8000.0,
+        "p99": 8000.0,
+        "max": 8000.0
+      }
+    },
+    "clock": {
+      "pairs": 8739,
+      "bracketed_pairs": 8739,
+      "native_query_bracket_width_us": {
+        "n": 8739,
+        "min": 1318.886,
+        "p50": 3997.296,
+        "p95": 4055.9133,
+        "p99": 4109.324760000001,
+        "max": 6657.288
+      },
+      "run_to_read_us": {
+        "n": 8739,
+        "min": 0.296,
+        "p50": 0.982,
+        "p95": 2.852,
+        "p99": 18.96644000000009,
+        "max": 56.61
+      },
+      "wall_per_sim_tick_ratio": {
+        "n": 8738,
+        "min": 0.33009875,
+        "p50": 0.999772,
+        "p95": 1.0143079125,
+        "p99": 1.0275154899999999,
+        "max": 1.668947
+      },
+      "alignment": "native timestamp and Run CLOCK_MONOTONIC pair each call; target read is within run_wall..read_wall; runner uses same host CLOCK_MONOTONIC",
+      "mapping_uncertainty": "Each native hrt query is causally bracketed by previous serialized Run read_wall and current run_wall. Width is recorded, not assumed4ms. First unbracketed row stays unknown. No global affine zero-error clock assertion."
+    },
+    "truth": {
+      "vehicle_local_position_groundtruth": {
+        "available": true,
+        "source_rows": 4639,
+        "valid_aligned_rows": 8739,
+        "hold_age_us": {
+          "n": 8739,
+          "min": 0.0,
+          "p50": 8000.0,
+          "p95": 16000.0,
+          "p99": 16000.0,
+          "max": 16000.0
+        }
+      },
+      "vehicle_attitude_groundtruth": {
+        "available": true,
+        "source_rows": 4639,
+        "valid_aligned_rows": 8739,
+        "hold_age_us": {
+          "n": 8739,
+          "min": 0.0,
+          "p50": 8000.0,
+          "p95": 16000.0,
+          "p99": 16000.0,
+          "max": 16000.0
+        }
+      }
+    },
+    "extra_external_fields": [
+      "external_position[0]",
+      "external_yaw"
+    ],
+    "gates": {
+      "single_h": true,
+      "single_action": true,
+      "continuous_h": true,
+      "continuous_action": true,
+      "input_reconstruction": true,
+      "complete_continuous": true,
+      "all_control_calls": true,
+      "truth_present": true,
+      "policy": true
+    },
+    "status": "PASS"
+  },
+  "off_baseline": {
+    "inference_duration_us": {
+      "n": 8742,
+      "min": 1.0,
+      "p50": 2.0,
+      "p95": 4.0,
+      "p99": 15.0,
+      "max": 58.0
+    },
+    "control_sample_dt_us": {
+      "n": 8741,
+      "min": 4000.0,
+      "p50": 4000.0,
+      "p95": 4000.0,
+      "p99": 4000.0,
+      "max": 4000.0
+    },
+    "native_sample_dt_us": {
+      "n": 4370,
+      "min": 8000.0,
+      "p50": 8000.0,
+      "p95": 8000.0,
+      "p99": 8000.0,
+      "max": 8000.0
+    },
+    "sample_missed_total": 0,
+    "duplicate_total": 0,
+    "regressed_total": 0,
+    "max_tilt_deg_whole_log": 36.853085448198605,
+    "ulog_sha256": "3686bba9df44175fa41e8c6a8c0851e862cac0d9025196de8220d125b3442256",
+    "whole_observation_cycle_us": {
+      "n": 8742,
+      "min": 4.38,
+      "p50": 9.194,
+      "p95": 25.70019999999994,
+      "p99": 48.186320000000094,
+      "max": 119.052
+    },
+    "p11_setup_ns": {
+      "n": 8742,
+      "min": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0
+    },
+    "p11_pre_ns": {
+      "n": 8742,
+      "min": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0
+    },
+    "p11_post_copy_ns": {
+      "n": 8742,
+      "min": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0
+    },
+    "p11_publication_ns": {
+      "n": 8742,
+      "min": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "max": 0.0
+    },
+    "units_p11_parts": "microseconds; exact observed parts include full publication; full span also includes ordinary controller work"
+  },
+  "synchronization": {
+    "schema": "p11-sync-check-1",
+    "raw_send_sha256": "605abbdb9d65969827bfd71af9f9c2aa303fd447f214d01eec0d5bdc62089c3a",
+    "sends": 1164,
+    "matched_valid_reads": 1164,
+    "ambiguous_reads": [],
+    "unmatched_valid_reads": [],
+    "unconsumed_or_unmatched_send_ids": [],
+    "latency_lower_us": {
+      "n": 1164,
+      "min": 41.249,
+      "p50": 3110.8285,
+      "p95": 3936.298749999999,
+      "p99": 4238.438669999988,
+      "max": 7851.747
+    },
+    "latency_upper_us": {
+      "n": 1164,
+      "min": 111.839,
+      "p50": 3175.4505,
+      "p95": 3993.76165,
+      "p99": 4305.3294399999895,
+      "max": 7924.058
+    },
+    "publish_call_us": {
+      "n": 1164,
+      "min": 37.49,
+      "p50": 56.499,
+      "p95": 80.9764,
+      "p99": 97.56113999999997,
+      "max": 126.507
+    },
+    "publish_plus_sidecar_us": {
+      "n": 1163,
+      "min": 65.138,
+      "p50": 97.109,
+      "p95": 136.49949999999998,
+      "p99": 159.46349999999984,
+      "max": 238.337
+    },
+    "whole_sidecar_accounting": "each emission logs preceding complete duration; last duration is retained in p1_reference_stopped event",
+    "phase_bins_sample_minus_LP_us": {
+      "4000": 18,
+      "8000": 583,
+      "12000": 563
+    },
+    "event_transitions": [
+      {
+        "kind": "CAPTURE_OR_STALE",
+        "native_us": 48272000,
+        "sample_us": 48272000,
+        "LP_age_us": 8000,
+        "last_read_age_us": null,
+        "native_query_host_interval_ns": [
+          912687662522485,
+          912687666543747
+        ],
+        "read_host_interval_ns": [
+          912687666543747,
+          912687666576534
+        ]
+      },
+      {
+        "kind": "RESUME",
+        "native_us": 53724000,
+        "sample_us": 53724000,
+        "LP_age_us": 12000,
+        "last_read_age_us": 0,
+        "native_query_host_interval_ns": [
+          912693114541894,
+          912693118579185
+        ],
+        "read_host_interval_ns": [
+          912693118579185,
+          912693118580055
+        ]
+      },
+      {
+        "kind": "CAPTURE_OR_STALE",
+        "native_us": 66800000,
+        "sample_us": 66800000,
+        "LP_age_us": 8000,
+        "last_read_age_us": 204000,
+        "native_query_host_interval_ns": [
+          912706190568935,
+          912706194547423
+        ],
+        "read_host_interval_ns": [
+          912706194547423,
+          912706194548266
+        ]
+      },
+      {
+        "kind": "RESUME",
+        "native_us": 66980000,
+        "sample_us": 66980000,
+        "LP_age_us": 12000,
+        "last_read_age_us": 0,
+        "native_query_host_interval_ns": [
+          912706370589160,
+          912706374610851
+        ],
+        "read_host_interval_ns": [
+          912706374610851,
+          912706374612379
+        ]
+      },
+      {
+        "kind": "CAPTURE_OR_STALE",
+        "native_us": 67472000,
+        "sample_us": 67472000,
+        "LP_age_us": 8000,
+        "last_read_age_us": 204000,
+        "native_query_host_interval_ns": [
+          912706862580728,
+          912706866550179
+        ],
+        "read_host_interval_ns": [
+          912706866550179,
+          912706866551040
+        ]
+      },
+      {
+        "kind": "RESUME",
+        "native_us": 67640000,
+        "sample_us": 67640000,
+        "LP_age_us": 8000,
+        "last_read_age_us": 0,
+        "native_query_host_interval_ns": [
+          912707030554538,
+          912707034634839
+        ],
+        "read_host_interval_ns": [
+          912707034634839,
+          912707034635710
+        ]
+      },
+      {
+        "kind": "CAPTURE_OR_STALE",
+        "native_us": 78332000,
+        "sample_us": 78332000,
+        "LP_age_us": 12000,
+        "last_read_age_us": 204000,
+        "native_query_host_interval_ns": [
+          912717722558136,
+          912717726552525
+        ],
+        "read_host_interval_ns": [
+          912717726552525,
+          912717726553784
+        ]
+      }
+    ],
+    "phase_interpretation": "measured read/capture phases only; intent is not native phase. Group overlap must be reported NOT_IDENTIFIABLE.",
+    "status": "PASS",
+    "latest_value_semantics": "unconsumed send IDs are recorded, not automatically called logger loss; every native control row is checked separately"
+  },
+  "storage": {
+    "measured_physical_allocated_bytes": {
+      "dev09-final-protocol": 85975040,
+      "dev10-complete-timing-off": 65667072,
+      "dev11-complete-timing-on": 78180352
+    },
+    "per_future_attempt_bound_bytes": 117468800,
+    "reserve_bytes": 2000000000,
+    "available_bytes": 10953453568,
+    "required_72_bytes": 10457753600,
+    "check_before_every_attempt": true,
+    "mechanism": "new hardlink AFTER every owned process exits; both raw paths survive; no historical files deleted/overwritten"
+  },
+  "failures_retained": {
+    "dev03": "invalid JSON sidecar exception, pre-stream truncated, no task acceptance, counted",
+    "dev05": "normal frozen safety-envelope abort; infra/output chain pass; counted censored flight failure, not protection anomaly"
+  },
+  "phase": "measured send/read and native query intervals retained; 2ms intent is not claimed exact phase; formal 0/2/6ms variants are evaluated by achieved distributions",
+  "scope": "engineering observation gate on these development runs; finite overhead/equivalence evidence, not universal scheduling bound, model accuracy or theory admission",
+  "no_more_development_planned": true,
+  "remaining_development_cap": 1,
+  "formal_plan_rows": 72,
+  "source_receipts": {
+    "data/p11-20261025-development/dev11-complete-timing-on/observation/observation.json": "a11516c6923b086d34c24a1a8a5767e335794fdd38e8a2926e85389bf0fbe98f",
+    "data/p11-20261025-development/dev11-complete-timing-on/synchronization/synchronization.json": "32d9150569f72d12c76a2889d3f66b76eb8a800a9eb11aeb02b760b3617712ac",
+    "data/p11-20261025-development/dev11-complete-timing-on/target-replay/target-replay.json": "fedf916fe8728ce5f854c36808f941d9412eb78a73a855ddb4477fb21ddcdf67"
+  }
+}

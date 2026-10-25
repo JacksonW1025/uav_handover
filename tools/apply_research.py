@@ -909,3 +909,7 @@ print('Applied SITL research instrumentation and POSIX daemon TLS initialization
 
 from apply_preparation import apply as apply_preparation
 apply_preparation()
+
+# Independent, read-only P11 observation hooks (default off).
+from apply_p11 import apply as apply_p11
+apply_p11()

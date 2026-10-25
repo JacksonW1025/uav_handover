@@ -1,0 +1,182 @@
+{
+  "schema": "p11-observation-1",
+  "run": "data/p11-20261025-development/dev04-observe-anchor-v2/run",
+  "baseline": {
+    "inference_duration_us": {
+      "n": 8739,
+      "min": 1.0,
+      "p50": 2.0,
+      "p95": 4.0,
+      "p99": 15.0,
+      "max": 63.0
+    },
+    "control_sample_dt_us": {
+      "n": 8738,
+      "min": 4000.0,
+      "p50": 4000.0,
+      "p95": 4000.0,
+      "p99": 4000.0,
+      "max": 4000.0
+    },
+    "native_sample_dt_us": {
+      "n": 4369,
+      "min": 8000.0,
+      "p50": 8000.0,
+      "p95": 8000.0,
+      "p99": 8000.0,
+      "max": 8000.0
+    },
+    "sample_missed_total": 0,
+    "duplicate_total": 0,
+    "regressed_total": 0,
+    "max_tilt_deg_whole_log": 35.563716747700475,
+    "ulog_sha256": "413cc13d528c81e60a065b8c404bb6a9650e65fac754e40d6e5e02e8682e9c24"
+  },
+  "problems": [],
+  "tolerances": {
+    "single_h": 1e-05,
+    "single_action": 1e-05,
+    "continuous_h": 0.0001,
+    "continuous_action": 0.0001,
+    "input": 0.0001
+  },
+  "scope": "all contiguous active logged control calls; exogenous18 inputs and schedule known; no future-free plant claim",
+  "executor_action_field": "CLIPPED executor output before (a+1)/2; unclipped Dense output reconstructed from exact prestate/input/weights and verified clipped output",
+  "missing_truth": "never filled with zeros; gz angular topic contains finite-difference Euler rates, not body angular velocity",
+  "policy_matches_run": true,
+  "example_max_abs_error": 6.914603389862606e-07,
+  "single_step": {
+    "rows": 8739,
+    "native": 4370,
+    "h_max": 4.959731811915447e-07,
+    "action_max": 6.178573702664281e-07,
+    "previous_action_write_max": 0.0,
+    "unclipped_peak": 1.5622571316352287
+  },
+  "input_reconstruction": {
+    "max_abs": 1.0051847176839601e-07,
+    "components_over_1e-4": 0
+  },
+  "continuous": {
+    "rows": 8739,
+    "total_active_rows": 8739,
+    "complete_active_interval": true,
+    "h_max": 7.381048542920432e-07,
+    "action_max": 1.0382901056149585e-06,
+    "input_history_max": 1.0382901056149585e-06,
+    "seconds": 34.952,
+    "compute_s": 0.4844710340257734,
+    "initialization": "first active pre-GRU and previous_action exactly once; history counter reset by original activation",
+    "missing_call_boundaries": []
+  },
+  "coverage": {
+    "observed_control_calls": 8739,
+    "timing_control_calls": 8739,
+    "missing": 0,
+    "extra": 0,
+    "unique": true,
+    "non4ms_edges": 0,
+    "native_commit_mismatch": 0
+  },
+  "local_position_sample": {
+    "advance_us": {
+      "n": 8738,
+      "min": 0.0,
+      "p50": 0.0,
+      "p95": 8000.0,
+      "p99": 8000.0,
+      "max": 8000.0
+    },
+    "age_us": {
+      "n": 8739,
+      "min": 0.0,
+      "p50": 4000.0,
+      "p95": 8000.0,
+      "p99": 8000.0,
+      "max": 8000.0
+    }
+  },
+  "attitude_sample": {
+    "advance_us": {
+      "n": 8738,
+      "min": 0.0,
+      "p50": 4000.0,
+      "p95": 4000.0,
+      "p99": 8000.0,
+      "max": 8000.0
+    },
+    "age_us": {
+      "n": 8739,
+      "min": 0.0,
+      "p50": 4000.0,
+      "p95": 4000.0,
+      "p99": 4000.0,
+      "max": 4000.0
+    }
+  },
+  "clock": {
+    "pairs": 8739,
+    "run_to_read_us": {
+      "n": 8739,
+      "min": 0.305,
+      "p50": 1.018,
+      "p95": 2.917900000000003,
+      "p99": 18.186920000000132,
+      "max": 149.976
+    },
+    "wall_per_sim_tick_ratio": {
+      "n": 8738,
+      "min": 0.5194035,
+      "p50": 0.9996186250000001,
+      "p95": 1.0211633,
+      "p99": 1.0818194624999997,
+      "max": 1.4807065
+    },
+    "alignment": "native timestamp and Run CLOCK_MONOTONIC pair each call; target read is within run_wall..read_wall; runner uses same host CLOCK_MONOTONIC",
+    "mapping_uncertainty": "Run native hrt acquisition precedes run_wall by instruction/param-read span; add one 4ms physics tick for a conservative nearest-bracket mapping; not zero uncertainty"
+  },
+  "truth": {
+    "vehicle_local_position_groundtruth": {
+      "available": true,
+      "source_rows": 4635,
+      "valid_aligned_rows": 8739,
+      "hold_age_us": {
+        "n": 8739,
+        "min": 0.0,
+        "p50": 8000.0,
+        "p95": 16000.0,
+        "p99": 16000.0,
+        "max": 16000.0
+      }
+    },
+    "vehicle_attitude_groundtruth": {
+      "available": true,
+      "source_rows": 4635,
+      "valid_aligned_rows": 8739,
+      "hold_age_us": {
+        "n": 8739,
+        "min": 0.0,
+        "p50": 8000.0,
+        "p95": 16000.0,
+        "p99": 16000.0,
+        "max": 16000.0
+      }
+    }
+  },
+  "extra_external_fields": [
+    "external_position[0]",
+    "external_yaw"
+  ],
+  "gates": {
+    "single_h": true,
+    "single_action": true,
+    "continuous_h": true,
+    "continuous_action": true,
+    "input_reconstruction": true,
+    "complete_continuous": true,
+    "all_control_calls": true,
+    "truth_present": true,
+    "policy": true
+  },
+  "status": "PASS"
+}

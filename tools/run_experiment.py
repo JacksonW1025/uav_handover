@@ -46,6 +46,7 @@ P7_GAP_TREATMENTS=['T1a3r2']
 # P9 factorial controls use existing RTGT/RTDEC/RREC parameters, with explicit
 # names and a P9-only config gate. No PX4/policy/safety-threshold change.
 P9_GAP_TREATMENTS=['P9-Z','P9-C','P9-R','P9-CR']
+P11_GAP_TREATMENTS=['P11-Z','P11-C']
 
 def p5_profile(p5,spec):
     """P5 gap runs: merged reference profile (pure function of the config). Cruise = pre_gap_s + count*D +
@@ -121,6 +122,7 @@ class Experiment:
             if spec.get('cancelled'):raise RuntimeError('condition cancelled by the pre-registered safety budget: '+args.condition)
             allowed=P5_TREATMENT_KINDS[args.kind]+P6_GAP_TREATMENTS+P7_GAP_TREATMENTS
             if 'p9' in self.cfg:allowed=allowed+P9_GAP_TREATMENTS
+            if 'p11' in self.cfg:allowed=allowed+P11_GAP_TREATMENTS
             if args.treatment not in allowed or args.treatment not in p5['treatments']:raise RuntimeError(f'p5_gap needs --treatment in {allowed}')
             # The P2 treatment and profile keys are reused so apply_treatment, the stream and the analyzers work unchanged.
             self.pcfg=p5_profile(p5,spec);self.cfg['p1_condition']=args.condition;self.cfg['p1_speed_m_s']=float(spec['speed_m_s'])
@@ -157,6 +159,9 @@ class Experiment:
         self.stream=None;self.stream_t0=None;self.stream_state=None;self.listener_durations=[];self.p3_motion_t0=None
         self.alt_floor=None;self.p6_switch_s=None
         self.samples=(self.out/'telemetry.jsonl').open('w')
+        # P11 opt-in sidecar: serial ids and publish-call intervals, no message changes.
+        self.p11_sends=(self.out/'p11-sends.jsonl').open('w') if self.cfg.get('p11',{}).get('runner_trace') else None
+        if getattr(self,'p11_sends',None):self.files.append(self.p11_sends)
         self.resources=(self.out/'resources.jsonl').open('w');self.last_resource=0
         self.rootfs=self.out/'rootfs'
         self.source=LAB/'.local/checkouts'/('px4-'+self.variant)
@@ -427,7 +432,15 @@ class Experiment:
             traj=self.msgs.TrajectorySetpoint();traj.timestamp=stamp
             traj.position=[origin[i]+axis[i]*s for i in range(3)];traj.velocity=[axis[i]*v for i in range(3)]
             traj.acceleration=[axis[i]*a for i in range(3)];traj.yaw=yaw;traj.yawspeed=0.
+            p11_before=time.monotonic_ns() if getattr(self,'p11_sends',None) else None
             self.trajpub.publish(traj)
+            if getattr(self,'p11_sends',None):
+                self.p11_sends.write(json.dumps({'send_id':state['count']+1,'profile_s':t,'stream_t0_monotonic_s':self.stream_t0,
+                    'before_ns':p11_before,'after_ns':time.monotonic_ns(),'header_timestamp':stamp,
+                    'previous_sidecar_ns':state.get('p11_sidecar_ns'),
+                    'position':list(map(float,traj.position)),'velocity':list(map(float,traj.velocity)),'yaw':float(traj.yaw)},allow_nan=False)+'\n')
+                self.p11_sends.flush()
+                state['p11_sidecar_ns']=time.monotonic_ns()-p11_before
             state['count']+=1;state['last_position']=list(map(float,traj.position));state['last_velocity']=list(map(float,traj.velocity));state['last_t']=t
         def publish():
             now=time.monotonic();t=0. if self.stream_t0 is None else now-self.stream_t0
@@ -450,7 +463,8 @@ class Experiment:
     def stop_stream(self):
         state=self.stream_state;self.stream=None
         self.event('p1_reference_stopped',published=state['count'],last_position_ned_m=state.get('last_position'),
-            last_velocity_ned_m_s=state.get('last_velocity'),since_last_publish_s=time.monotonic()-state['last'])
+            last_velocity_ned_m_s=state.get('last_velocity'),since_last_publish_s=time.monotonic()-state['last'],
+            **({'p11_last_sidecar_ns':state.get('p11_sidecar_ns')} if getattr(self,'p11_sends',None) else {}))
 
     def p1_flight(self,mode):
         kind=self.args.kind.replace('p2_','p1_');p=self.profile_cfg()
@@ -537,6 +551,13 @@ class Experiment:
         check=self.p5_path_check(origin);self.event('p5_planned_path_check',**check)
         if not check['inside']:raise RuntimeError(f"planned path would leave the safety radius margin: {check['radius_with_allowance_m']:.2f} m > {check['limit_m']:.2f} m")
         windows=self.p5_gap_windows();total=self.profile_duration()+p['end_hold_s']
+        if 'p11' in self.cfg:
+            # Remove complete events without changing the source trajectory or absolute times.
+            mask=self.cfg['p11'].get('event_mask',list(range(len(windows))))
+            windows=[w for i,w in enumerate(windows) if i in mask]
+            shift=float(self.cfg['p11'].get('event_shift_s',0.))
+            if not 0.<=shift<=.008:raise RuntimeError('P11 event phase shift outside declared [0,8ms]')
+            windows=[(a+shift,b+shift) for a,b in windows]
         self.event('p5_gap_plan',windows_profile_s=windows,gaps=p['gaps'],profile_duration_s=total,cruise_s=p['cruise_s'],start_offset_m=p['start_offset_m'])
         self.start_stream(origin,yaw,False,gaps=windows)
         self.stream_t0=time.monotonic()
@@ -918,6 +939,8 @@ class Experiment:
         logging=self.rootfs/'etc/logging';logging.mkdir(exist_ok=True)
         names=['sensor_baro','vehicle_air_data','actuator_outputs','sensor_gyro','vehicle_imu','vehicle_imu_status','vehicle_local_position','vehicle_global_position','position_setpoint_triplet','takeoff_status','vehicle_attitude','vehicle_angular_velocity','vehicle_status','vehicle_control_mode','trajectory_setpoint','vehicle_attitude_setpoint','vehicle_rates_setpoint','vehicle_torque_setpoint','vehicle_thrust_setpoint','rate_ctrl_status','actuator_motors','vehicle_command','vehicle_command_ack']
         if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator','research_memory','research_target','research_recovery']
+        if self.cfg.get('p11',{}).get('observe'):
+            names+=['research_p11','vehicle_local_position_groundtruth','vehicle_attitude_groundtruth','vehicle_angular_velocity_groundtruth']
         (logging/'logger_topics.txt').write_text(''.join(n+' 0 0\n' for n in names)+(''.join(f'route_observability 0 {i}\n' for i in range(1,10)) if self.variant=='raptor' else ''))
         self.spawn('agent',[str(LAB/'scripts/MicroXRCEAgent'),'udp4','-p',str(self.cfg['agent_port']),'-v','4'])
         self.spawn('gazebo',['gz','sim','-r','-s','-v','3']+(['--seed',str(self.sim_seed)] if self.sim_seed is not None else [])+[str(self.source/'Tools/simulation/gz/worlds/default.sdf')])
@@ -1001,6 +1024,8 @@ class Experiment:
             self.command('param','set','MC_RAPTOR_RSH','0')
             self.state('raptor','read',expected=1)
             self.command('param','set','MC_RAPTOR_RSH','1')
+            if self.cfg.get('p11',{}).get('observe'):
+                self.command('param','set','MC_RAPTOR_P11','1')
         self.wait(lambda:self.latest['vehicle_local_position'].xy_valid and self.latest['vehicle_local_position'].z_valid,45,'valid local position')
         self.pump(4)
         if self.variant=='raptor':self.state_contract()
@@ -1098,7 +1123,14 @@ class Experiment:
         for f in self.files:f.close()
         logs=sorted(self.rootfs.glob('log/**/*.ulg'))
         if logs:
-            shutil.copy2(logs[-1],self.out/'flight.ulg');self.metadata['ulog_sha256']=digest(self.out/'flight.ulg')
+            if self.cfg.get('p11',{}).get('ulog_storage')=='hardlink_after_shutdown':
+                # Both raw paths survive. Linking a NEW destination after every
+                # owned process exits avoids a second physical copy, no unlink.
+                os.link(logs[-1],self.out/'flight.ulg')
+                self.metadata['ulog_storage']={'mode':'hardlink_after_shutdown','source':str(logs[-1]),
+                    'inode':logs[-1].stat().st_ino,'links':logs[-1].stat().st_nlink}
+            else:shutil.copy2(logs[-1],self.out/'flight.ulg')
+            self.metadata['ulog_sha256']=digest(self.out/'flight.ulg')
         self.metadata['checks']=self.checks
         write(self.out/'metadata.json',self.metadata)
         self.events.close()

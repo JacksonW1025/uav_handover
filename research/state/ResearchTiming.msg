@@ -49,3 +49,11 @@ uint64 control_start_wall_ns
 uint64 control_end_wall_ns
 uint64 actuator_publish_wall_ns
 uint64 actuator_publish_sim_us
+
+# P11 v2 complete observation accounting; active control rows, zero means unavailable.
+uint64 p11_cycle_wall_start_ns
+uint64 p11_cycle_wall_end_ns
+uint64 p11_setup_ns
+uint64 p11_pre_ns
+uint64 p11_post_copy_ns
+uint64 p11_publication_ns

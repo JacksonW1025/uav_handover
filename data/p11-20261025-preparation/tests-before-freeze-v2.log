@@ -1,0 +1,125 @@
+.....................................................F.....F....F....... [ 34%]
+...F...................F................................................ [ 69%]
+................................................................         [100%]
+=================================== FAILURES ===================================
+__________ test_actual_profile_keeps_reposition_tail_and_all_windows ___________
+
+    def test_actual_profile_keeps_reposition_tail_and_all_windows():
+        r,c=src.runner();tr=r.reposition(0.)[3]
+        p,v,a=r.p1_profile(tr-.002)
+        assert abs(p-r.pcfg['start_offset_m']-1e-6)<1e-12
+        assert abs(v+.001)<1e-12
+        assert r.p1_profile(tr)[1]==0
+        assert len(r.p5_gap_windows())==3
+        assert r.p5_gap_windows()[0][0]==tr+3+1+1
+>       c.us=0;r.stream();assert r.trajpub.messages[-1].position==[0.,0.,-3.]
+
+tests/test_p10_a3.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+actual_runner_pure_methods:459: in publish
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = 0.0
+
+>   ???
+E   AttributeError: 'Experiment' object has no attribute 'p11_sends'
+
+actual_runner_pure_methods:435: AttributeError
+____________ test_complete_source_and_exact_nonzero_prefix_refusal _____________
+
+    def test_complete_source_and_exact_nonzero_prefix_refusal():
+>       a=checker.verify(DATA,COMP);f=a['first_certificate_failure']
+
+tests/test_p10_a3.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+directory = PosixPath('/home/car/uav_handover/data/p10-20261025-a3/source-08')
+compatibility = PosixPath('/home/car/uav_handover/data/p10-20261025-a3/compatibility-02/compatibility.json')
+
+    def verify(directory, compatibility):
+        directory=directory.resolve();compatibility=compatibility.resolve()
+        manifest=json.loads((directory/'manifest.json').read_text())
+        for name,digest in manifest['files'].items():
+            if sha(directory/name)!=digest:raise ValueError('INPUT_HASH_MISMATCH: '+name)
+        ledger=json.loads((directory/'source-ledger.json').read_text())
+        assert not ledger['oracle_adapter_mismatches'], 'SOURCE_ORACLE_ADAPTER_MISMATCH'
+        snap=json.loads((directory/'source-snapshot.json').read_text())
+>       assert snap==snapshot(), 'SOURCE_SNAPSHOT_NOT_CURRENT_OR_INCOMPLETE'
+E       AssertionError: SOURCE_SNAPSHOT_NOT_CURRENT_OR_INCOMPLETE
+
+tools/p10a3/verify.py:77: AssertionError
+_______ test_actual_origin_yaw_and_named_initial_samples_are_not_zeroed ________
+
+    def test_actual_origin_yaw_and_named_initial_samples_are_not_zeroed():
+        startup=src.startup_observation();r,c=src.runner(startup)
+        assert startup['state_sample_us']==53708000 and startup['first_confirmed_stream_read_us']==53712000 and startup['profile_native_bound_us']==53716000
+        assert startup['local_position_sample_us']==startup['attitude_sample_us']==53704000
+>       c.us=0;r.stream();m=r.trajpub.messages[-1]
+
+tests/test_p10_a3.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+actual_runner_pure_methods:459: in publish
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+t = 0.0
+
+>   ???
+E   AttributeError: 'Experiment' object has no attribute 'p11_sends'
+
+actual_runner_pure_methods:435: AttributeError
+_________ test_uniform_ball_counterexample_survives_real_queue_updates _________
+
+    def test_uniform_ball_counterexample_survives_real_queue_updates():
+>       r=cc.calculate();b=b4.load();y=b['center'][0].copy();w=np.array([float(F(x)) for x in r['per_step_w_p_v_q']]);rho=np.exp(-.05)
+
+tests/test_p10_a4.py:123: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tools/p10a4/contract_counterexample.py:24: in calculate
+    b=load();raw=json.loads((ROOT/'data/p10-20261024-a2/construction-reviewed/certificate.json').read_text())['P_integer']
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def load():
+        base=ROOT/'data/p10-20261025-a3/source-08'
+        source_manifest=json.loads((base/'manifest.json').read_text())
+        for name,digest in source_manifest['files'].items():assert sha(base/name)==digest,'A3_SOURCE_ARTIFACT_CHANGED'
+>       for path,digest in source_manifest['source_sha256'].items():assert sha(ROOT/path)==digest,'A3_SOURCE_DEPENDENCY_CHANGED'
+E       AssertionError: A3_SOURCE_DEPENDENCY_CHANGED
+
+tools/p10a4/bench.py:13: AssertionError
+_____________ test_reproducible_audit_and_refuse_output_overwrite ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-car/pytest-78/test_reproducible_audit_and_re0')
+
+    def test_reproducible_audit_and_refuse_output_overwrite(tmp_path):
+        gate = ROOT/'config/p10_a_gate.json'
+>       v.run(tmp_path/'first', gate);v.run(tmp_path/'second', gate)
+
+tests/test_p10_review.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+output = PosixPath('/tmp/pytest-of-car/pytest-78/test_reproducible_audit_and_re0/first')
+gate_path = PosixPath('/home/car/uav_handover/config/p10_a_gate.json')
+
+    def run(output, gate_path):
+        require_declaration(json.loads(gate_path.read_text()))
+        inputs = list(SOURCE_HASHES) + ['config/p9.json', 'config/p10_a2_events.json',
+            'data/p10-20261024-a2/source-map-final.json',
+            'data/p10-20261024-a2/source-map-evidence.json',
+            'data/p10-20261024-a2/construction-reviewed/certificate.json',
+            'data/p10-20261024-a2/construction-reviewed/trace.csv.gz',
+            'data/p10-20261024-a2/complete-decision.json', 'config/p10_a_gate.json']
+        for name, expected in SOURCE_HASHES.items():
+            if sha(ROOT/name) != expected:
+>               raise ValueError('SOURCE_CHANGED_REQUIRES_NEW_REVIEW: '+name)
+E               ValueError: SOURCE_CHANGED_REQUIRES_NEW_REVIEW: tools/run_experiment.py
+
+tools/p10review/verify.py:291: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_p10_a3.py::test_actual_profile_keeps_reposition_tail_and_all_windows
+FAILED tests/test_p10_a3.py::test_complete_source_and_exact_nonzero_prefix_refusal
+FAILED tests/test_p10_a3.py::test_actual_origin_yaw_and_named_initial_samples_are_not_zeroed
+FAILED tests/test_p10_a4.py::test_uniform_ball_counterexample_survives_real_queue_updates
+FAILED tests/test_p10_review.py::test_reproducible_audit_and_refuse_output_overwrite
+5 failed, 203 passed in 22.73s

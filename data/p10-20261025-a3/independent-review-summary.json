@@ -1,0 +1,180 @@
+{
+  "gate": "NOT_PASSED",
+  "research_commit": "ac1b606bf7ea69749b56eeee4740b99471f95f48",
+  "source_isolation": {
+    "runner": "AST isolated actual profile_cfg/reposition/profile_duration/p1_profile/p5_gap_windows/start_stream; no runner import/constructor or SITL",
+    "oracle": "byte-extracted native valid-read, complete stale/fresh/capture branches and actual target/recovery methods; actual TargetProfile/RecoveryTarget/SampleClock headers; transport/parameter/publication stubs",
+    "independence": "separate Python guard/reset adapter; checker imports neither generator nor empirical diagnostician. Reuses retained exact PD and A primitives; not full native binary equivalence or two independent raw-log readers",
+    "single_reference_origin": "actual source runner messages, no manually duplicated ramp/hold reference",
+    "rows": 7350,
+    "transition_order": "read -> stale/capture -> target/recovery transition -> SampleClock; capture may occur before duplicate rejection"
+  },
+  "startup": {
+    "origin_ned": [
+      0.0269325338,
+      0.00996312127,
+      -2.95094204
+    ],
+    "yaw_rad": 1.6767029762268066,
+    "observed_pre_first_read_state_us": 53708000,
+    "named_local_position_sample_us": 53704000,
+    "named_attitude_sample_us": 53704000,
+    "first_confirmed_read_us": 53712000,
+    "profile_bound_us": 53716000,
+    "timing_scope": "actual named sensor/module values at LAST inference before first confirmed stream read. Source-allowed callback class starts from this declared pre-read state; profile native bound is later, not substituted for exact monotonic start. This is not an exact historic clock replay",
+    "set": "recorded center + lateral position .01*zp and lateral q .1*zq; both parameters in [-1,1]; velocity at actual recorded center",
+    "FIFO": "proxy empty history; first source/body e,d fill earliest sample; at k<22 repeat that sample. No fabricated physical prehistory or native FIFO identity",
+    "prestream_scope": "source module invariant/activation checks; compressed prelude is not proof of entire prestream body/GRU timing history",
+    "unmodelled_memory": "GRU/previous action/motor/estimator effects remain in the conditional residual interface, never zero by default"
+  },
+  "prefix_proof": {
+    "axis": 1,
+    "prefixes": 3274,
+    "matrix_lemma": {
+      "P_bounds": ".5 I<P<30000 I",
+      "difference_lower": "1/2 I",
+      "exact_Q_margins": [
+        "37399267100956378778817997168706605162293159009229397196432320915954077/74798534502080835014210166875750400000000000000000000000000000000000000",
+        "787352991599081658501431519341191687627215975567753059734635510077435277/1574705989517491263457056144752640000000000000000000000000000000000000000"
+      ],
+      "output_square_constants": [
+        "3/20000",
+        "1/1250",
+        "2/5"
+      ],
+      "target_column_norm_upper": [
+        "11/2",
+        "5"
+      ],
+      "new_lateral_candidate_not_scaled_old_P": true
+    },
+    "radius_at_refusal": "360141/1000000000",
+    "first_failure": {
+      "profile_us": 13096000,
+      "relative_first_gap_s": 0.2010000000000005,
+      "cause": "UNSATURATED_CERTIFICATE_NOT_APPLICABLE_AT_SOURCE_CAPTURE",
+      "actual_source_capture": true,
+      "axis_velocity_error_lower": "984243401248525267135401/549755813888000000000000",
+      "axis_velocity_error_upper": "984254884683205689895849/549755813888000000000000",
+      "entire_initial_set_exceeds_velocity_clip": true,
+      "radius_P": "360141/1000000000",
+      "position_upper": null,
+      "scope": "failure of linear unsaturated certificate, not a proof of tilt failure",
+      "yaw_independent_geometric_clip_exclusion": true,
+      "proof": "||v_xy|| >= |v_l_fixed|/sqrt(c^2+s^2) > sqrt(2); at T0 target velocity=0, at least one native clip axis exceeds 1 for every capture yaw",
+      "position_reset_scope": "not needed for refusal; no post-reset position enclosure claimed"
+    },
+    "logic": "exact rational P/difference/output inequalities, full initial two-parameter box plus conditional P-ball disturbances, summed center/generator rounding; clip inclusion checked before each use of unsaturated A",
+    "no_post_capture_set_proof": true,
+    "post_failure_trace": "full clipped nominal source/model reconstruction retained; generator columns thereafter are rejected candidate data, not an accepted enclosure"
+  },
+  "empirical_error": {
+    "state_mapping": "p/v/errors from research_timing named local position sample and reconstructed actual active target; q=-g R_body_z_xy/Rzz rotated into target-yaw frame, using EXACT named attitude_sample",
+    "alignment": "native gyro sample time, not DDS UTC or line-profile seconds; require all 24 rows 4ms and fixed yaw",
+    "tested_steps": 7196,
+    "q_necessary_violations": 7196,
+    "necessary_q_bound": "|w_q| <= sqrt(.4)*1e-7 < .633e-7 if ||w||_P<=1e-7",
+    "first_counterexample": {
+      "index": 1381,
+      "sample_us": 53800000,
+      "next_sample_us": 53804000,
+      "profile_bound_offset_us": 84000,
+      "attitude_sample_us": 53796000,
+      "next_attitude_sample_us": 53800000,
+      "yaw_rad": 1.6767029762268066,
+      "yaw_constant_24_samples": true,
+      "quaternion": [
+        [
+          0.6689073443412781,
+          0.0022572646848857403,
+          -0.001189047354273498,
+          0.7433415055274963
+        ],
+        [
+          0.6689128875732422,
+          0.0024164661299437284,
+          -0.0011171072255820036,
+          0.7433361411094666
+        ]
+      ],
+      "cos_yaw": -0.10570878174597352,
+      "sin_yaw": 0.9943971306584619,
+      "q": [
+        0.048517093158193414,
+        0.04989637139524809
+      ],
+      "delayed_clipped_position": 0.00952804120943304,
+      "delayed_clipped_velocity": -0.018169238421605925,
+      "kp": 8.790378768672879,
+      "kv": 5.453065498984149,
+      "residual_q": 0.0029981754082312293
+    },
+    "max_abs_q_residual": 0.14499322687658459,
+    "exact_portable_counterexamples": [
+      {
+        "sample_us": 53800000,
+        "profile_bound_offset_us": 84000,
+        "exact_abs_residual_lower": "27237985192572947696539414261699516607109155544636573487224249645235898167387636898419442750324418146288695147979/9084853780667211816738193448037469688577831848062096985422263434575540085130302324736000000000000000000000000000000",
+        "necessary_q_bound": "633/10000000000",
+        "margin_lower": "27237410121328631462031414734054255835277868567880591156485072415960489535700248150282286961524418146288695147979/9084853780667211816738193448037469688577831848062096985422263434575540085130302324736000000000000000000000000000000"
+      },
+      {
+        "sample_us": 53804000,
+        "profile_bound_offset_us": 88000,
+        "exact_abs_residual_lower": "1314999921510619679022153583934929412092905431045708917796329886433997829917745860969742715592589106062060986099/459649208807145099218588861447007843515945065219464321474179547392155081702660468899840000000000000000000000000000",
+        "necessary_q_bound": "633/10000000000",
+        "margin_lower": "1314970825715702186737373047259999816496410871723080525704780570868647906501074082562061355720589106062060986099/459649208807145099218588861447007843515945065219464321474179547392155081702660468899840000000000000000000000000000"
+      },
+      {
+        "sample_us": 53808000,
+        "profile_bound_offset_us": 92000,
+        "exact_abs_residual_lower": "1836834853567822330055151434347444621904839743953415051751816026686344412182681608671673531136740836676904400923/445718428723474395405896727931615728642091012064132431994543461273280402949850225704960000000000000000000000000000",
+        "necessary_q_bound": "633/10000000000",
+        "margin_lower": "1836806639591284134125922241084566550629216699592351392168870772085245813533174883152386407168740836676904400923/445718428723474395405896727931615728642091012064132431994543461273280402949850225704960000000000000000000000000000"
+      },
+      {
+        "sample_us": 67620000,
+        "profile_bound_offset_us": 13904000,
+        "exact_abs_residual_lower": "395848586040869239255936810800856287022874133185953430411569596925853194656260243396656927/2730117775624152155883068016943846278985676293826542986854400000000000000000000000000000000",
+        "necessary_q_bound": "633/10000000000",
+        "margin_lower": "395848413224414042247105343402650814477404673392644031191398529042333194656260243396656927/2730117775624152155883068016943846278985676293826542986854400000000000000000000000000000000"
+      },
+      {
+        "sample_us": 67612000,
+        "profile_bound_offset_us": 13896000,
+        "exact_abs_residual_lower": "365005762221603680917972795665371038111333848289593709944830826480758582413352273491188053084410596049077118909/3128365081540067576337720455377376591844646449624606062828252581006644138886142361600000000000000000000000000000",
+        "necessary_q_bound": "633/10000000000",
+        "margin_lower": "365005564196094019431695213487666212723395584523473448707267049452370204692778281998376563804410596049077118909/3128365081540067576337720455377376591844646449624606062828252581006644138886142361600000000000000000000000000000"
+      },
+      {
+        "sample_us": 67604000,
+        "profile_bound_offset_us": 13888000,
+        "exact_abs_residual_lower": "7027567952111933746068914668510838938655491268257193254951149825715317118609839816537247922031522263829675317509/60252928551197784083979913232911393550098301779182219546039508154692229534572565495808000000000000000000000000000",
+        "necessary_q_bound": "633/10000000000",
+        "margin_lower": "7027564138101556455249182152582331295364279547034690632716652561414450926591710278093852037385122263829675317509/60252928551197784083979913232911393550098301779182219546039508154692229534572565495808000000000000000000000000000"
+      }
+    ],
+    "scope": "7196/7196 is sample diagnostic; six portable rows independently recomputed with rational quaternion mapping and rho enclosure. No empirical maximum promoted to hard bound"
+  },
+  "closed_and_conditional": {
+    "closed_for_declared_class": [
+      "actual source profile and held-reference generation",
+      "read-age strict >200ms and capture/reset/rec0/sample order",
+      "proxy deterministic startup and exact finite lateral prefix refusal"
+    ],
+    "conditional_or_unclosed": [
+      "exact historic monotonic/native alignment and all actual callback phases",
+      "actual controller residual and output/quantization interface; mapped P9 dev01 refutes old w",
+      "full nonlinear saturated set propagation after first capture",
+      "real intersample attitude, height and full task costs",
+      "source-allowed observation set does not prove every perturbed member physically produced by the controller"
+    ]
+  },
+  "tests": "63 passed in 23.96s",
+  "source_reproduction_byte_identical": true,
+  "new_SITL_starts": 0,
+  "new_development_flights": 0,
+  "new_formal_flights": 0,
+  "new_real_flights": 0,
+  "B_C_D_started": false
+}

@@ -6,6 +6,11 @@ ROOT=Path(__file__).resolve().parents[1]
 PX=ROOT/'uav_lab/.local/checkouts/px4-raptor'
 def edit(name,old,new):
  p=PX/name;s=p.read_text()
+ # P12 adds one explicit mode selection inside this formerly contiguous function.
+ # Its unique marker prevents reinsertion of the complete P4/P5 function.
+ if old=='int Raptor::task_spawn(int argc, char *argv[])\n{' and 'void Raptor::research_target_capture' in new and 'P12_CAPTURE_OVERLAY' in s:
+  assert s.count('void Raptor::research_target_capture(')==1
+  return
  if new in s:return
  if old not in s:raise RuntimeError('expected source anchor missing: '+name)
  p.write_text(s.replace(old,new,1))
@@ -913,3 +918,5 @@ apply_preparation()
 # Independent, read-only P11 observation hooks (default off).
 from apply_p11 import apply as apply_p11
 apply_p11()
+from apply_p12 import apply as apply_p12
+apply_p12()

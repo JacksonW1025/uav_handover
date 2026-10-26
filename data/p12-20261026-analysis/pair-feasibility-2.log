@@ -1,0 +1,117 @@
+{
+  "schema": "p12-development-pair-feasibility-1",
+  "criteria": {
+    "position_m": 0.01,
+    "velocity_m_s": 0.02,
+    "SO3_deg": 0.5,
+    "hidden_l2": 0.05,
+    "previous_max": 0.03,
+    "history_max": 0.03,
+    "filter_max_rad_s": 10.0,
+    "target_hold_T_s": 0.5,
+    "target_reference_increment_m": 0.02,
+    "one_call_action_bound": 0.2,
+    "discrete_mismatch_allowed": 0,
+    "reason": "target reference Ep+.5Ev<=.02 (4% of position clip), source initial action increment<=.2 (10% full range), filter1% configured speed plus exact relation; no complete feedback domain claimed",
+    "frozen_before_pair_inspection": true
+  },
+  "pairs": [
+    {
+      "arms": [
+        "dev03-native",
+        "dev05-native-repair"
+      ],
+      "window_profile_s": [
+        12.395,
+        12.895
+      ],
+      "rows": 125,
+      "timing_alignment": "same absolute profile; nearest observed call, no peak/capture alignment; timing mismatch retained",
+      "max_alignment_ms": 0.9805880000008926,
+      "continuous": {
+        "position_m": 0.04337287757209329,
+        "velocity_m_s": 0.038910858760322936,
+        "SO3_deg": 0.8755797508001445,
+        "hidden_l2": 0.08419294882810595,
+        "previous_max": 0.06620299816131592,
+        "history_max": 0.06212341785430908,
+        "filter_max_rad_s": 8.051800950093707,
+        "one_call_action_bound": 2.0,
+        "target_reference_increment_m": 0.06282830695225475
+      },
+      "discrete_mismatches": {
+        "count": 125,
+        "committed": 125,
+        "stale": 0,
+        "lp_sample_age": 125,
+        "att_sample_age": 14,
+        "native_sample_offset": 0
+      },
+      "gates": {
+        "position_m": false,
+        "velocity_m_s": false,
+        "SO3_deg": false,
+        "hidden_l2": false,
+        "previous_max": false,
+        "history_max": false,
+        "filter_max_rad_s": true,
+        "one_call_action_bound": false,
+        "target_reference_increment_m": false,
+        "discrete": false
+      },
+      "status": "NOT_MATCHED",
+      "full_feedback_matching_certificate": false,
+      "source_activation": "both arms use source T0; not an exact simulator/estimator/clock snapshot"
+    },
+    {
+      "arms": [
+        "dev04-intermediate",
+        "dev06-intermediate-repair"
+      ],
+      "window_profile_s": [
+        12.395,
+        12.895
+      ],
+      "rows": 125,
+      "timing_alignment": "same absolute profile; nearest observed call, no peak/capture alignment; timing mismatch retained",
+      "max_alignment_ms": 1.2401940000010825,
+      "continuous": {
+        "position_m": 0.06755748711511665,
+        "velocity_m_s": 0.047109705862947084,
+        "SO3_deg": 1.1305167282247053,
+        "hidden_l2": 0.10179414986597782,
+        "previous_max": 0.06198278069496155,
+        "history_max": 0.06114476919174194,
+        "filter_max_rad_s": 7.742954710400909,
+        "one_call_action_bound": 2.0,
+        "target_reference_increment_m": 0.09111234004659019
+      },
+      "discrete_mismatches": {
+        "count": 125,
+        "committed": 125,
+        "stale": 0,
+        "lp_sample_age": 3,
+        "att_sample_age": 7,
+        "native_sample_offset": 0
+      },
+      "gates": {
+        "position_m": false,
+        "velocity_m_s": false,
+        "SO3_deg": false,
+        "hidden_l2": false,
+        "previous_max": false,
+        "history_max": false,
+        "filter_max_rad_s": true,
+        "one_call_action_bound": false,
+        "target_reference_increment_m": false,
+        "discrete": false
+      },
+      "status": "NOT_MATCHED",
+      "full_feedback_matching_certificate": false,
+      "source_activation": "both arms use source T0; not an exact simulator/estimator/clock snapshot"
+    }
+  ],
+  "formal_starts": 0,
+  "threshold_relaxation": false,
+  "interpretation": "source repair removes early activation semantic confound; independent SITL initial states may remain unmatched; failed subsystems do not justify strict causal combination claims"
+}

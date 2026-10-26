@@ -188,6 +188,7 @@ class Experiment:
             self.env['GZ_SIM_RESOURCE_PATH']=str(research_models)+':'+self.env['GZ_SIM_RESOURCE_PATH']
             self.env['PX4_GZ_MODELS']=str(research_models)
             self.env['HANDOVER_GZ_MOTOR_TRACE']=str(self.out/'gz-motor');(self.out/'gz-motor').mkdir()
+            if self.cfg.get('p12',{}).get('observe'):self.env['HANDOVER_P12_TRACE']='1'
         plugins=self.runtime/'src/modules/simulation/gz_plugins' if (self.runtime/'src').exists() else self.runtime/'plugins'
         plugin_paths=str(plugins)+(':'+str(plugins/'optical_flow') if (plugins/'optical_flow').is_dir() else '')
         self.env['GZ_SIM_SYSTEM_PLUGIN_PATH']=plugin_paths
@@ -547,6 +548,11 @@ class Experiment:
         self.mode(mode);self.wait_raptor_active();self.capture_states('neural_after_entry')
         self.hover(self.cfg['neural_s'],'neural')
         origin,yaw,source=self.raptor_target()
+        if self.cfg.get('p12',{}).get('common_world_reference'):
+            # P12 development v2: a shared absolute task, not a per-run capture-origin task.
+            origin=[float(x) for x in self.cfg['p12']['common_world_reference']['position_ned_m']]
+            yaw=float(self.cfg['p12']['common_world_reference']['yaw_rad'])
+            source='P12_FIXED_COMMON_WORLD_REFERENCE'
         self.event('p1_reference_origin',source=source,origin_ned_m=origin,yaw_rad=yaw)
         check=self.p5_path_check(origin);self.event('p5_planned_path_check',**check)
         if not check['inside']:raise RuntimeError(f"planned path would leave the safety radius margin: {check['radius_with_allowance_m']:.2f} m > {check['limit_m']:.2f} m")
@@ -559,8 +565,25 @@ class Experiment:
             if not 0.<=shift<=.008:raise RuntimeError('P11 event phase shift outside declared [0,8ms]')
             windows=[(a+shift,b+shift) for a,b in windows]
         self.event('p5_gap_plan',windows_profile_s=windows,gaps=p['gaps'],profile_duration_s=total,cruise_s=p['cruise_s'],start_offset_m=p['start_offset_m'])
+        p12_epoch=None
+        if self.cfg.get('p12',{}).get('native_stream_anchor'):
+            # Confirm an ACTUAL committed row. Its recorded CLOCK_MONOTONIC
+            # defines the task epoch; neither sample nor native time is forged.
+            deadline=time.monotonic()+2.;anchor=None
+            while time.monotonic()<deadline:
+                before=time.monotonic_ns();text=self.command('listener','research_p11','-n','1');after=time.monotonic_ns()
+                fields={key:re.search(r'^\s*'+key+r':\s*(\d+)',text,re.M) for key in ['timestamp','timestamp_sample','run_wall_ns','local_position_sample']}
+                if re.search(r'native_step:\s*True',text) and all(fields.values()):
+                    values={key:int(value.group(1)) for key,value in fields.items()}
+                    if 0<after-values['run_wall_ns']<30_000_000:
+                        anchor={**values,'query_before_ns':before,'query_after_ns':after};break
+                self.pump(.001)
+            if anchor is None:raise RuntimeError('P12 native committed stream anchor not confirmed')
+            p12_epoch=anchor['run_wall_ns']/1e9
+            self.event('p12_confirmed_native_stream_anchor',**anchor,
+                       scope='past actual commit row; async query age retained; no exact snapshot claim')
         self.start_stream(origin,yaw,False,gaps=windows)
-        self.stream_t0=time.monotonic()
+        self.stream_t0=p12_epoch if p12_epoch is not None else time.monotonic()
         self.event('p1_profile_started',px4_bound_us=self.native_bound_streaming(),duration_s=total)
         while time.monotonic()-self.stream_t0<total:self.pump(0.01)
         bound=self.native_bound_streaming();log=self.stream_state['gaps_log'];self.stop_stream()
@@ -651,6 +674,16 @@ class Experiment:
         # P7 rate-limited recovery: set only by treatments that name it (others keep the default RREC=0).
         recovery='rrec' in t
         if recovery:self.command('param','set','MC_RAPTOR_RREC',repr(float(t['rrec'])))
+        if 'p12' in self.cfg:
+            for param,value in {'MC_RAPTOR_P12':int(self.cfg['p12']['observe']),
+                                'MC_RAPTOR_P12PH':int(self.cfg['p12']['phase']),
+                                'MC_RAPTOR_P12R':int(self.cfg['p12']['repair'])}.items():
+                self.command('param','set',param,str(value))
+                shown_p12=self.command('param','show',param)
+                match_p12=re.search(param+r'\s*\[[^\]]*\]\s*:\s*(-?\d+)',shown_p12)
+                if not match_p12 or int(match_p12.group(1))!=value:
+                    raise RuntimeError('P12 parameter readback failed: '+param)
+            self.event('p12_parameters_before_arming',parameters=self.cfg['p12'])
         shown={}
         for name_ in ['MC_RAPTOR_RINI','MC_RAPTOR_NCO','MC_RAPTOR_RSH']+(['MC_RAPTOR_RTGT','MC_RAPTOR_RTDEC'] if target else [])+(['MC_RAPTOR_RREC'] if recovery else []):
             text=self.command('param','show',name_);match=re.search(name_+r'\s*\[[^\]]*\]\s*:\s*(-?\d+(?:\.\d+)?)',text)
@@ -941,6 +974,8 @@ class Experiment:
         if self.variant=='raptor':names+=['research_output','research_angular_velocity','raptor_status','raptor_input','route_observability','research_state_request','research_state_response','research_timing','research_actuator','research_memory','research_target','research_recovery']
         if self.cfg.get('p11',{}).get('observe'):
             names+=['research_p11','vehicle_local_position_groundtruth','vehicle_attitude_groundtruth','vehicle_angular_velocity_groundtruth']
+        if self.cfg.get('p12',{}).get('observe'):
+            names+=['research_p12']
         (logging/'logger_topics.txt').write_text(''.join(n+' 0 0\n' for n in names)+(''.join(f'route_observability 0 {i}\n' for i in range(1,10)) if self.variant=='raptor' else ''))
         self.spawn('agent',[str(LAB/'scripts/MicroXRCEAgent'),'udp4','-p',str(self.cfg['agent_port']),'-v','4'])
         self.spawn('gazebo',['gz','sim','-r','-s','-v','3']+(['--seed',str(self.sim_seed)] if self.sim_seed is not None else [])+[str(self.source/'Tools/simulation/gz/worlds/default.sdf')])

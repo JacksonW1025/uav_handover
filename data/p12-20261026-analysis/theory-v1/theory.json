@@ -1,0 +1,94 @@
+{
+  "schema": "p12-theory-attempt-1",
+  "policy_sha256": "5327c83dc57f094ca1977a2533ebce318645be010e16b9354c96c337cd5c278b",
+  "matrix_sha256": "3cc5028b2bfb284136d7a53ff56b51da4c154d76872c5e3aad132a84f0c329fe",
+  "network": {
+    "h_gain_exact": "1581696693094666135/144115188075855872",
+    "h_gain": 10.975225541544802,
+    "x_gain": 57.596491234970586,
+    "h_to_output_gain": 35.6293827204779,
+    "x_to_output_gain": 160.84932813343755,
+    "prefix_example": [
+      {
+        "call": 1,
+        "commits": true,
+        "h_bound_max": 0.06857171677651538,
+        "action_bound_max": 0.19624532124972455,
+        "clipped_box_bound_reached": false
+      },
+      {
+        "call": 2,
+        "commits": false,
+        "h_bound_max": 0.553377310824336,
+        "action_bound_max": 1.7098071298959203,
+        "clipped_box_bound_reached": false
+      },
+      {
+        "call": 3,
+        "commits": true,
+        "h_bound_max": 0.553377310824336,
+        "action_bound_max": 1.7098071298959203,
+        "clipped_box_bound_reached": false
+      },
+      {
+        "call": 4,
+        "commits": false,
+        "h_bound_max": 2.0,
+        "action_bound_max": 2.0,
+        "clipped_box_bound_reached": true
+      },
+      {
+        "call": 5,
+        "commits": true,
+        "h_bound_max": 2.0,
+        "action_bound_max": 2.0,
+        "clipped_box_bound_reached": true
+      },
+      {
+        "call": 6,
+        "commits": false,
+        "h_bound_max": 2.0,
+        "action_bound_max": 2.0,
+        "clipped_box_bound_reached": true
+      },
+      {
+        "call": 7,
+        "commits": true,
+        "h_bound_max": 2.0,
+        "action_bound_max": 2.0,
+        "clipped_box_bound_reached": true
+      },
+      {
+        "call": 8,
+        "commits": false,
+        "h_bound_max": 2.0,
+        "action_bound_max": 2.0,
+        "clipped_box_bound_reached": true
+      }
+    ],
+    "first_box_trivial_call": 4,
+    "domain": "h in [-1,1]^16; componentwise absolute errors; real arithmetic; arbitrary x; no sampled Jacobian claim",
+    "full_feedback_storage": "NOT_ESTABLISHED; observation/plant/caches/clock and joint residual need coupled domain bounds"
+  },
+  "capture": {
+    "relation": "same-phase capture: dp_target=dp_held; dv_target=alpha*dv_held,H; d(position input)=0; d(velocity input,H)=(1-alpha)*dv_held,H; memory unchanged",
+    "speed_reference": "b_a(v,t)=prox_(a*t*L2)(v); globally 1-Lipschitz; integral D is t-Lipschitz",
+    "finite_horizon": "||dr(t)||<=||dp_capture||+T||dv_capture||; ||ds(t)||<=||dv_capture|| for all 0<=t<=T; add documented casts",
+    "repair_parameter": "if every allowed held |v_i|<=L, (1-alpha)*L+epsilon<=1 implies alpha>=1-(1-epsilon)/L; P12 actual alpha=1",
+    "scope": "whole target hold profile and capture jump; not body closed-loop safety or resume guarantee"
+  },
+  "filter": {
+    "global_branch_crossing_bound": "E_next <= max(rho_up*E+(1-rho_up)*U,rho_down*E+(1-rho_down)*U)",
+    "same_command_initial_memory": "E(T)<=exp(-T/.025)*E0 for any same command sequence and branch crossings",
+    "example_initial_error_1000_after_200ms_rad_s": 0.33546262790251186,
+    "thrust_interface": "|dT|<=2*k*Omega*|d(actual_scaled_joint)|; filter error alone does not bound actual joint error",
+    "source_application": "configured Gazebo FirstOrderFilter update; applies every physical dt, not controller/native ticks"
+  },
+  "A4_counterexample": {
+    "status": "NOT_PROVEN_EXCLUDED",
+    "reason": "filter constraints restrict an execution subsystem, but A4 innovation lives in p/v/q; no certified causal plant/estimator residual relation excludes its 22-step sequence while covering all records",
+    "missing_first_interface": "first physical/estimator transition after command selection: bounded causal joint, torque, cache and estimation residual, coupled to complete feedback"
+  },
+  "actual_record_coverage": "P11#70 dual-clock legal word accepted; no future scheduler or whole plant coverage certificate",
+  "method_not_score": "analytic componentwise hybrid incremental relations and repair constraints retained; empirical predictions are separate"
+}

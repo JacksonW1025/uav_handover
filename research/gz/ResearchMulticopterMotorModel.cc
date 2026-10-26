@@ -97,6 +97,8 @@ class FirstOrderFilter {
   }
 
   ~FirstOrderFilter() = default;
+  // P12 read-only access to the actual internal state, before UpdateFilter.
+  T ResearchState() const { return previousState; }
 
   protected:
   double timeConstantUp;
@@ -245,9 +247,20 @@ class gz::sim::systems::ResearchMulticopterMotorModelPrivate
   public: uint64_t researchAppliedUs{0};
   public: uint64_t researchSimUs{0};
   public: uint64_t researchRows{0};
+  // P12 separate versioned trace; old motor-*.bin remains byte-compatible.
+  public: struct ExecutionRow
+  {
+    uint64_t simUs, sampleUs, consumeWallNs, filterWallNs, endWallNs;
+    double dt, command, filterBefore, filterAfter, jointVelocity, scaledJointVelocity;
+    double thrust, torqueWorld[3], tauUp, tauDown, slowdown, motorConstant;
+  };
+  static_assert(sizeof(ExecutionRow) == 152, "P12 execution trace layout");
+  public: FILE *researchExecution{nullptr};
+  public: uint64_t researchConsumeNs{0};
   public: ~ResearchMulticopterMotorModelPrivate()
   {
     if (this->researchTrace) fclose(this->researchTrace);
+    if (this->researchExecution) fclose(this->researchExecution);
   }
 };
 
@@ -428,6 +441,13 @@ void ResearchMulticopterMotorModel::Configure(const Entity &_entity,
     const std::string path = std::string(dir) + "/motor-" +
         std::to_string(this->dataPtr->actuatorNumber) + ".bin";
     this->dataPtr->researchTrace = std::fopen(path.c_str(), "wb");
+    if (std::getenv("HANDOVER_P12_TRACE"))
+    {
+      const std::string executionPath = std::string(dir) + "/execution-p12-" +
+          std::to_string(this->dataPtr->actuatorNumber) + ".bin";
+      this->dataPtr->researchExecution = std::fopen(executionPath.c_str(), "wb");
+      if (!this->dataPtr->researchExecution) gzerr << "P12 execution trace open failed\n";
+    }
     if (!this->dataPtr->researchTrace)
     {
       gzerr << "Research motor trace cannot open " << path << std::endl;
@@ -624,6 +644,7 @@ void ResearchMulticopterMotorModelPrivate::UpdateForcesAndMoments(
     }
     row.appliedSampleUs = this->researchAppliedUs;
     row.stepWallNs = ResearchMonotonicNs();
+    this->researchConsumeNs = row.stepWallNs;
     row.arrivalWallNs = msg.has_value() ? traceArrivalNs : 0;
     row.received = traceReceived;
     row.flags = (msg.has_value() ? 1u : 0u) | (researchComponent ? 2u : 0u);
@@ -766,6 +787,8 @@ void ResearchMulticopterMotorModelPrivate::UpdateForcesAndMoments(
           msgs::Convert(parentWrenchComp->Data().torque()) + parentWorldTorque);
       }
       // Apply the filter on the motor's velocity.
+      const uint64_t p12FilterWallNs = this->researchExecution ? ResearchMonotonicNs() : 0;
+      const double p12FilterBefore = this->rotorVelocityFilter->ResearchState();
       double refMotorRotVel;
       refMotorRotVel = this->rotorVelocityFilter->UpdateFilter(
           this->refMotorInput, this->samplingTime);
@@ -775,6 +798,22 @@ void ResearchMulticopterMotorModelPrivate::UpdateForcesAndMoments(
       *jointVelCmd = components::JointVelocityCmd(
           {this->turningDirection * refMotorRotVel
                               / this->rotorVelocitySlowdownSim});
+      if (this->researchExecution)
+      {
+        ExecutionRow row{};
+        row.simUs=this->researchSimUs;row.sampleUs=this->researchAppliedUs;
+        row.consumeWallNs=this->researchConsumeNs;row.filterWallNs=p12FilterWallNs;
+        row.dt=this->samplingTime;row.command=this->refMotorInput;
+        row.filterBefore=p12FilterBefore;row.filterAfter=refMotorRotVel;
+        row.jointVelocity=motorRotVel;row.scaledJointVelocity=realMotorVelocity;
+        row.thrust=thrust;row.torqueWorld[0]=parentWorldTorque.X();
+        row.torqueWorld[1]=parentWorldTorque.Y();row.torqueWorld[2]=parentWorldTorque.Z();
+        row.tauUp=this->timeConstantUp;row.tauDown=this->timeConstantDown;
+        row.slowdown=this->rotorVelocitySlowdownSim;row.motorConstant=this->motorConstant;
+        row.endWallNs=ResearchMonotonicNs();
+        std::fwrite(&row,sizeof(row),1,this->researchExecution);
+        if (this->researchRows%25==0) std::fflush(this->researchExecution);
+      }
     }
   }
 }

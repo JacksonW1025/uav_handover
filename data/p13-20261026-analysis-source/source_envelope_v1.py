@@ -1,0 +1,14 @@
+"""Analytic real-source finite-domain envelopes, no observed maxima or fitting."""
+import sys,json,math
+from pathlib import Path
+import mpmath as mp
+mp.iv.dps=45;iv=mp.iv
+R=Path(__file__).resolve().parents[2];sys.path.insert(0,str(R/'tools'));from p9_model import write
+hi=lambda x:math.nextafter(float(x.b),math.inf)
+lo=lambda x:math.nextafter(float(x.a),-math.inf)
+F=lambda x:iv.mpf(str(x))
+dt=F(1)/250;g=F('9.8');m=F('2.0643076923076924');mr=F('0.016076923076923075');rBC=F('.00186913101803548');rmax=iv.sqrt(F('.174')**2*2+(F('.06')-rBC)**2);O=F(1100);wb=iv.sqrt(3)*8;V=F(12);k=F('.00000854858');cd=F('.0000806428');cm=F('.016');cr=F('.000001');Ir=F('.00002649858234714004');Jxx=F('.00000038464910483993325');Jyy=F('.000026115851691700804');imin=F('.02166666666666667');imax=F('.04000000000000001')+4*mr*rmax**2+4*Ir+2*rBC**2
+Tmax=4*k*O**2;Dmax=4*cd*O*V;taumax=rmax*(Tmax+Dmax)+cm*Tmax+4*cr*O*V;dImax=4*(Jyy-Jxx)*(O/10);spinmax=4*Ir*O/10;alpha=iv.exp(-dt/(F(1)/80));Ej=F(1);deltaO=(1-alpha)*1000+2*Ej;spinrate=4*Ir*deltaO/(10*dt);angular=(taumax+dImax*wb+imax*wb**2+spinmax*wb+spinrate)/imin
+Ev=rBC*dt**2*(2*wb*angular+wb**3/2);Ep=rBC*wb**2*dt**2/2
+out=Path(sys.argv[1]);out.mkdir(parents=True,exist_ok=False);write(out/'envelope.json',{'schema':'p13-source-finite-envelope-1','domain':'prefrozen velocity8m/s, omega components8rad/s, scaled joint1100rad/s, source no wind; Vrel<=12 is a conditional link-domain bound, ideal joint geometry plus its separate error budget','source_only':True,'formal_results_used':False,'r_base_to_COM_m':hi(rBC),'rotor_lever_radius_upper_m':hi(rmax),'inertia_eigenvalue_lower_kgm2':lo(imin),'inertia_eigenvalue_upper_kgm2':hi(imax),'body_omega_norm_upper_rad_s':hi(wb),'total_thrust_upper_N':hi(Tmax),'total_drag_upper_N':hi(Dmax),'external_torque_upper_Nm':hi(taumax),'angular_acceleration_norm_upper_rad_s2':hi(angular),'COM_discrete_velocity_remainder_upper_m_s_per_step':hi(Ev),'COM_discrete_upward_acceleration_extra_upper_m_s2':hi(Ev/dt),'COM_semimplicit_position_geometry_remainder_upper_m_per_step':hi(Ep),'derivation':{'r':'source five-link inertial COM geometry, nominal ideal structure','I':'positive source inertias plus parallel-axis PSD, each rotor inertial norm<=Ir','tau':'lever*(thrust+drag)+yaw moment+rolling moment','alpha':'Imin inverse times external tau+dI*omega+omega cross(Iomega+spin)+DeltaSpin/dt','velocity_remainder':'r dt² [2 omegaMax alphaMax + omegaMax³/2] from FreeJoint coordinate update, not LCP residual','position_remainder':'r omegaMax² dt²/2, using integral of rotation group derivative norm1'},'unproved_actual_conditions':['no contact/other constraints','future solver/filter numeric error Ej<=1 candidate; not observed max','future additional FP/joint geometry errors beyond real nominal source relation','domain invariance and link velocity<=12'],'not_a_complete_actual_safety_certificate':True})
+print('SOURCE BOUNDS Aomega',hi(angular),'Ev/dt',hi(Ev/dt),'Ep',hi(Ep))

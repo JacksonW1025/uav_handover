@@ -1,0 +1,21 @@
+from analysis_paths_v1 import analysis_dir
+"""Distinct clocks/modes and measured latest-value output, without every-action axiom."""
+import sys,json
+from pathlib import Path
+from collections import Counter
+import numpy as np
+R=Path(__file__).resolve().parents[2];sys.path.insert(0,str(R/'tools'));from p12c.features import load
+from p9_model import write,sha
+
+def create(aggregate,out):
+ out.mkdir(parents=True,exist_ok=False);case_rows=json.load(open(aggregate/'cases.json'))['rows'];rows=[]
+ for row in case_rows:
+  if row['status']!='FINISH':continue
+  target=R/'data/p13-20261026-formal'/row['id'];a=analysis_dir(target);d=load(target/'run',a);e=json.load(open(R/'data/p13-20261026-formal-analysis-v3'/row['id']/'events/event-states.json'));use=(d['t']>=0)&(d['t']<=e['valid_end_s']);ix=np.flatnonzero(use);ds=np.diff(d['sample_us'][ix].astype(np.int64));dn=np.diff(d['native_us'][ix].astype(np.int64));native=json.load(open(a/'native/native-audit.json'));outchain=json.load(open(target/'run/output-chain.json'));ex=json.load(open(a/'execution/execution.json'));ph=json.load(open(a/'physics/physics.json'));cap=[]
+  for ev in e['events']:
+   if ev['status']!='CAPTURE_REACHED':cap.append({'label':ev['label'],'status':ev['status']});continue
+   rr={r['label']:r for r in e['rows']};c=rr.get(ev['label']+'_capture');r=rr.get(ev['label']+'_resume');cap.append({'label':ev['label'],'status':ev['status'],'capture_profile_s':ev['capture_profile_s'],'resume_profile_s':ev.get('resume_profile_s'),'actual_hold_profile_s':ev.get('resume_profile_s',e['valid_end_s'])-ev['capture_profile_s'],'native_capture_us':c.get('native_us') if c else None,'sample_capture_us':c.get('sample_us') if c else None,'sample_hold_us':r['sample_us']-c['sample_us'] if c and r and 'sample_us' in r else None,'native_hold_us':r['native_us']-c['native_us'] if c and r and 'native_us' in r else None,'resume_status':ev.get('resume_status'),'capture_GRU_committed':c['state']['actual_GRU_commit'] if c and c.get('state') else None})
+  A=next((v for v in cap if v['label']=='A' and v.get('resume_status')=='READ_AND_FRESH_CONFIRMED'),None);B=next((v for v in cap if v['label']=='B' and v['status']=='CAPTURE_REACHED'),None)
+  rows.append({'id':row['id'],'family':row['family'],'block':row['block'],'arm':row['arm'],'output_calls_task':len(ix),'GRU_commits_task':int(d['committed'][ix].sum()),'sample_increment_us_counts':dict(Counter(map(int,ds))),'native_increment_us_counts':dict(Counter(map(int,dn))),'native_platform_edges_task':int(np.sum(dn==0)),'native_jump_over_sample_edges_task':int(np.sum(dn>ds)),'sample_native_offset_us_range':[int((d['sample_us'][ix].astype(np.int64)-d['native_us'][ix].astype(np.int64)).min()),int((d['sample_us'][ix].astype(np.int64)-d['native_us'][ix].astype(np.int64)).max())],'actual_event_intervals':cap,'actual_Aresume_to_Bcapture_profile_s':None if A is None or B is None else B['capture_profile_s']-A['resume_profile_s'],'planned_Aresume_to_Bstop_s':row.get('gap_s',row.get('gap')),'native_audit':{k:native[k] for k in ['status','gates','read_commit_count','read_intermediate_count','gate_delays_pending_calls']},'execution_filter_replay_max_rad_s':max(x['continuous_max_rad_s'] for x in ex['motors'].values()),'output_chain_summary':{k:outchain.get(k) for k in ['status','motors_disagree_steps','px4_overwritten_publications','neural_published_actions_logged','partial_tail_bytes']},'neural_selected_consumption':{k:v['neural'] for k,v in outchain['motors'].items()},'legacy_fullrun_physics_status':ph['status'],'full_body_physics_status':json.load(open(R/'data/p13-20261026-physics-scope-v4'/target.name/'physics.json'))['status']})
+ write(out/'clocks-and-execution.json',{'schema':'p13-clock-execution-review-1','rows':rows,'timing_scope':'original host task coordinate, native hrt and sample timestamps independently retained, no zero/native platform division; P11run70 original status unchanged and clock word remains allowed','phase_estimand':'fixed PH1 read policy total effect; P13 does not estimate a pure capture-phase effect nor randomize PH1/PH2','output_semantics':'latest-value at each source layer; observed selected/applicable counts reported, not every-output-executed requirement','new_SITL':0,'source_sha256':sha(Path(__file__))})
+if __name__=='__main__':create(Path(sys.argv[1]),Path(sys.argv[2]))

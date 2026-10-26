@@ -1,0 +1,56 @@
+{
+  "schema": "p13-source-kernel-progression-1",
+  "case": "dev01-F2-NORMAL",
+  "rows": [
+    {
+      "variant": "M4_with_direct_physical_initial_and_actual_future_rotor",
+      "source_file": "data/p13-20261026-diagnostics/dev01-open-plant/arrays.npz",
+      "sha256": "de67ec03460d2a8a0cfa81832a64655313ee519f12571bef28059f5cdc0a358b",
+      "first_predicted45deg_witness_s": 2.639835314,
+      "stored_rows": 682,
+      "common_early_rows": 682,
+      "common_early_position_max_error_m": 2.824123629201924,
+      "future_inputs": "actual future force-phase rotor and next filter",
+      "M4_scope_warning": "empirical controller/LP plant forced physical q/omega initial is diagnostic, not frozen autonomous M4 score"
+    },
+    {
+      "variant": "source_average_rotor_inertia_actual_future_rotor",
+      "source_file": "data/p13-20261026-diagnostics/dev01-open-plant/arrays.npz",
+      "sha256": "de67ec03460d2a8a0cfa81832a64655313ee519f12571bef28059f5cdc0a358b",
+      "first_predicted45deg_witness_s": 11.399835542,
+      "stored_rows": 2977,
+      "common_early_rows": 682,
+      "common_early_position_max_error_m": 0.00041625947115200824,
+      "future_inputs": "actual future force-phase rotor and next filter",
+      "M4_scope_warning": null
+    },
+    {
+      "variant": "source_anisotropic_inertia_actual_future_rotor",
+      "source_file": "data/p13-20261026-diagnostics/dev01-anisotropic-open-plant/arrays.npz",
+      "sha256": "ba04ac66007ec16865681520f2b0bdb697288d3d23fc91aa92c698fddba94c04",
+      "first_predicted45deg_witness_s": 20.647835223,
+      "stored_rows": 5189,
+      "common_early_rows": 682,
+      "common_early_position_max_error_m": 1.6160852717624914e-07,
+      "future_inputs": "actual future force-phase rotor and next filter",
+      "M4_scope_warning": null
+    },
+    {
+      "variant": "source_discrete_FreeJoint_actual_future_command_only",
+      "source_file": "data/p13-20261026-theory/source-discrete-audit-v1/dev01-F2-NORMAL/arrays.npz",
+      "sha256": "1e313cfb24da27437eac7a45d762fb56488b7fe31769f2729d0c36ef4b32608f",
+      "first_predicted45deg_witness_s": 21.331835015,
+      "stored_rows": 5500,
+      "common_early_rows": 682,
+      "common_early_position_max_error_m": 2.0600789733240502e-08,
+      "future_inputs": "actual selected command only, own filter/phase/body",
+      "M4_scope_warning": null
+    }
+  ],
+  "scale": "same45deg witness, old50/new80 stop rules retained separately; not a comparison of domain-exit times",
+  "source_relations_changed": "source thrust/drag and anisotropic rotor inertia, then FreeJoint coordinate update",
+  "not_new_frozen_model": true,
+  "not_heldout_prediction_grade": true,
+  "true_physical_normal_never45deg": "see actualrecord",
+  "new_SITL": 0
+}

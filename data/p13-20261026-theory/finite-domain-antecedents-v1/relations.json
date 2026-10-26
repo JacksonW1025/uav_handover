@@ -1,0 +1,19 @@
+{
+  "schema": "p13-finite-domain-antecedents-1",
+  "source_only": true,
+  "neural_command_real_range_rad_s": [
+    150,
+    1000
+  ],
+  "command_range_basis": "clip action[-1,1], source150+850*(a+1)/2 and fixed motor permutation",
+  "filter_real_invariance": "f_next=u+(f-u) exp(-dt/tau), tau>0. For any switching raise/lower mode, if f0 in[0,1000] and u in[0,1000], every real-source f remains[0,1000]. C++ finite arithmetic future error budget separately unproved.",
+  "filter_full_switch_increment": "real map monotone in(state,input) and translation equivariant, so joint infinity nonexpansive across raise/lower mode boundaries; differing consumption words introduce input/clock error, not every-action requirement",
+  "ideal_link_velocity_bound_from_prefrozen_COM8_omega_components8_m_s": 11.503539639035196,
+  "allowed_additional_joint_link_velocity_residual_to_keep_Vrel12_m_s": 0.4964603609648037,
+  "relation": "v_link=v_COM+R*(omega_cross_r)+delta_v_link; Vrel<=8+sqrt(3)*8*rmax+E_delta_v+|wind|. Source world wind0. No sample maximum used.",
+  "joint_velocity_residual_future_budget_status": "NOT_PROVEN, do not set it zero because observed small",
+  "mode_domain": "no contact/otherconstraints and required servo modes are future conditions; sampled geometry projection alone not an invariant certificate",
+  "A4": "NOT_PROVEN_EXCLUDED",
+  "formal_experimental_or_model_change": false,
+  "SITL": 0
+}

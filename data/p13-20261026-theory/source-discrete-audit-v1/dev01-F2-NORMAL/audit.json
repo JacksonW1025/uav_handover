@@ -1,0 +1,38 @@
+{
+  "schema": "p13-source-discrete-relation-audit-1",
+  "case": "dev01-F2-NORMAL",
+  "raw_body_sha256": "cef33a827ff1b84beb64365131c78017202b801bdec0ef4ed7f7ded959000a2b",
+  "one_step": {
+    "rows": 7348,
+    "COM_position_max_m": 3.1242204586109565e-13,
+    "COM_velocity_max_m_s": 2.329805609301123e-13,
+    "body_omega_max_rad_s": 1.1341925662544661e-13,
+    "body_SO3_max_deg": 9.549000667984489e-09,
+    "scope": "each actual PRE physical state and selected command supplied; no autonomous claim"
+  },
+  "known_command_open": {
+    "rows": 5500,
+    "total_recorded_rows": 7348,
+    "full": false,
+    "stop": {
+      "profile_s": 21.999835473,
+      "row": 5499,
+      "reason": "frozen finite working-domain exit; no long-tail mechanism inference"
+    },
+    "COM_position_max_m": 4.618474900303002,
+    "COM_velocity_max_m_s": 7.249792678289458,
+    "tilt_error_max_deg": 79.84903809548115,
+    "scope": "initial physical state once, future actually selected commands ONLY; own carried filter/rotorphase/body dynamics. No future pose/omega/filter resets. Diagnostic, not blind flight forecast."
+  },
+  "not_new_main_candidate": true,
+  "frozen_M3_M4_M5_unchanged": true,
+  "formal_prediction_scores_unchanged": true,
+  "source_provenance": {
+    "upstream_version": "DART6.13.2 FreeJoint::integrateVelocities and integratePositions",
+    "url": "https://raw.githubusercontent.com/dartsim/dart/v6.13.2/dart/dynamics/FreeJoint.cpp",
+    "source_relationship": "linear classical-acceleration update, translated pose, rotation of stored velocities; COM rBC geometry retained",
+    "installed_binary": "Ubuntu6.13.2+ds actual snapshot, source reading is not a rebuilt binary certificate"
+  },
+  "future_certificate": false,
+  "remaining": "future SERVO/FP/joint geometry domain and EKF/cache feedback; observed residuals not hard future bounds"
+}

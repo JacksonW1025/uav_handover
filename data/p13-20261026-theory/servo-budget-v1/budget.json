@@ -1,0 +1,29 @@
+{
+  "schema": "p13-finite-SERVO-budget-1",
+  "source_only_no_formal_fit": true,
+  "working_domain": "predeclared bodyomega components8, filter<=1000, scaledjoint<=1100, Vrel<=12 source conditional domain. Current actual joint-filter/numeric discrepancy<=Ej1 is antecedent, not empirical max.",
+  "rotor_axial_coriolis_acceleration_bound_rad_s2": 62.14660633484163,
+  "free_body_angular_acceleration_upper_rad_s2": 972.4166761441924,
+  "current_joint_abs_upper_rad_s": 100.10000000000001,
+  "free_joint_velocity_abs_upper_rad_s": 104.23825312991615,
+  "source_command_joint_abs_upper_rad_s": 100.00000000000001,
+  "rhs_component_abs_upper_rad_s": 204.23825312991616,
+  "rhs_L2_upper_rad_s": 408.4765062598323,
+  "kappa_upper_inverse_inertia": 22.78217809511381,
+  "A_condition_number_upper": 1.002414781686786,
+  "lambda_L2_upper_Nms": 0.010824048327167648,
+  "real_exact_solver_CFM_scaled_joint_error_upper_rad_s": 4.087231012478089e-06,
+  "sufficient_eta_infinity_budget_for_scaled_joint_error1_rad_s": 0.09999959127689872,
+  "eta_unit": "servo-projected angular velocity rad/s; independently Aoriginal*lambda-b; never defined from ej",
+  "meaning": "conditional source recurrence closes bounded-rhs -> bounded impulse without finite force limit. The displayed eta budget is a concrete sufficient numeric condition for Ej1, NOT a proved actual future solver residual bound.",
+  "applicability": [
+    "four parallel-axis revolute SERVO rows with current prescribed commands, no clipping",
+    "no contact/other constraints; infinite force limits do not bound lambda",
+    "nominal source mass/inertia/geometry; numerical DeltaA treated separately",
+    "future actual floating solver residual <=displayed budget remains unproved",
+    "parent applied yaw/rolling moment, no direct rotor axial drive in force phase"
+  ],
+  "first_remaining_numeric_obligation": "bound actual DART matrix perturbation and servo-projected eta on reachable finite mode domain, then close estimator/cache/history feedback",
+  "observed_old_solver_small_residual": "independent empirical support only, not used for constants",
+  "complete_closedloop_certificate": false
+}

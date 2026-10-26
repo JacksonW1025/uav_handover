@@ -1,0 +1,33 @@
+{
+  "schema": "p13-source-finite-envelope-1",
+  "domain": "prefrozen velocity8m/s, omega components8rad/s, scaled joint1100rad/s, source no wind; Vrel<=12 is a conditional link-domain bound, ideal joint geometry plus its separate error budget",
+  "source_only": true,
+  "formal_results_used": false,
+  "r_base_to_COM_m": 0.00186913101803548,
+  "rotor_lever_radius_upper_m": 0.2528461942141869,
+  "inertia_eigenvalue_lower_kgm2": 0.021666666666666664,
+  "inertia_eigenvalue_upper_kgm2": 0.04422424943616821,
+  "body_omega_norm_upper_rad_s": 13.85640646055102,
+  "total_thrust_upper_N": 41.3751272,
+  "total_drag_upper_N": 4.257939840000001,
+  "external_torque_upper_Nm": 12.252949366584852,
+  "angular_acceleration_norm_upper_rad_s2": 1005.849541888892,
+  "COM_discrete_velocity_remainder_upper_m_s_per_step": 0.0008734115854523884,
+  "COM_discrete_upward_acceleration_extra_upper_m_s2": 0.2183528963630971,
+  "COM_semimplicit_position_geometry_remainder_upper_m_per_step": 2.8709852437024974e-06,
+  "derivation": {
+    "r": "source five-link inertial COM geometry, nominal ideal structure",
+    "I": "positive source inertias plus parallel-axis PSD, each rotor inertial norm<=Ir",
+    "tau": "lever*(thrust+drag)+yaw moment+rolling moment",
+    "alpha": "Imin inverse times external tau+dI*omega+omega cross(Iomega+spin)+DeltaSpin/dt",
+    "velocity_remainder": "r dt² [2 omegaMax alphaMax + omegaMax³/2] from FreeJoint coordinate update, not LCP residual",
+    "position_remainder": "r omegaMax² dt²/2, using integral of rotation group derivative norm1"
+  },
+  "unproved_actual_conditions": [
+    "no contact/other constraints",
+    "future solver/filter numeric error Ej<=1 candidate; not observed max",
+    "future additional FP/joint geometry errors beyond real nominal source relation",
+    "domain invariance and link velocity<=12"
+  ],
+  "not_a_complete_actual_safety_certificate": true
+}

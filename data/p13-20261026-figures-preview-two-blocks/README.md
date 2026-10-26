@@ -1,0 +1,1 @@
+All figures use assigned cases and original time, no peak/capture alignment. Three seeds per condition, gaps/arms/models correlated. Physical COM and model-origin diagnostics remain distinct from LP task criterion. PDFs are standalone export figures.

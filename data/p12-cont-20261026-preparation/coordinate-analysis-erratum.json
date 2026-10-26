@@ -1,0 +1,17 @@
+{
+  "schema": "p12-cont-coordinate-analysis-erratum-1",
+  "frozen_analyzer_sha256": "be20fdf4f8f015b59b3eaebae6ded29e0f95b68a8132d40b9dbc4e480c63400f",
+  "error": "unused aggregate world-height field treated truth_pv NEDz as ENUz",
+  "source": "GZBridge.cpp poseInfoCallback directly sets position={pose.y,pose.x,-pose.z}; observe copies NED fields unchanged",
+  "correction": "H=-z_NED; loss=max z_NED(t)-z_NED(task_start)",
+  "affected": "post-batch independent world-height aggregation only; original aggregate not executed",
+  "unaffected": [
+    "raw truth topic/arrays",
+    "frozen per-flight LP-based task criterion",
+    "scorev2",
+    "native protocol",
+    "safety protection",
+    "random assignment/model parameters"
+  ],
+  "action": "freeze bytes retained; separate analysis-v2 output and tests; no field/threshold relaxation, no flight rerun"
+}

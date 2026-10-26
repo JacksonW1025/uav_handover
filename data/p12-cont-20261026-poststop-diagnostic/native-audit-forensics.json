@@ -1,0 +1,28 @@
+{
+  "schema": "p12-cont-stopped-native-audit-forensics-1",
+  "formal_id": "b3-ph2-NORMAL1",
+  "frozen_audit_status": "FAIL_UNCHANGED",
+  "all_active_phase_exceptions": [
+    {
+      "timestamp": 48348000,
+      "timestamp_sample": 48348000,
+      "call_index_before": 0,
+      "call_index_after": 1,
+      "last_gru_sample_before": 48340000,
+      "gate_permit": 1,
+      "gate_pending": 1,
+      "predicted_commit": 1,
+      "actual_commit": 1,
+      "history_count_before": 0,
+      "active_row_index": 0,
+      "external_valid": true
+    }
+  ],
+  "task_valid_reads": 1198,
+  "task_commit_reads": 0,
+  "source": "P12Controls.hpp p12_delivery_allowed permits uninitialized original path; frozen audit checks every active read without initialization exemption",
+  "interpretation": "first active output after executor timing initialization/reset; source permits uninitialized/force-sync-not-ready path; inactive GRU history can already exist. Diagnostic only, frozen FAIL and stop unchanged",
+  "remaining21": "NOT_STARTED_PENDING; no new-version bypass",
+  "denied": false,
+  "uncertain": false
+}

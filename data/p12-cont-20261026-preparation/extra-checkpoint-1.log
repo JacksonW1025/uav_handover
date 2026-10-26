@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/data/p12-cont-20261026-analysis-v2-source/extra.py", line 72, in <module>
+    p=argparse.ArgumentParser();p.add_argument('--analysis',type=Path,required=True);a=p.parse_args();main(a.analysis)
+                                                                                                      ^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/data/p12-cont-20261026-analysis-v2-source/extra.py", line 69, in main
+    write(out/'prefix-array-manifest.json',{'files':{str(f.relative_to(ROOT)):sha(f) for f in sorted((out/'prefix').glob('*.npz'))},'all_full_arrays_local':True,'no_SITL':True,'no_new_fit':True,'sampling':'all common observed controller reads, no decimation'})
+                                                         ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 682, in relative_to
+    raise ValueError(f"{str(self)!r} is not in the subpath of {str(other)!r}")
+ValueError: 'data/p12-cont-20261026-analysis-v2-checkpoint-1/extra/prefix/b1-ph1-A-M2.npz' is not in the subpath of '/home/car/uav_handover'

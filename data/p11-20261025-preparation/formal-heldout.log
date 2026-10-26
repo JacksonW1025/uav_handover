@@ -1,0 +1,76 @@
+START 39 /72 F5-r1-B
+FINISH F5-r1-B FAILURE FAILURE censored True
+START 40 /72 F6-r1-A
+FINISH F6-r1-A SUCCESS SUCCESS censored False
+START 41 /72 F6-r1-B
+FINISH F6-r1-B SUCCESS SUCCESS censored False
+START 42 /72 ANCHOR-D-09-r1-ORIGINAL
+FINISH ANCHOR-D-09-r1-ORIGINAL FAILURE FAILURE censored True
+START 43 /72 F4-r1-REPAIR
+FINISH F4-r1-REPAIR SUCCESS SUCCESS censored False
+START 44 /72 F6-r1-REPAIR
+FINISH F6-r1-REPAIR SUCCESS SUCCESS censored False
+START 45 /72 F4-r1-A
+FINISH F4-r1-A SUCCESS SUCCESS censored False
+START 46 /72 F5-r1-A
+FINISH F5-r1-A FAILURE FAILURE censored True
+START 47 /72 F5-r1-AB
+FINISH F5-r1-AB FAILURE FAILURE censored True
+START 48 /72 ANCHOR-D-03-r1-ORIGINAL
+FINISH ANCHOR-D-03-r1-ORIGINAL FAILURE FAILURE censored True
+START 49 /72 F5-r1-REPAIR
+FINISH F5-r1-REPAIR SUCCESS SUCCESS censored False
+START 50 /72 F5-r1-NORMAL
+FINISH F5-r1-NORMAL SUCCESS SUCCESS censored False
+START 51 /72 F6-r1-AB
+FINISH F6-r1-AB SUCCESS SUCCESS censored False
+START 52 /72 F4-r1-NORMAL
+FINISH F4-r1-NORMAL SUCCESS SUCCESS censored False
+START 53 /72 F4-r1-B
+FINISH F4-r1-B SUCCESS SUCCESS censored False
+START 54 /72 F6-r1-NORMAL
+FINISH F6-r1-NORMAL SUCCESS SUCCESS censored False
+START 55 /72 F4-r1-AB
+FINISH F4-r1-AB SUCCESS FAILURE censored False
+BLOCK_COMPLETE 2 55 formal finished
+START 56 /72 F5-r2-REPAIR
+FINISH F5-r2-REPAIR SUCCESS SUCCESS censored False
+START 57 /72 F5-r2-B
+FINISH F5-r2-B FAILURE FAILURE censored True
+START 58 /72 F5-r2-A
+FINISH F5-r2-A FAILURE FAILURE censored True
+START 59 /72 ANCHOR-D-09-r2-ORIGINAL
+FINISH ANCHOR-D-09-r2-ORIGINAL FAILURE FAILURE censored True
+START 60 /72 F6-r2-AB
+FINISH F6-r2-AB SUCCESS SUCCESS censored False
+START 61 /72 F6-r2-A
+FINISH F6-r2-A SUCCESS SUCCESS censored False
+START 62 /72 F4-r2-NORMAL
+FINISH F4-r2-NORMAL SUCCESS SUCCESS censored False
+START 63 /72 F4-r2-A
+FINISH F4-r2-A SUCCESS SUCCESS censored False
+START 64 /72 F6-r2-B
+FINISH F6-r2-B SUCCESS SUCCESS censored False
+START 65 /72 F5-r2-AB
+FINISH F5-r2-AB FAILURE FAILURE censored True
+START 66 /72 F6-r2-NORMAL
+FINISH F6-r2-NORMAL SUCCESS SUCCESS censored False
+START 67 /72 F4-r2-AB
+FINISH F4-r2-AB SUCCESS FAILURE censored False
+START 68 /72 ANCHOR-D-03-r2-ORIGINAL
+FINISH ANCHOR-D-03-r2-ORIGINAL FAILURE FAILURE censored True
+START 69 /72 F4-r2-REPAIR
+FINISH F4-r2-REPAIR SUCCESS SUCCESS censored False
+START 70 /72 F5-r2-NORMAL
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p11/campaign.py", line 145, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/car/uav_handover/tools/p11/campaign.py", line 135, in main
+    execute(row,acceptance)
+  File "/home/car/uav_handover/tools/p11/campaign.py", line 86, in execute
+    tool('observe.py',[attempt/'run','--output',attempt/'observation'],attempt/'observation.log')
+  File "/home/car/uav_handover/tools/p11/campaign.py", line 45, in tool
+    if r.returncode:raise RuntimeError('analysis failure '+script+'; see '+str(log))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: analysis failure observe.py; see /home/car/uav_handover/data/p11-20261025-formal/F5-r2-NORMAL/observation.log

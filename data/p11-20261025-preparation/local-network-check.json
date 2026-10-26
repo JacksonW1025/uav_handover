@@ -1,0 +1,15 @@
+{
+  "policy_sha256": "5327c83dc57f094ca1977a2533ebce318645be010e16b9354c96c337cd5c278b",
+  "domain": "hidden in [-1,1]^16, arbitrary network input; original reset and convex GRU update preserve this domain without out-of-domain memory injection",
+  "global_hidden_infinity_lipschitz_coarse": 12.899877716384696,
+  "derivation": "|dhprime/dh|inf <= 1 + .5||Wh_z||inf + ||Wh_n||inf + .25||Wh_r||inf (||Wh_n||inf+|bh_n|inf), via sigmoid derivative<=.25, tanh<=1, |h-n|<=2. Conservative analytic bound, not a contraction certificate.",
+  "sample_local_Jh_spectral_norm": {
+    "n": 128,
+    "min": 1.1878291199210165,
+    "max": 1.437618654928134,
+    "median": 1.3561728028552593,
+    "finite_difference_epsilon": 1e-05
+  },
+  "classification": "global bound source/math checked; finite-difference local norms only sampled evidence. Bound>1 does not refute another weighted contraction or hybrid storage inequality.",
+  "state_interface": "must include action-history mean, previous action, sampler/hold and target modes with GRU; isolated h bound alone is not full incremental gain"
+}

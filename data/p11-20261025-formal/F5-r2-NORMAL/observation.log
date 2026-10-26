@@ -1,0 +1,29 @@
+/home/car/uav_handover/tools/p11/observe.py:139: RuntimeWarning: divide by zero encountered in divide
+  'wall_per_sim_tick_ratio':stats(np.diff(D['run_wall_ns'].astype(np.int64))/np.diff(D['timestamp'].astype(np.int64))/1000),
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p11/observe.py", line 179, in <module>
+    a=p.parse_args();r=analyze(a.run,a.output);raise SystemExit(0 if r['status'] in ['PASS','BASELINE_ONLY'] else 1)
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p11/observe.py", line 172, in analyze
+    write(out/'observation.json',report)
+  File "/home/car/uav_handover/tools/p9_model.py", line 34, in write
+    f.write(json.dumps(obj, indent=2, ensure_ascii=False, allow_nan=False)+'\n')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/encoder.py", line 202, in encode
+    chunks = list(chunks)
+             ^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/usr/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.12/json/encoder.py", line 398, in _iterencode_dict
+    yield _floatstr(value)
+          ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/encoder.py", line 240, in floatstr
+    raise ValueError(
+ValueError: Out of range float values are not JSON compliant: inf

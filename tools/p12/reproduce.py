@@ -23,7 +23,7 @@ def main():
     tool('p12/pack.py',[a.run,'--sync',sync,'--output',a.output/'packed'],'pack')
     tool('p11/pack.py',['measure',a.run,'--sync',sync,'--output',a.output/'measured'],'measure')
     tool('p12/isolated.py',['--packed',a.output/'packed','--models',ROOT/'data/p11-20261025-formal/models','--output',a.output/'prediction'],'prediction')
-    tool('p11/score.py',['--predictions',a.output/'prediction','--packed',a.output/'packed','--measurement',a.output/'measured/measurement.json','--output',a.output/'score'],'score')
+    tool('p12/score.py',['--predictions',a.output/'prediction','--packed',a.output/'packed','--measurement',a.output/'measured/measurement.json','--output',a.output/'score'],'score')
     comparison={}
     if a.compare:
         for path in (a.output/'prediction').glob('*.npz'):
@@ -33,7 +33,7 @@ def main():
                 comparison[path.name]=set(fresh.files)==set(prior.files) and all(np.array_equal(fresh[k],prior[k],equal_nan=True) for k in fresh.files)
         if not all(comparison.values()):raise RuntimeError('reproduced numerical predictions differ')
     (a.output/'reproduction.json').write_text(json.dumps({'schema':'p12-reproduction-1','status':'PASS','run':str(a.run),
-        'SITL_starts':0,'future_data_isolation':True,'array_comparisons':comparison,
+        'SITL_starts':0,'score_schema':'p12-scoring-2','future_data_isolation':True,'array_comparisons':comparison,
         'scope':'known-input audits plus isolated autonomous candidate numerics; no full plant proof or formal acceptance'},indent=2)+'\n')
     print('PASS: offline reproduction; no SITL starts')
 

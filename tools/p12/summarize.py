@@ -10,7 +10,8 @@ from p11.models import speeds
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--scores',type=Path,default=ROOT/'data/p12-20261026-score-review');a=p.parse_args()
     out=a.output;out.mkdir(parents=True,exist_ok=False);prep=ROOT/'data/p12-20261026-preparation';analysis=ROOT/'data/p12-20261026-analysis'
     ledger=[json.loads(s) for s in (prep/'attempts.jsonl').read_text().splitlines()];starts=[r for r in ledger if r['event']=='START_INTENT']
     names=[r['id'] for r in starts];cases={};raw=[];hash_cache={};ordering=[]
@@ -62,10 +63,11 @@ def main():
                     ordering.append({'case':name,'motor':motor,'capture_sample':capture['sample_us'],
                         'same_physics_step_consumption':same,'command_from_capture_call_first_consumption':selected,
                         'capture_bracket_ns':[lo,hi]})
-        score=analysis/(name+'-score/score.json')
+        score=a.scores/name/'score.json'
         if score.exists():
             report=json.loads(score.read_text())
-            cases[name]['predictions']={key:{k:v.get(k) for k in ['peak_abs_error_deg','position_norm_m','risk_comparison','task_risk_comparison','event_windows']} for key,v in report['models'].items()}
+            cases[name]['score_schema']=report['schema']
+            cases[name]['predictions']={key:{k:v.get(k) for k in ['peak_abs_error_deg','position_norm_m','risk_comparison','height_risk_comparison','task_risk_comparison','full_prediction','risk','event_windows']} for key,v in report['models'].items()}
         paths=[run/'flight.ulg',run/'telemetry.jsonl',run/'resources.jsonl',run/'p11-sends.jsonl']
         paths+=list((run/'gz-motor').glob('*.bin'))+list((run/'rootfs/log').glob('**/*.ulg'))
         for file in paths:
@@ -97,6 +99,7 @@ def main():
         'empirical_prediction_scope':'all development/previously seen sources; isolated autonomous simulations and known-input replay separated; no formal heldout validation',
         'theory_status':'SOURCE_SUBSYSTEM_INCREMENTAL_RELATIONS_PROVED; FULL_FEEDBACK_STORAGE_AND_ACTUAL_COVERAGE_NOT_ESTABLISHED',
         'A4_counterexample':'NOT_PROVEN_EXCLUDED','clock70':'new offline diagnostic only; old P11 validity/STOP/pending unchanged',
+        'score_root':str(a.scores),'score_schema':'p12-scoring-2',
         'CI':'separately query after normal push; local tests are not CI'}
     write(out/'conclusion.json',conclusion)
     with (out/'startup-ledger.csv').open('w') as f:

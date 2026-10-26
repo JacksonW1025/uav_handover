@@ -1,0 +1,114 @@
+{
+  "schema": "p12c-domain-membership-1",
+  "case": "prep-normal-b2-on",
+  "cohort": "new preparation",
+  "full_task_recorded": true,
+  "valid_task_interval_s": [
+    0.0,
+    29.392217998
+  ],
+  "observed_projection": "PASS",
+  "first_observed_projection_exit_profile_s": null,
+  "first_actual_domain_status_unknown_profile_s": 0.0,
+  "actual_finite_domain": "UNKNOWN_FROM_INITIAL_PHYSICAL_STATE_AND_CONTINUOUS_MEMBERSHIP",
+  "observable_ranges": {
+    "H_pose_m": [
+      2.888359785079956,
+      2.9829819202423096
+    ],
+    "theta_pose_deg_max": 17.019549739408674,
+    "callback_velocity_norm_m_s_max": 2.016914318505302,
+    "controller_gyro_component_max": 1.026090145111084,
+    "cache_ages_max_us": [
+      8000,
+      4000
+    ]
+  },
+  "physics_motor": [
+    {
+      "motor": 0,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        720.227294921875,
+        810.8284912109375
+      ],
+      "filter_range_rad_s": [
+        732.1967923010085,
+        808.8582799067337
+      ],
+      "joint_scaled_abs_max_rad_s": 808.8582799059911,
+      "first_violation_step": null
+    },
+    {
+      "motor": 1,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        687.65380859375,
+        796.75927734375
+      ],
+      "filter_range_rad_s": [
+        708.9316591748485,
+        792.8620427063018
+      ],
+      "joint_scaled_abs_max_rad_s": 792.8620427048602,
+      "first_violation_step": null
+    },
+    {
+      "motor": 2,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        703.9330444335938,
+        800.1840209960938
+      ],
+      "filter_range_rad_s": [
+        724.9212907661304,
+        793.3626993187232
+      ],
+      "joint_scaled_abs_max_rad_s": 793.3626993166556,
+      "first_violation_step": null
+    },
+    {
+      "motor": 3,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        700.9824829101562,
+        816.4830932617188
+      ],
+      "filter_range_rad_s": [
+        714.1251697993753,
+        813.9649647627059
+      ],
+      "joint_scaled_abs_max_rad_s": 813.9649647618268,
+      "first_violation_step": null
+    }
+  ],
+  "old_solver_full_task": null,
+  "unobservable_or_unproved": [
+    {
+      "field": "instantaneous physical COM/body velocity",
+      "why": "only callback finite difference and LP delayed estimate; original pose physical time not retained"
+    },
+    {
+      "field": "physical angular velocity / full rigid state between pose callbacks",
+      "why": "controller gyro is filtered/cached; truth angular topic is Euler finite difference, not physical body twist"
+    },
+    {
+      "field": "continuous H/theta membership between callbacks",
+      "why": "sampled poses satisfy candidate bounds but future acceleration/integration and measurement-delay error bounds absent"
+    },
+    {
+      "field": "new-record pre-solve free velocity and unwrapped joint angle/constraint mode",
+      "why": "heavy solver intentionally OFF; old source/step audit cannot fill new fields"
+    },
+    {
+      "field": "future solver DeltaA/eta and body/cache invariant set",
+      "why": "posthoc matrix accuracy cannot establish all future rounding/feedback bounds"
+    }
+  ],
+  "case_excluded": false,
+  "A4": "NOT_PROVEN_EXCLUDED"
+}

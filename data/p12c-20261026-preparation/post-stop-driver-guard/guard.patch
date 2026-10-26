@@ -1,0 +1,11 @@
+--- actually-used-preparation-driver
++++ post-stop-guard-only-driver
+@@ -17,6 +17,8 @@
+  return len(starts)+1
+ 
+ def baseline():
++ # Post-stop-only guard: actual preparation driver is archived, no new runtime.
++ if (P/'formal-stop.json').exists():raise RuntimeError('P12c engineering queue is stopped; no automatic preparation/formal continuation')
+  b=json.load(open(P/'baseline.json'))
+  for n,h in b['old_files'].items():
+   if sha(R/n)!=h:raise RuntimeError('old history changed '+n)

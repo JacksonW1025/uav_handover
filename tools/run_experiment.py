@@ -1007,7 +1007,7 @@ class Experiment:
             names+=['research_p11','vehicle_local_position_groundtruth','vehicle_attitude_groundtruth','vehicle_angular_velocity_groundtruth']
         if self.cfg.get('p12',{}).get('observe'):
             names+=['research_p12']
-        if self.cfg.get('p12b',{}).get('observe'):names+=['research_p12b']
+        if self.cfg.get('p12b',{}).get('observe') and not self.cfg.get('p12c_platform'):names+=['research_p12b']
         (logging/'logger_topics.txt').write_text(''.join(n+' 0 0\n' for n in names)+(''.join(f'route_observability 0 {i}\n' for i in range(1,10)) if self.variant=='raptor' else ''))
         self.spawn('agent',[str(LAB/'scripts/MicroXRCEAgent'),'udp4','-p',str(self.cfg['agent_port']),'-v','4'])
         self.spawn('gazebo',['gz','sim','-r','-s','-v','3']+(['--seed',str(self.sim_seed)] if self.sim_seed is not None else [])+[str(self.source/'Tools/simulation/gz/worlds/default.sdf')])

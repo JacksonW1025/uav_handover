@@ -1,0 +1,30 @@
+P12C_START 1 preparation prep-normal-b1-off
+P12C_FINISH 1 prep-normal-b1-off SUCCESS
+P12C_START 2 preparation prep-normal-b1-on
+P12C_FINISH 2 prep-normal-b1-on SUCCESS
+P12C_START 3 preparation prep-normal-b2-off
+P12C_FINISH 3 prep-normal-b2-off SUCCESS
+P12C_START 4 preparation prep-normal-b2-on
+P12C_FINISH 4 prep-normal-b2-on SUCCESS
+P12C_START 5 preparation prep-safe_event-b1-off
+P12C_FINISH 5 prep-safe_event-b1-off SUCCESS
+P12C_START 6 preparation prep-safe_event-b1-on
+P12C_FINISH 6 prep-safe_event-b1-on SUCCESS
+P12C_START 7 preparation prep-safe_event-b2-on
+P12C_FINISH 7 prep-safe_event-b2-on SUCCESS
+P12C_START 8 preparation prep-safe_event-b2-off
+P12C_FINISH 8 prep-safe_event-b2-off SUCCESS
+P12C_START 9 preparation prep-boundary-b1-on
+P12C_FINISH 9 prep-boundary-b1-on FAILURE
+P12C_START 10 preparation prep-boundary-b1-off
+P12C_FINISH 10 prep-boundary-b1-off FAILURE
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p12c_platform/campaign.py", line 77, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/car/uav_handover/tools/p12c_platform/campaign.py", line 73, in main
+    execute(row,a.stage)
+  File "/home/car/uav_handover/tools/p12c_platform/campaign.py", line 48, in execute
+    fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB);items=[json.loads(x) for x in ledger.read_text().splitlines()] if ledger.exists() else [];ordinal=claim(items,row['id'],kind);remaining=36-len([r for r in items if r['event']=='START_INTENT']);st=os.statvfs(R);available=st.f_bavail*st.f_frsize;required=remaining*300_000_000+22_000_000_000
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+BlockingIOError: [Errno 11] Resource temporarily unavailable

@@ -1,0 +1,128 @@
+{
+  "schema": "p12c-domain-membership-1",
+  "case": "prep03-F2-ph2-NORMAL0-on-direct-v2",
+  "cohort": "old source solver evidence whole task",
+  "full_task_recorded": true,
+  "valid_task_interval_s": [
+    0.0,
+    29.391917004
+  ],
+  "observed_projection": "PASS",
+  "first_observed_projection_exit_profile_s": null,
+  "first_actual_domain_status_unknown_profile_s": 0.0,
+  "actual_finite_domain": "UNKNOWN_FROM_INITIAL_PHYSICAL_STATE_AND_CONTINUOUS_MEMBERSHIP",
+  "observable_ranges": {
+    "H_pose_m": [
+      2.8510525226593018,
+      2.9290502071380615
+    ],
+    "theta_pose_deg_max": 17.549243947502973,
+    "callback_velocity_norm_m_s_max": 2.0010440433282684,
+    "controller_gyro_component_max": 1.0364577770233154,
+    "cache_ages_max_us": [
+      8000,
+      4000
+    ]
+  },
+  "physics_motor": [
+    {
+      "motor": 0,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        709.4229125976562,
+        813.926513671875
+      ],
+      "filter_range_rad_s": [
+        723.1965922246034,
+        811.2613873775592
+      ],
+      "joint_scaled_abs_max_rad_s": 811.2613873765538,
+      "first_violation_step": null
+    },
+    {
+      "motor": 1,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        724.8584594726562,
+        801.2924194335938
+      ],
+      "filter_range_rad_s": [
+        739.1904452153232,
+        794.7296589338793
+      ],
+      "joint_scaled_abs_max_rad_s": 794.7296589314019,
+      "first_violation_step": null
+    },
+    {
+      "motor": 2,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        730.1639404296875,
+        805.5086059570312
+      ],
+      "filter_range_rad_s": [
+        743.1634713986352,
+        797.221020307274
+      ],
+      "joint_scaled_abs_max_rad_s": 797.2210203041458,
+      "first_violation_step": null
+    },
+    {
+      "motor": 3,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        704.13330078125,
+        819.8240356445312
+      ],
+      "filter_range_rad_s": [
+        719.4928460420409,
+        814.4273053706255
+      ],
+      "joint_scaled_abs_max_rad_s": 814.4273053688869,
+      "first_violation_step": null
+    }
+  ],
+  "old_solver_full_task": {
+    "source": "old FULL solver rows, not just servo-only subset; sim_us+4000 matches motor/IMU destination physical step",
+    "rows_in_task": 29396,
+    "free_joint_abs_max_rad_s": 81.44278079482187,
+    "position_abs_max_rad": 3963.593412097382,
+    "system_dimensions": [
+      4
+    ],
+    "all_joint_modes": [
+      2
+    ],
+    "all_forces_unbounded_in_task": true,
+    "free_domain_at_observed_solver_calls": true,
+    "scope": "posthoc old physical-step values; no future invariant or new-record free-velocity observation"
+  },
+  "unobservable_or_unproved": [
+    {
+      "field": "instantaneous physical COM/body velocity",
+      "why": "only callback finite difference and LP delayed estimate; original pose physical time not retained"
+    },
+    {
+      "field": "physical angular velocity / full rigid state between pose callbacks",
+      "why": "controller gyro is filtered/cached; truth angular topic is Euler finite difference, not physical body twist"
+    },
+    {
+      "field": "continuous H/theta membership between callbacks",
+      "why": "sampled poses satisfy candidate bounds but future acceleration/integration and measurement-delay error bounds absent"
+    },
+    {
+      "field": "new-record pre-solve free velocity and unwrapped joint angle/constraint mode",
+      "why": "heavy solver intentionally OFF; old source/step audit cannot fill new fields"
+    },
+    {
+      "field": "future solver DeltaA/eta and body/cache invariant set",
+      "why": "posthoc matrix accuracy cannot establish all future rounding/feedback bounds"
+    }
+  ],
+  "case_excluded": false,
+  "A4": "NOT_PROVEN_EXCLUDED"
+}

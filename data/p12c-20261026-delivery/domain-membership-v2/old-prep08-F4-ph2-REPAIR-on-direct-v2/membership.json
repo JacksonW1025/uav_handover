@@ -1,0 +1,128 @@
+{
+  "schema": "p12c-domain-membership-1",
+  "case": "prep08-F4-ph2-REPAIR-on-direct-v2",
+  "cohort": "old source solver evidence whole task",
+  "full_task_recorded": true,
+  "valid_task_interval_s": [
+    0.0,
+    29.392076294
+  ],
+  "observed_projection": "PASS",
+  "first_observed_projection_exit_profile_s": null,
+  "first_actual_domain_status_unknown_profile_s": 0.0,
+  "actual_finite_domain": "UNKNOWN_FROM_INITIAL_PHYSICAL_STATE_AND_CONTINUOUS_MEMBERSHIP",
+  "observable_ranges": {
+    "H_pose_m": [
+      2.901461124420166,
+      3.008789539337158
+    ],
+    "theta_pose_deg_max": 16.802107629392065,
+    "callback_velocity_norm_m_s_max": 2.4274405019578795,
+    "controller_gyro_component_max": 1.7876306772232056,
+    "cache_ages_max_us": [
+      12000,
+      8000
+    ]
+  },
+  "physics_motor": [
+    {
+      "motor": 0,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        679.7490234375,
+        889.4957275390625
+      ],
+      "filter_range_rad_s": [
+        697.6868510840832,
+        863.3865868586413
+      ],
+      "joint_scaled_abs_max_rad_s": 863.3865868579425,
+      "first_violation_step": null
+    },
+    {
+      "motor": 1,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        617.4572143554688,
+        870.3858642578125
+      ],
+      "filter_range_rad_s": [
+        659.1254474699684,
+        857.8150188471286
+      ],
+      "joint_scaled_abs_max_rad_s": 857.8150188460581,
+      "first_violation_step": null
+    },
+    {
+      "motor": 2,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        381.4448547363281,
+        843.8128662109375
+      ],
+      "filter_range_rad_s": [
+        508.80086209320615,
+        835.6864504728713
+      ],
+      "joint_scaled_abs_max_rad_s": 835.6864504714758,
+      "first_violation_step": null
+    },
+    {
+      "motor": 3,
+      "physics_steps": 7348,
+      "all_recorded_domain_bounds": true,
+      "command_range_rad_s": [
+        683.6715698242188,
+        1000.0
+      ],
+      "filter_range_rad_s": [
+        713.6027388197788,
+        936.1700718838323
+      ],
+      "joint_scaled_abs_max_rad_s": 936.1700718670534,
+      "first_violation_step": null
+    }
+  ],
+  "old_solver_full_task": {
+    "source": "old FULL solver rows, not just servo-only subset; sim_us+4000 matches motor/IMU destination physical step",
+    "rows_in_task": 29396,
+    "free_joint_abs_max_rad_s": 93.61758047147315,
+    "position_abs_max_rad": 3976.3538452610233,
+    "system_dimensions": [
+      4
+    ],
+    "all_joint_modes": [
+      2
+    ],
+    "all_forces_unbounded_in_task": true,
+    "free_domain_at_observed_solver_calls": true,
+    "scope": "posthoc old physical-step values; no future invariant or new-record free-velocity observation"
+  },
+  "unobservable_or_unproved": [
+    {
+      "field": "instantaneous physical COM/body velocity",
+      "why": "only callback finite difference and LP delayed estimate; original pose physical time not retained"
+    },
+    {
+      "field": "physical angular velocity / full rigid state between pose callbacks",
+      "why": "controller gyro is filtered/cached; truth angular topic is Euler finite difference, not physical body twist"
+    },
+    {
+      "field": "continuous H/theta membership between callbacks",
+      "why": "sampled poses satisfy candidate bounds but future acceleration/integration and measurement-delay error bounds absent"
+    },
+    {
+      "field": "new-record pre-solve free velocity and unwrapped joint angle/constraint mode",
+      "why": "heavy solver intentionally OFF; old source/step audit cannot fill new fields"
+    },
+    {
+      "field": "future solver DeltaA/eta and body/cache invariant set",
+      "why": "posthoc matrix accuracy cannot establish all future rounding/feedback bounds"
+    }
+  ],
+  "case_excluded": false,
+  "A4": "NOT_PROVEN_EXCLUDED"
+}

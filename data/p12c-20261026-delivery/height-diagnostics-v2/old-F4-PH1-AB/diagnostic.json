@@ -1,0 +1,289 @@
+{
+  "schema": "p12c-height-process-diagnostic-2",
+  "case": "b2-ph1-AB",
+  "alignment": [
+    {
+      "motor": 0,
+      "all_destination_sample_exact": true,
+      "period": "force in row sim_us advances World pre(sim_us-4000) to post(sim_us), under checked4ms nominal World; held pose timestamps remain arrival-native, not physics sample stamps"
+    },
+    {
+      "motor": 1,
+      "all_destination_sample_exact": true,
+      "period": "force in row sim_us advances World pre(sim_us-4000) to post(sim_us), under checked4ms nominal World; held pose timestamps remain arrival-native, not physics sample stamps"
+    },
+    {
+      "motor": 2,
+      "all_destination_sample_exact": true,
+      "period": "force in row sim_us advances World pre(sim_us-4000) to post(sim_us), under checked4ms nominal World; held pose timestamps remain arrival-native, not physics sample stamps"
+    },
+    {
+      "motor": 3,
+      "all_destination_sample_exact": true,
+      "period": "force in row sim_us advances World pre(sim_us-4000) to post(sim_us), under checked4ms nominal World; held pose timestamps remain arrival-native, not physics sample stamps"
+    }
+  ],
+  "results": [
+    {
+      "variant": "truth_pose_force_continuous_constant_acc",
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_error_max_m": 0.13105015002784182,
+          "H_signed_end_error_m": -0.13105015002784182
+        },
+        {
+          "segment": "A_resume_to_B",
+          "rows": 228,
+          "H_error_max_m": 0.16724588185791678,
+          "H_signed_end_error_m": -0.1642826238516384
+        },
+        {
+          "segment": "B_and_full_tail",
+          "rows": 3897,
+          "H_error_max_m": 1.081319322163426,
+          "H_signed_end_error_m": -1.081319322163426
+        }
+      ],
+      "initial_COM_W_estimate": 0.00018825926235876977,
+      "controlled_replacements": {
+        "actual_future_T": true,
+        "attitude_stream": "truth_pose",
+        "approx_drag_from_actual_future_held_v_and_cached_gyro": false,
+        "initial_W_source": "callback",
+        "after_initial_state_reset": false
+      },
+      "scope": "diagnostic conditional balance, no new candidate or fitting, not autonomous score; force/IMU destination physics-step alignment exact, pose physical sample time lost at native-stamped callback; drag is reconstructed approximation not direct vector, numerical integration not certified"
+    },
+    {
+      "variant": "truth_pose_force_semiimplicit_position",
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_error_max_m": 0.1311086237278576,
+          "H_signed_end_error_m": -0.1311086237278576
+        },
+        {
+          "segment": "A_resume_to_B",
+          "rows": 228,
+          "H_error_max_m": 0.17041495109692306,
+          "H_signed_end_error_m": -0.1666636469635674
+        },
+        {
+          "segment": "B_and_full_tail",
+          "rows": 3897,
+          "H_error_max_m": 1.0814608757595925,
+          "H_signed_end_error_m": -1.0814608757595925
+        }
+      ],
+      "initial_COM_W_estimate": 0.00018825926235876977,
+      "controlled_replacements": {
+        "actual_future_T": true,
+        "attitude_stream": "truth_pose",
+        "approx_drag_from_actual_future_held_v_and_cached_gyro": false,
+        "initial_W_source": "callback",
+        "after_initial_state_reset": false
+      },
+      "scope": "diagnostic conditional balance, no new candidate or fitting, not autonomous score; force/IMU destination physics-step alignment exact, pose physical sample time lost at native-stamped callback; drag is reconstructed approximation not direct vector, numerical integration not certified"
+    },
+    {
+      "variant": "cached_attitude_force_continuous_constant_acc",
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_error_max_m": 0.14166113932551028,
+          "H_signed_end_error_m": -0.14166113932551028
+        },
+        {
+          "segment": "A_resume_to_B",
+          "rows": 228,
+          "H_error_max_m": 0.17823004847350665,
+          "H_signed_end_error_m": -0.1742835469985824
+        },
+        {
+          "segment": "B_and_full_tail",
+          "rows": 3897,
+          "H_error_max_m": 0.951456581621152,
+          "H_signed_end_error_m": -0.951456581621152
+        }
+      ],
+      "initial_COM_W_estimate": 0.00018825926235876977,
+      "controlled_replacements": {
+        "actual_future_T": true,
+        "attitude_stream": "cached_attitude",
+        "approx_drag_from_actual_future_held_v_and_cached_gyro": false,
+        "initial_W_source": "callback",
+        "after_initial_state_reset": false
+      },
+      "scope": "diagnostic conditional balance, no new candidate or fitting, not autonomous score; force/IMU destination physics-step alignment exact, pose physical sample time lost at native-stamped callback; drag is reconstructed approximation not direct vector, numerical integration not certified"
+    },
+    {
+      "variant": "cached_attitude_force_semiimplicit_position",
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_error_max_m": 0.14172482156245003,
+          "H_signed_end_error_m": -0.14172482156245003
+        },
+        {
+          "segment": "A_resume_to_B",
+          "rows": 228,
+          "H_error_max_m": 0.181396538585886,
+          "H_signed_end_error_m": -0.17664805325988242
+        },
+        {
+          "segment": "B_and_full_tail",
+          "rows": 3897,
+          "H_error_max_m": 0.9515812262109806,
+          "H_signed_end_error_m": -0.9515812262109806
+        }
+      ],
+      "initial_COM_W_estimate": 0.00018825926235876977,
+      "controlled_replacements": {
+        "actual_future_T": true,
+        "attitude_stream": "cached_attitude",
+        "approx_drag_from_actual_future_held_v_and_cached_gyro": false,
+        "initial_W_source": "callback",
+        "after_initial_state_reset": false
+      },
+      "scope": "diagnostic conditional balance, no new candidate or fitting, not autonomous score; force/IMU destination physics-step alignment exact, pose physical sample time lost at native-stamped callback; drag is reconstructed approximation not direct vector, numerical integration not certified"
+    },
+    {
+      "variant": "truth_pose_approx_drag_continuous_constant_acc",
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_error_max_m": 0.0043402921474076095,
+          "H_signed_end_error_m": -0.004336031185476319
+        },
+        {
+          "segment": "A_resume_to_B",
+          "rows": 228,
+          "H_error_max_m": 0.022166952863006184,
+          "H_signed_end_error_m": -0.012703267709082589
+        },
+        {
+          "segment": "B_and_full_tail",
+          "rows": 3897,
+          "H_error_max_m": 0.04528743803393587,
+          "H_signed_end_error_m": -0.04528743803393587
+        }
+      ],
+      "initial_COM_W_estimate": 0.00018825926235876977,
+      "controlled_replacements": {
+        "actual_future_T": true,
+        "attitude_stream": "truth_pose_approx_drag",
+        "approx_drag_from_actual_future_held_v_and_cached_gyro": true,
+        "initial_W_source": "callback",
+        "after_initial_state_reset": false
+      },
+      "scope": "diagnostic conditional balance, no new candidate or fitting, not autonomous score; force/IMU destination physics-step alignment exact, pose physical sample time lost at native-stamped callback; drag is reconstructed approximation not direct vector, numerical integration not certified"
+    },
+    {
+      "variant": "truth_pose_approx_drag_semiimplicit_position",
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_error_max_m": 0.004337161921276866,
+          "H_signed_end_error_m": -0.004334147412633715
+        },
+        {
+          "segment": "A_resume_to_B",
+          "rows": 228,
+          "H_error_max_m": 0.02531828094062538,
+          "H_signed_end_error_m": -0.01499149853927273
+        },
+        {
+          "segment": "B_and_full_tail",
+          "rows": 3897,
+          "H_error_max_m": 0.04532368195656522,
+          "H_signed_end_error_m": -0.04532368195656522
+        }
+      ],
+      "initial_COM_W_estimate": 0.00018825926235876977,
+      "controlled_replacements": {
+        "actual_future_T": true,
+        "attitude_stream": "truth_pose_approx_drag",
+        "approx_drag_from_actual_future_held_v_and_cached_gyro": true,
+        "initial_W_source": "callback",
+        "after_initial_state_reset": false
+      },
+      "scope": "diagnostic conditional balance, no new candidate or fitting, not autonomous score; force/IMU destination physics-step alignment exact, pose physical sample time lost at native-stamped callback; drag is reconstructed approximation not direct vector, numerical integration not certified"
+    },
+    {
+      "variant": "truth_pose_approx_drag_LP_initial_continuous_constant_acc",
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_error_max_m": 0.0009297724338814817,
+          "H_signed_end_error_m": 0.0002022132433308066
+        },
+        {
+          "segment": "A_resume_to_B",
+          "rows": 228,
+          "H_error_max_m": 0.017385110455238717,
+          "H_signed_end_error_m": -0.007843980857133559
+        },
+        {
+          "segment": "B_and_full_tail",
+          "rows": 3897,
+          "H_error_max_m": 0.03649780079528897,
+          "H_signed_end_error_m": -0.03494086029180554
+        }
+      ],
+      "initial_COM_W_estimate": -0.00016376093844883144,
+      "controlled_replacements": {
+        "actual_future_T": true,
+        "attitude_stream": "truth_pose_approx_drag_LP_initial",
+        "approx_drag_from_actual_future_held_v_and_cached_gyro": true,
+        "initial_W_source": "LP",
+        "after_initial_state_reset": false
+      },
+      "scope": "diagnostic conditional balance, no new candidate or fitting, not autonomous score; force/IMU destination physics-step alignment exact, pose physical sample time lost at native-stamped callback; drag is reconstructed approximation not direct vector, numerical integration not certified"
+    },
+    {
+      "variant": "truth_pose_approx_drag_LP_initial_semiimplicit_position",
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_error_max_m": 0.0009608649283849857,
+          "H_signed_end_error_m": 0.0002040970161791833
+        },
+        {
+          "segment": "A_resume_to_B",
+          "rows": 228,
+          "H_error_max_m": 0.02053643853285214,
+          "H_signed_end_error_m": -0.010132211687324144
+        },
+        {
+          "segment": "B_and_full_tail",
+          "rows": 3897,
+          "H_error_max_m": 0.03931440606132419,
+          "H_signed_end_error_m": -0.03497710421441047
+        }
+      ],
+      "initial_COM_W_estimate": -0.00016376093844883144,
+      "controlled_replacements": {
+        "actual_future_T": true,
+        "attitude_stream": "truth_pose_approx_drag_LP_initial",
+        "approx_drag_from_actual_future_held_v_and_cached_gyro": true,
+        "initial_W_source": "LP",
+        "after_initial_state_reset": false
+      },
+      "scope": "diagnostic conditional balance, no new candidate or fitting, not autonomous score; force/IMU destination physics-step alignment exact, pose physical sample time lost at native-stamped callback; drag is reconstructed approximation not direct vector, numerical integration not certified"
+    }
+  ],
+  "W_truth_source": "poseInfoCallback finite difference of poses divided by clipped native-arrival dt[.001,.1]s; not direct physical velocity; pose physical header time not retained",
+  "geometry": "H_COM=H_model+rR33; W_COM=W_model-d(rR33)/dt, includes source/timing uncertainty",
+  "future_certificate": false,
+  "autonomous_prediction": false,
+  "new_SITL_starts": 0
+}

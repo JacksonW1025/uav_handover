@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p12c_platform/workflow.py", line 31, in <module>
+    p=argparse.ArgumentParser();p.add_argument('--run',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--models',type=Path,required=True);a=p.parse_args();process(a.run,a.output,a.models)
+                                                                                                                                                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p12c_platform/workflow.py", line 27, in process
+    tool('p12c/isolated.py',['--packed',out/'packed','--models',models,'--output',out/'prediction'],'prediction');tool('p12/score.py',['--predictions',out/'prediction','--packed',out/'packed','--measurement',out/'measured/measurement.json','--output',out/'score'],'score')
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p12c_platform/workflow.py", line 14, in tool
+    if q.returncode and not allow:raise RuntimeError('offline evidence tool failed '+label)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: offline evidence tool failed prediction

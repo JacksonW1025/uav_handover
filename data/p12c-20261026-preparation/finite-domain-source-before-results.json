@@ -1,0 +1,99 @@
+{
+  "source": "uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/models/x500_base/model.sdf",
+  "sha256": "e807dca3406f7cd5cb3d545898601c3ec17e0e5242e25cf467a69df1812cf436",
+  "rotor_Izz_kg_m2_exact": "662464558678501/25000000000000000000",
+  "yaw_free_effective_inertia_exact": "54867449230769242687/1250000000000000000000",
+  "kappa_inverse_inertia": 22.782178095113807,
+  "A_servo_ideal": "I_r^-1 I4 + kappa 11T; add c*diag(A) to CFM diagonal",
+  "alpha_lower": 37737.86789420185,
+  "condition_number_upper": 1.0024147816892024,
+  "collision_geometry": [
+    {
+      "link": "base_link",
+      "collision": "base_link_collision_0",
+      "origin_radius_upper_m": 0.49824689052802223,
+      "method": "triangle + rotated box circumsphere; conservative for all orientations and rotor angles"
+    },
+    {
+      "link": "base_link",
+      "collision": "base_link_collision_1",
+      "origin_radius_upper_m": 0.5028016429938373,
+      "method": "triangle + rotated box circumsphere; conservative for all orientations and rotor angles"
+    },
+    {
+      "link": "base_link",
+      "collision": "base_link_collision_2",
+      "origin_radius_upper_m": 0.5028016429938373,
+      "method": "triangle + rotated box circumsphere; conservative for all orientations and rotor angles"
+    },
+    {
+      "link": "base_link",
+      "collision": "base_link_collision_3",
+      "origin_radius_upper_m": 0.6215824589969832,
+      "method": "triangle + rotated box circumsphere; conservative for all orientations and rotor angles"
+    },
+    {
+      "link": "base_link",
+      "collision": "base_link_collision_4",
+      "origin_radius_upper_m": 0.6215824589969832,
+      "method": "triangle + rotated box circumsphere; conservative for all orientations and rotor angles"
+    },
+    {
+      "link": "rotor_0",
+      "collision": "rotor_0_collision",
+      "origin_radius_upper_m": 0.5278825088399783,
+      "method": "triangle + rotated box circumsphere; conservative for all orientations and rotor angles"
+    },
+    {
+      "link": "rotor_1",
+      "collision": "rotor_1_collision",
+      "origin_radius_upper_m": 0.5278825088399783,
+      "method": "triangle + rotated box circumsphere; conservative for all orientations and rotor angles"
+    },
+    {
+      "link": "rotor_2",
+      "collision": "rotor_2_collision",
+      "origin_radius_upper_m": 0.5278825088399783,
+      "method": "triangle + rotated box circumsphere; conservative for all orientations and rotor angles"
+    },
+    {
+      "link": "rotor_3",
+      "collision": "rotor_3_collision",
+      "origin_radius_upper_m": 0.5278825088399783,
+      "method": "triangle + rotated box circumsphere; conservative for all orientations and rotor angles"
+    }
+  ],
+  "max_collision_radius_m": 0.6215824589969832,
+  "finite_working_domain": {
+    "time": "task0 through nominal full poststream, <=36s; takeoff/landing outside certificate claim but logs retained",
+    "world_model_origin_H_m": [
+      0.6,
+      8.0
+    ],
+    "tilt_deg_max": 50,
+    "body_velocity_norm_m_s_max": 8,
+    "body_omega_component_rad_s_max": 8,
+    "rotor_relative_angle_abs_rad_max": 5000,
+    "scaled_joint_and_free_speed_abs_rad_s_max": 1100,
+    "filter_and_consumed_command_rad_s": [
+      0,
+      1000
+    ],
+    "dt_physics_s": 0.004,
+    "LP_att_cache_age_s_max": 0.024,
+    "clock": "sample/native actual words, including native plateau allowed; no constant4ms controller map",
+    "constraint_modes": "no ground/self contact conditional on geometric height domain and one-vehicle plane world; SERVO, no finite force/velocity limits; position \u00b11e16 inactive in rotor angle domain",
+    "unknown_invariance": "future free/body/cache/height membership and floating solver error NOT_PROVEN; full target records must be checked without removing unfavorable failures"
+  },
+  "uniform_source_conditional_bounds": {
+    "CFM": 1e-09,
+    "free_joint_rad_s_max": 110.0,
+    "command_joint_rad_s_max": 100.0,
+    "b_l2_rad_s_max": 420.0,
+    "lambda_l2_N_m_s_max_exact_arithmetic": 0.011129404574669412,
+    "joint_scaled_error_l2_rad_s_CFMonly": 4.202535516571127e-06,
+    "with_independent_solver_eta": "add 10*(1+c*Dmax/alpha)*||eta||_2 conservatively using ||lambda||<=(||b||+||eta||)/alpha; future eta bound NOT_PROVEN",
+    "scope": "finite-domain real mass/constraint algebra, not empirical max or full FP/closed-loop certificate",
+    "infinite_force_limits": "not used as impulse bound; positive inertia and bounded b supply conditional bound"
+  }
+}

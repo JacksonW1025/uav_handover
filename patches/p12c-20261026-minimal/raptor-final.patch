@@ -1,0 +1,2424 @@
+diff --git a/msg/CMakeLists.txt b/msg/CMakeLists.txt
+index 369ec75..68c7619 100644
+--- a/msg/CMakeLists.txt
++++ b/msg/CMakeLists.txt
+@@ -180,6 +180,7 @@ set(msg_files
+ 	QshellReq.msg
+ 	QshellRetval.msg
+ 	RadioStatus.msg
++	ResearchRecovery.msg
+ 	RangingBeacon.msg
+ 	RateCtrlStatus.msg
+ 	RcChannels.msg
+@@ -194,7 +195,16 @@ set(msg_files
+ 	RoverSteeringSetpoint.msg
+ 	RoverThrottleSetpoint.msg
+ 	Rpm.msg
++	ResearchStateRequest.msg
++	ResearchStateResponse.msg
++	ResearchTiming.msg
++	ResearchAngularVelocity.msg
++	ResearchOutput.msg
++	ResearchActuator.msg
++	RouteObservability.msg
++	ResearchMemory.msg
+ 	RtlStatus.msg
++	ResearchTarget.msg
+ 	RtlTimeEstimate.msg
+ 	SatelliteInfo.msg
+ 	SensorAccel.msg
+@@ -232,8 +242,11 @@ set(msg_files
+ 	UavcanParameterValue.msg
+ 	UlogStream.msg
+ 	UlogStreamAck.msg
++	ResearchP11.msg
+ 	VehicleAcceleration.msg
++	ResearchP12.msg
+ 	VehicleAirData.msg
++	ResearchP12b.msg
+ 	VehicleConstraints.msg
+ 	VehicleControlMode.msg
+ 	VehicleImu.msg
+diff --git a/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp b/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp
+index 486ddcf..77d6595 100644
+--- a/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp
++++ b/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp
+@@ -49,6 +49,9 @@ LockstepScheduler::~LockstepScheduler()
+ 
+ void LockstepScheduler::set_absolute_time(uint64_t time_us)
+ {
++    // Serialize selection AND broadcast. Returning waiters drain this lock
++    // before their caller-owned mutex/condition may leave scope.
++    std::lock_guard<std::mutex> lock_broadcast(_broadcast_mutex);
+ 	if (_time_us == 0 && time_us > 0) {
+ 		PX4_INFO("setting initial absolute time to %" PRIu64 " us", time_us);
+ 	}
+@@ -63,13 +66,12 @@ void LockstepScheduler::set_absolute_time(uint64_t time_us)
+ 		pthread_mutex_t *lock;
+ 	};
+ 
+-	static constexpr int MAX_WAKEUPS = 32;
+-	WakeUp wakeups[MAX_WAKEUPS];
+-	int num_wakeups = 0;
++	std::vector<WakeUp> wakeups;
++	wakeups.reserve(32);
+ 
+ 	{
+ 		std::unique_lock<std::mutex> lock_timed_waits(_timed_waits_mutex);
+-		_setting_time = true;
++
+ 
+ 		TimedWait *timed_wait = _timed_waits;
+ 		TimedWait *timed_wait_prev = nullptr;
+@@ -96,9 +98,7 @@ void LockstepScheduler::set_absolute_time(uint64_t time_us)
+ 				// Mark as timed out and collect for broadcast
+ 				timed_wait->timeout = true;
+ 
+-				if (num_wakeups < MAX_WAKEUPS) {
+-					wakeups[num_wakeups++] = {timed_wait->passed_cond, timed_wait->passed_lock};
+-				}
++				wakeups.push_back({timed_wait->passed_cond, timed_wait->passed_lock});
+ 			}
+ 
+ 			timed_wait_prev = timed_wait;
+@@ -106,18 +106,11 @@ void LockstepScheduler::set_absolute_time(uint64_t time_us)
+ 		}
+ 	}
+ 
+-	// Broadcast under _broadcast_mutex (not _timed_waits_mutex) so that
+-	// locking passed_lock here doesn't create an ordering cycle.
+-	{
+-		std::lock_guard<std::mutex> lock_broadcast(_broadcast_mutex);
+-
+-		for (int i = 0; i < num_wakeups; ++i) {
+-			pthread_mutex_lock(wakeups[i].lock);
+-			pthread_cond_broadcast(wakeups[i].cond);
+-			pthread_mutex_unlock(wakeups[i].lock);
+-		}
+-
+-		_setting_time = false;
++	// The list lock is released before acquiring caller locks.
++	for (const auto &wakeup : wakeups) {
++		pthread_mutex_lock(wakeup.lock);
++		pthread_cond_broadcast(wakeup.cond);
++		pthread_mutex_unlock(wakeup.lock);
+ 	}
+ }
+ 
+@@ -158,25 +151,14 @@ int LockstepScheduler::cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *loc
+ 
+ 	timed_wait.done = true;
+ 
+-	if (!timeout && _setting_time) {
+-		// This is where it gets tricky: the timeout has not been triggered yet,
+-		// and another thread is in set_absolute_time().
+-		// If it already passed the 'done' check, it will access the mutex and
+-		// the condition variable next. However they might be invalid as soon as we
+-		// return here, so we wait until set_absolute_time() is done.
+-		// In addition we have to unlock 'lock', otherwise we risk a
+-		// deadlock due to a different locking order in set_absolute_time().
+-		// Note that this case does not happen too frequently, and thus can be
+-		// a bit more expensive.
+-		// We wait for both the iteration phase (_timed_waits_mutex) and the
+-		// broadcast phase (_broadcast_mutex) to complete.
+-		pthread_mutex_unlock(lock);
+-		_timed_waits_mutex.lock();
+-		_timed_waits_mutex.unlock();
+-		_broadcast_mutex.lock();
+-		_broadcast_mutex.unlock();
+-		pthread_mutex_lock(lock);
+-	}
++    // A timed-out wait can wake externally before the clock thread reaches
++    // its selected mutex. Always drain the entire pending broadcast phase.
++    // Unlock the caller mutex first to avoid a cycle with the clock thread.
++    pthread_mutex_unlock(lock);
++    {
++        std::lock_guard<std::mutex> drain(_broadcast_mutex);
++    }
++    pthread_mutex_lock(lock);
+ 
+ 	return result;
+ }
+diff --git a/platforms/posix/src/px4/common/px4_daemon/server.cpp b/platforms/posix/src/px4/common/px4_daemon/server.cpp
+index 95b8116..3d37c5b 100644
+--- a/platforms/posix/src/px4/common/px4_daemon/server.cpp
++++ b/platforms/posix/src/px4/common/px4_daemon/server.cpp
+@@ -66,6 +66,8 @@ Server::Server(int instance_id)
+ 	: _mutex(PTHREAD_MUTEX_INITIALIZER),
+ 	  _instance_id(instance_id)
+ {
++    const int ret=pthread_key_create(&_key,_pthread_key_destructor);
++    if(ret!=0){PX4_ERR("failed to create daemon stdout pthread key");return;}
+ 	_instance = this;
+ }
+ 
+@@ -77,6 +79,7 @@ Server::~Server()
+ int
+ Server::start()
+ {
++    if(_instance!=this)return -1;
+ 	std::string sock_path = get_socket_path(_instance_id);
+ 
+ 	// Delete socket in case it exists already.
+@@ -129,12 +132,7 @@ void Server::_pthread_key_destructor(void *arg)
+ void
+ Server::_server_main()
+ {
+-	int ret = pthread_key_create(&_key, _pthread_key_destructor);
+-
+-	if (ret != 0) {
+-		PX4_ERR("failed to create pthread key");
+-		return;
+-	}
++    int ret=0;
+ 
+ 	// The list of file descriptors to watch.
+ 	std::vector<pollfd> poll_fds;
+diff --git a/src/lib/mixer_module/functions/FunctionMotors.hpp b/src/lib/mixer_module/functions/FunctionMotors.hpp
+index 76e2b27..41bce50 100644
+--- a/src/lib/mixer_module/functions/FunctionMotors.hpp
++++ b/src/lib/mixer_module/functions/FunctionMotors.hpp
+@@ -77,6 +77,10 @@ public:
+ 	uORB::SubscriptionCallbackWorkItem *subscriptionCallback() override { return &_topic; }
+ 
+ 	bool getLatestSampleTimestamp(hrt_abstime &t) const override { t = _data.timestamp_sample; return t != 0; }
++#ifdef __PX4_POSIX
++    // uORB generation of the last copied actuator_motors; gaps are overwritten publications.
++    bool researchGeneration(unsigned &g) const override { g = _topic.get_last_generation(); return true; }
++#endif
+ 
+ 	static inline void updateValues(uint32_t reversible, float thrust_factor, float *values, int num_values)
+ 	{
+diff --git a/src/lib/mixer_module/functions/FunctionProviderBase.hpp b/src/lib/mixer_module/functions/FunctionProviderBase.hpp
+index f3a648b..85d68e8 100644
+--- a/src/lib/mixer_module/functions/FunctionProviderBase.hpp
++++ b/src/lib/mixer_module/functions/FunctionProviderBase.hpp
+@@ -67,6 +67,9 @@ public:
+ 	virtual uORB::SubscriptionCallbackWorkItem *subscriptionCallback() { return nullptr; }
+ 
+ 	virtual bool getLatestSampleTimestamp(hrt_abstime &t) const { return false; }
++#ifdef __PX4_POSIX
++    virtual bool researchGeneration(unsigned &g) const { return false; }
++#endif
+ 
+ 	/**
+ 	 * Check whether the output (motor) is configured to be reversible
+diff --git a/src/lib/mixer_module/mixer_module.hpp b/src/lib/mixer_module/mixer_module.hpp
+index 8f98df5..fc9b3ca 100644
+--- a/src/lib/mixer_module/mixer_module.hpp
++++ b/src/lib/mixer_module/mixer_module.hpp
+@@ -163,7 +163,20 @@ public:
+ 
+ 	void setMaxTopicUpdateRate(unsigned max_topic_update_interval_us);
+ 
++// SITL research: sample actually selected by the configured output provider.
++#ifdef __PX4_POSIX
++    hrt_abstime researchSelectedSampleTimestamp() const {
++        hrt_abstime sample=0;
++        if (_function_allocated[0]) _function_allocated[0]->getLatestSampleTimestamp(sample);
++        return sample;
++    }
++#endif
+ 	const actuator_armed_s &armed() const { return _armed; }
++#ifdef __PX4_POSIX
++    bool researchSelectedGeneration(unsigned &g) const {
++        return _function_allocated[0] && _function_allocated[0]->researchGeneration(g);
++    }
++#endif
+ 	bool isActuatorTestRunning() const { return _actuator_test.inTestMode(); }
+ 
+ 	void setAllFailsafeValues(uint16_t value);
+diff --git a/src/lib/rate_control/rate_control.hpp b/src/lib/rate_control/rate_control.hpp
+index 0ee8bd1..978be71 100644
+--- a/src/lib/rate_control/rate_control.hpp
++++ b/src/lib/rate_control/rate_control.hpp
+@@ -101,6 +101,11 @@ public:
+ 	 * @see _rate_int
+ 	 */
+ 	void resetIntegral() { _rate_int.zero(); }
++#ifdef __PX4_POSIX
++	matrix::Vector3f researchGet() const { return _rate_int; }
++	matrix::Vector3f researchLimit() const { return _lim_int; }
++	void researchSet(const matrix::Vector3f &v) { _rate_int = v; }
++#endif
+ 
+ 	/**
+ 	 * Set the integral term to 0 for specific axes
+diff --git a/src/modules/commander/Commander.cpp b/src/modules/commander/Commander.cpp
+index b03d6a9..339a66f 100644
+--- a/src/modules/commander/Commander.cpp
++++ b/src/modules/commander/Commander.cpp
+@@ -1116,6 +1116,21 @@ Commander::handle_command(const vehicle_command_s &cmd)
+ 
+ 				if (arming_res == TRANSITION_DENIED) {
+ 					cmd_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_TEMPORARILY_REJECTED;
++					if (arming_action == vehicle_command_s::ARMING_ACTION_ARM) {
++						health_report_s health_report{};
++						_health_and_arming_checks.getHealthReport(health_report);
++						const uint64_t failed_checks = health_report.arming_check_error_flags
++								       | health_report.health_error_flags;
++						route_observability::publishLifecycle(
++							_route_observability_pub, _route_observability_sequence,
++							route_observability_s::EVENT_ARMING_REQUEST_REJECTED,
++							"commander", static_cast<int8_t>(_vehicle_status.nav_state),
++							static_cast<int8_t>(_vehicle_status.executor_in_charge), -1,
++							route_observability_s::RESULT_REJECTED, false,
++							static_cast<int8_t>(_vehicle_status.nav_state),
++							failed_checks ? route_observability_s::REASON_HEALTH_CHECK
++							: route_observability_s::REASON_NONE, failed_checks);
++					}
+ 
+ 				} else {
+ 					cmd_result = vehicle_command_ack_s::VEHICLE_CMD_RESULT_ACCEPTED;
+@@ -2549,6 +2564,30 @@ bool Commander::handleModeIntentionAndFailsafe()
+ 	_vehicle_status.failsafe = _failsafe.inFailsafe();
+ 	_vehicle_status.failsafe_and_user_took_over = _failsafe.userTakeoverActive();
+ 
++	if (!_route_epoch_initialized || prev_nav_state != _vehicle_status.nav_state) {
++		const bool startup = !_route_epoch_initialized;
++		_route_epoch_initialized = true;
++		++_route_epoch_id;
++		uint8_t change_source = route_observability_s::CHANGE_SOURCE_USER_OR_EXECUTOR;
++
++		if (startup) {
++			change_source = route_observability_s::CHANGE_SOURCE_STARTUP;
++
++		} else if (prev_failsafe_action != _failsafe.selectedAction() || _failsafe.inFailsafe()) {
++			change_source = route_observability_s::CHANGE_SOURCE_FAILSAFE;
++		}
++
++		const int8_t registration_mode_id =
++			(_vehicle_status.nav_state >= vehicle_status_s::NAVIGATION_STATE_EXTERNAL1
++			 && _vehicle_status.nav_state <= vehicle_status_s::NAVIGATION_STATE_EXTERNAL8)
++			? static_cast<int8_t>(_vehicle_status.nav_state) : -1;
++		route_observability::publishRouteEpoch(
++			_route_observability_pub, _route_observability_sequence, _route_epoch_id,
++			static_cast<int8_t>(prev_nav_state), static_cast<int8_t>(_vehicle_status.nav_state),
++			change_source, registration_mode_id,
++			static_cast<int8_t>(_vehicle_status.executor_in_charge), isArmed());
++	}
++
+ 	if (prev_nav_state != _vehicle_status.nav_state) {
+ 		_vehicle_status.nav_state_timestamp = hrt_absolute_time();
+ 	}
+diff --git a/src/modules/commander/Commander.hpp b/src/modules/commander/Commander.hpp
+index 7d6f27a..f38bfdf 100644
+--- a/src/modules/commander/Commander.hpp
++++ b/src/modules/commander/Commander.hpp
+@@ -47,6 +47,7 @@
+ #include <lib/hysteresis/hysteresis.h>
+ #include <lib/mathlib/mathlib.h>
+ #include <lib/perf/perf_counter.h>
++#include <lib/route_observability/RouteObservability.hpp>
+ #include <px4_platform_common/module.h>
+ #include <px4_platform_common/module_params.h>
+ 
+@@ -289,6 +290,9 @@ private:
+ 	bool _have_taken_off_since_arming{false};
+ 	bool _status_changed{true};
+ 	bool _mission_in_progress{false};
++	bool _route_epoch_initialized{false};
++	uint32_t _route_observability_sequence{0};
++	uint64_t _route_epoch_id{0};
+ 
+ 	vehicle_land_detected_s	_vehicle_land_detected{};
+ 
+@@ -326,6 +330,7 @@ private:
+ 	uORB::Publication<vehicle_command_s>			_vehicle_command_pub{ORB_ID(vehicle_command)};
+ 	uORB::Publication<vehicle_control_mode_s>		_vehicle_control_mode_pub{ORB_ID(vehicle_control_mode)};
+ 	uORB::Publication<vehicle_status_s>			_vehicle_status_pub{ORB_ID(vehicle_status)};
++	uORB::PublicationMulti<route_observability_s>		_route_observability_pub{ORB_ID(route_observability)};
+ 
+ 	orb_advert_t _mavlink_log_pub{nullptr};
+ 
+diff --git a/src/modules/commander/HealthAndArmingChecks/HealthAndArmingChecks.hpp b/src/modules/commander/HealthAndArmingChecks/HealthAndArmingChecks.hpp
+index 0d8e143..a9337dc 100644
+--- a/src/modules/commander/HealthAndArmingChecks/HealthAndArmingChecks.hpp
++++ b/src/modules/commander/HealthAndArmingChecks/HealthAndArmingChecks.hpp
+@@ -107,6 +107,7 @@ public:
+ 	 * Whether switching into a given navigation mode is possible
+ 	 */
+ 	bool canRun(uint8_t nav_state) const { return _reporter.canRun(nav_state); }
++	void getHealthReport(health_report_s &report) const { _reporter.getHealthReport(report); }
+ 
+ 	/**
+ 	 * Query the mode requirements: check if a mode prevents arming
+diff --git a/src/modules/commander/ModeManagement.cpp b/src/modules/commander/ModeManagement.cpp
+index ba1aef7..e541a8e 100644
+--- a/src/modules/commander/ModeManagement.cpp
++++ b/src/modules/commander/ModeManagement.cpp
+@@ -335,6 +335,13 @@ void ModeManagement::checkNewRegistrations(UpdateRequest &update_request)
+ 
+ 		reply.timestamp = hrt_absolute_time();
+ 		_register_ext_component_reply_pub.publish(reply);
++		route_observability::publishLifecycle(
++			_route_observability_pub, _route_observability_sequence,
++			route_observability_s::EVENT_REGISTRATION_PROCESSED,
++			request.name, reply.mode_id, reply.mode_executor_id, reply.arming_check_id,
++			reply.success ? route_observability_s::RESULT_SUCCESS : route_observability_s::RESULT_REJECTED,
++			false, -1, reply.success ? route_observability_s::REASON_NONE
++			: route_observability_s::REASON_INVALID_REGISTRATION);
+ 	}
+ }
+ 
+@@ -348,16 +355,50 @@ void ModeManagement::checkUnregistrations(uint8_t user_intended_nav_state, Updat
+ 		request.name[sizeof(request.name) - 1] = '\0';
+ 		PX4_DEBUG("got unregistration request: %s arming: %i mode: %i executor: %i", request.name,
+ 			  (int)request.arming_check_id, (int)request.mode_id, (int)request.mode_executor_id);
++		const bool active_at_removal = user_intended_nav_state == request.mode_id;
++		bool arming_removed = request.arming_check_id == -1;
++		bool mode_removed = request.mode_id == -1;
++		bool executor_removed = request.mode_executor_id == -1;
+ 
+ 		if (request.arming_check_id != -1) {
+-			_external_checks.removeRegistration(request.arming_check_id, request.mode_id);
++			arming_removed = _external_checks.removeRegistration(request.arming_check_id, request.mode_id);
++			route_observability::publishLifecycle(
++				_route_observability_pub, _route_observability_sequence,
++				route_observability_s::EVENT_ARMING_CHECK_SLOT_REMOVED,
++				request.name, request.mode_id, request.mode_executor_id, request.arming_check_id,
++				arming_removed ? route_observability_s::RESULT_SUCCESS : route_observability_s::RESULT_NOT_PRESENT,
++				active_at_removal, active_at_removal ? vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER : -1,
++				arming_removed ? route_observability_s::REASON_NONE
++				: route_observability_s::REASON_INVALID_REGISTRATION);
+ 		}
+ 
+ 		if (request.mode_id != -1) {
+-			if (_modes.removeExternalMode(request.mode_id, request.name)) {
++			mode_removed = _modes.removeExternalMode(request.mode_id, request.name);
++
++			if (mode_removed) {
++				executor_removed = request.mode_executor_id == -1
++						   || _mode_executors.valid(request.mode_executor_id);
+ 				removeModeExecutor(request.mode_executor_id);
+ 				// else: if the mode was already removed (due to a timeout), the executor was also removed already
+ 			}
++			route_observability::publishLifecycle(
++				_route_observability_pub, _route_observability_sequence,
++				route_observability_s::EVENT_EXTERNAL_MODE_SLOT_REMOVED,
++				request.name, request.mode_id, request.mode_executor_id, request.arming_check_id,
++				mode_removed ? route_observability_s::RESULT_SUCCESS : route_observability_s::RESULT_NOT_PRESENT,
++				active_at_removal, active_at_removal ? vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER : -1,
++				mode_removed ? route_observability_s::REASON_NONE
++				: route_observability_s::REASON_INVALID_REGISTRATION);
++
++			if (request.mode_executor_id != -1) {
++				route_observability::publishLifecycle(
++					_route_observability_pub, _route_observability_sequence,
++					route_observability_s::EVENT_EXECUTOR_SLOT_REMOVED,
++					request.name, request.mode_id, request.mode_executor_id, request.arming_check_id,
++					executor_removed ? route_observability_s::RESULT_SUCCESS
++					: route_observability_s::RESULT_NOT_PRESENT,
++					active_at_removal, active_at_removal ? vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER : -1);
++			}
+ 
+ 			// If the removed mode is currently active, switch to Hold
+ 			if (user_intended_nav_state == request.mode_id) {
+@@ -365,6 +406,16 @@ void ModeManagement::checkUnregistrations(uint8_t user_intended_nav_state, Updat
+ 				update_request.user_intended_nav_state = vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER;
+ 			}
+ 		}
++
++		const bool request_success = arming_removed && mode_removed && executor_removed;
++		route_observability::publishLifecycle(
++			_route_observability_pub, _route_observability_sequence,
++			route_observability_s::EVENT_UNREGISTER_REQUEST_PROCESSED,
++			request.name, request.mode_id, request.mode_executor_id, request.arming_check_id,
++			request_success ? route_observability_s::RESULT_SUCCESS : route_observability_s::RESULT_REJECTED,
++			active_at_removal, active_at_removal ? vehicle_status_s::NAVIGATION_STATE_AUTO_LOITER : -1,
++			request_success ? route_observability_s::REASON_NONE
++			: route_observability_s::REASON_INVALID_REGISTRATION);
+ 	}
+ }
+ 
+diff --git a/src/modules/commander/ModeManagement.hpp b/src/modules/commander/ModeManagement.hpp
+index d170359..834e62a 100644
+--- a/src/modules/commander/ModeManagement.hpp
++++ b/src/modules/commander/ModeManagement.hpp
+@@ -47,6 +47,7 @@
+ #include <uORB/topics/config_overrides.h>
+ 
+ #include <lib/modes/ui.hpp>
++#include <lib/route_observability/RouteObservability.hpp>
+ #include "UserModeIntention.hpp"
+ #include "HealthAndArmingChecks/checks/externalChecks.hpp"
+ #include "ModeUtil/setpoint_types.hpp"
+@@ -182,6 +183,8 @@ private:
+ 	uORB::Publication<config_overrides_s> _config_overrides_pub{ORB_ID(config_overrides)};
+ 	uORB::Subscription _config_overrides_request_sub{ORB_ID(config_overrides_request)};
+ 	uORB::Publication<config_overrides_s> _config_overrides_confirm_pub{ORB_ID(config_overrides_confirm)};
++	uORB::PublicationMulti<route_observability_s> _route_observability_pub{ORB_ID(route_observability)};
++	uint32_t _route_observability_sequence{0};
+ 
+ 	ExternalChecks &_external_checks;
+ 	ModeExecutors _mode_executors;
+diff --git a/src/modules/control_allocator/ControlAllocator.cpp b/src/modules/control_allocator/ControlAllocator.cpp
+index de0c299..8aa3ac5 100644
+--- a/src/modules/control_allocator/ControlAllocator.cpp
++++ b/src/modules/control_allocator/ControlAllocator.cpp
+@@ -1,3 +1,7 @@
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_actuator.h>
++#include <lib/handover_research/ActuatorGate.hpp>
++#endif
+ /****************************************************************************
+  *
+  *   Copyright (c) 2013-2019 PX4 Development Team. All rights reserved.
+@@ -709,6 +713,10 @@ ControlAllocator::get_ice_shedding_output(hrt_abstime now)
+ void
+ ControlAllocator::publish_actuator_controls()
+ {
++#ifdef __PX4_POSIX
++    handover_research::ActuatorGate publication_gate(false);
++    if (!publication_gate.allowed()) return;
++#endif
+ 	if (!_publish_controls) {
+ 		return;
+ 	}
+@@ -742,6 +750,19 @@ ControlAllocator::publish_actuator_controls()
+ 	}
+ 
+ 	_actuator_motors_pub.publish(actuator_motors);
++#ifdef __PX4_POSIX
++    research_actuator_s ownership{};
++    ownership.timestamp=hrt_absolute_time();ownership.actuator_timestamp=actuator_motors.timestamp;ownership.owner=2;
++    for(unsigned i=0;i<4;i++)ownership.control[i]=actuator_motors.control[i];
++    static uORB::Publication<research_actuator_s> ownership_pub{ORB_ID(research_actuator)};
++    ownership_pub.publish(ownership);
++#endif
++	route_observability::publish(
++		_route_observability_pub, _route_observability_sequence, _last_route_observability_pub,
++		route_observability_s::EVENT_ACTUATOR_OUTPUT_PUBLISHED,
++		route_observability_s::SOURCE_CONTROL_ALLOCATOR,
++		route_observability_s::TOPIC_ACTUATOR_MOTORS,
++		route_observability_s::WRITER_CONTROL_ALLOCATOR, actuator_motors.timestamp);
+ 
+ 	// servos
+ 	if (_num_actuators[1] > 0) {
+diff --git a/src/modules/control_allocator/ControlAllocator.hpp b/src/modules/control_allocator/ControlAllocator.hpp
+index a8ebb76..930cadb 100644
+--- a/src/modules/control_allocator/ControlAllocator.hpp
++++ b/src/modules/control_allocator/ControlAllocator.hpp
+@@ -62,6 +62,7 @@
+ 
+ #include <lib/matrix/matrix/math.hpp>
+ #include <lib/perf/perf_counter.h>
++#include <lib/route_observability/RouteObservability.hpp>
+ #include <px4_platform_common/px4_config.h>
+ #include <px4_platform_common/module.h>
+ #include <px4_platform_common/module_params.h>
+@@ -206,6 +207,7 @@ private:
+ 	uORB::Publication<actuator_motors_s>	_actuator_motors_pub{ORB_ID(actuator_motors)};
+ 	uORB::Publication<actuator_servos_s>	_actuator_servos_pub{ORB_ID(actuator_servos)};
+ 	uORB::Publication<actuator_servos_trim_s>	_actuator_servos_trim_pub{ORB_ID(actuator_servos_trim)};
++	uORB::PublicationMulti<route_observability_s> _route_observability_pub{ORB_ID(route_observability)};
+ 
+ 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
+ 
+@@ -231,6 +233,8 @@ private:
+ 	hrt_abstime _last_run{0};
+ 	hrt_abstime _timestamp_sample{0};
+ 	hrt_abstime _last_status_pub{0};
++	uint32_t _route_observability_sequence{0};
++	hrt_abstime _last_route_observability_pub{0};
+ 
+ 	ParamHandles _param_handles{};
+ 	Params _params{};
+diff --git a/src/modules/logger/logged_topics.cpp b/src/modules/logger/logged_topics.cpp
+index c893a85..ba24fc7 100644
+--- a/src/modules/logger/logged_topics.cpp
++++ b/src/modules/logger/logged_topics.cpp
+@@ -135,6 +135,8 @@ void LoggedTopics::add_default_topics()
+ 	add_optional_topic("tecs_status", 200);
+ 	add_optional_topic("tiltrotor_extra_controls", 100);
+ 	add_topic("trajectory_setpoint", 200);
++	// interval 0 means every update; the publisher applies the selected observation profile.
++	add_topic_multi("route_observability", 0, 12);
+ 	add_topic("transponder_report");
+ 	add_topic("vehicle_acceleration", 50);
+ 	add_topic("vehicle_air_data", 200);
+diff --git a/src/modules/mc_att_control/mc_att_control.hpp b/src/modules/mc_att_control/mc_att_control.hpp
+index b6e9b06..bb62645 100644
+--- a/src/modules/mc_att_control/mc_att_control.hpp
++++ b/src/modules/mc_att_control/mc_att_control.hpp
+@@ -56,6 +56,7 @@
+ #include <uORB/topics/vehicle_rates_setpoint.h>
+ #include <uORB/topics/vehicle_status.h>
+ #include <lib/mathlib/math/filter/AlphaFilter.hpp>
++#include <lib/route_observability/RouteObservability.hpp>
+ #include <lib/slew_rate/SlewRate.hpp>
+ #include <lib/stick_yaw/StickYaw.hpp>
+ 
+@@ -116,6 +117,7 @@ private:
+ 
+ 	uORB::Publication<vehicle_rates_setpoint_s>     _vehicle_rates_setpoint_pub{ORB_ID(vehicle_rates_setpoint)};    /**< rate setpoint publication */
+ 	uORB::Publication<vehicle_attitude_setpoint_s>  _vehicle_attitude_setpoint_pub;
++	uORB::PublicationMulti<route_observability_s>   _route_observability_pub{ORB_ID(route_observability)};
+ 
+ 	manual_control_setpoint_s       _manual_control_setpoint {};    /**< manual control setpoint */
+ 	vehicle_control_mode_s          _vehicle_control_mode {};       /**< vehicle control mode */
+@@ -138,6 +140,8 @@ private:
+ 
+ 	hrt_abstime _last_run{0};
+ 	hrt_abstime _last_attitude_setpoint{0};
++	uint32_t _route_observability_sequence{0};
++	hrt_abstime _last_route_observability_pub{0};
+ 
+ 	bool _spooled_up{false}; ///< used to make sure the vehicle cannot take off during the spoolup time
+ 	bool _landed{true};
+diff --git a/src/modules/mc_att_control/mc_att_control_main.cpp b/src/modules/mc_att_control/mc_att_control_main.cpp
+index b573de9..ebc5bd4 100644
+--- a/src/modules/mc_att_control/mc_att_control_main.cpp
++++ b/src/modules/mc_att_control/mc_att_control_main.cpp
+@@ -330,6 +330,16 @@ MulticopterAttitudeControl::Run()
+ 				}
+ 			}
+ 
++			if (!_vehicle_control_mode.flag_multicopter_position_control_enabled
++			    && _last_attitude_setpoint > 0) {
++				route_observability::publish(
++					_route_observability_pub, _route_observability_sequence, _last_route_observability_pub,
++					route_observability_s::EVENT_SETPOINT_CONSUMED,
++					route_observability_s::SOURCE_EXTERNAL_ATTITUDE,
++					route_observability_s::TOPIC_VEHICLE_ATTITUDE_SETPOINT,
++					route_observability_s::WRITER_UNKNOWN, _last_attitude_setpoint);
++			}
++
+ 			// Check for a heading reset
+ 			if (_quat_reset_counter != v_att.quat_reset_counter) {
+ 				const Quatf delta_q_reset(v_att.delta_q_reset);
+diff --git a/src/modules/mc_pos_control/MulticopterPositionControl.cpp b/src/modules/mc_pos_control/MulticopterPositionControl.cpp
+index 5c6f147..b188fe4 100644
+--- a/src/modules/mc_pos_control/MulticopterPositionControl.cpp
++++ b/src/modules/mc_pos_control/MulticopterPositionControl.cpp
+@@ -416,6 +416,11 @@ void MulticopterPositionControl::Run()
+ 		}
+ 
+ 		_vehicle_land_detected_sub.update(&_vehicle_land_detected);
++#ifdef __PX4_POSIX
++        _research_state.update(_vehicle_control_mode.flag_armed && _vehicle_control_mode.flag_multicopter_position_control_enabled,
++            [this](float *v) { _control.researchGet().copyTo(v); },
++            [this](const float *v, bool) { _control.researchSet(Vector3f(v)); });
++#endif
+ 
+ 		if (_hover_thrust_estimate_sub.updated()) {
+ 			hover_thrust_estimate_s hte;
+@@ -440,6 +445,15 @@ void MulticopterPositionControl::Run()
+ 
+ 		_trajectory_setpoint_sub.update(&_setpoint);
+ 
++		if (_vehicle_control_mode.flag_multicopter_position_control_enabled && _setpoint.timestamp > 0) {
++			route_observability::publish(
++				_route_observability_pub, _route_observability_sequence, _last_route_observability_pub,
++				route_observability_s::EVENT_SETPOINT_CONSUMED,
++				route_observability_s::SOURCE_EXTERNAL_TRAJECTORY,
++				route_observability_s::TOPIC_TRAJECTORY_SETPOINT,
++				route_observability_s::WRITER_UNKNOWN, _setpoint.timestamp);
++		}
++
+ 		adjustSetpointForEKFResets(vehicle_local_position, _setpoint);
+ 
+ 		if (_vehicle_control_mode.flag_multicopter_position_control_enabled) {
+@@ -600,6 +614,9 @@ void MulticopterPositionControl::Run()
+ 				}
+ 			}
+ 
++#ifdef __PX4_POSIX
++            researchCoordinateTakeover();
++#endif
+ 			// Publish internal position control setpoints
+ 			// on top of the input/feed-forward setpoints these containt the PID corrections
+ 			// This message is used by other modules (such as Landdetector) to determine vehicle intention.
+@@ -619,6 +636,10 @@ void MulticopterPositionControl::Run()
+ 			_takeoff.updateTakeoffState(_vehicle_control_mode.flag_armed, _vehicle_land_detected.landed, false, 10.f, true,
+ 						    vehicle_local_position.timestamp_sample);
+ 			_control.resetIntegral();
++#ifdef __PX4_POSIX
++            _research_controlled=false;
++            researchTrackNeural();
++#endif
+ 		}
+ 
+ 		// Publish takeoff status
+@@ -633,9 +654,51 @@ void MulticopterPositionControl::Run()
+ 		}
+ 	}
+ 
++#ifdef __PX4_POSIX
++    if (_research_state.engine.holding) _control.researchSet(Vector3f(_research_state.engine.held));
++#endif
+ 	perf_end(_cycle_perf);
+ }
+ 
++#ifdef __PX4_POSIX
++static bool research_coordination_enabled()
++{
++	static const param_t nco = param_find("MC_RAPTOR_NCO"), rsh = param_find("MC_RAPTOR_RSH");
++	int32_t mode = 0, enabled = 0;
++	param_get(nco, &mode); param_get(rsh, &enabled);
++	return mode == 1 && enabled;
++}
++void MulticopterPositionControl::researchTrackNeural()
++{
++	if (!research_coordination_enabled()) return;
++	research_actuator_s sample{};
++	while (_research_actuator_sub.update(&sample)) if (sample.owner == 1) {_research_neural = sample; _research_neural_set = true;}
++}
++void MulticopterPositionControl::researchCoordinateTakeover()
++{
++	// First classic position-control cycle after RAPTOR owned the motors (position control disabled).
++	const bool first = !_research_controlled;
++	_research_controlled = true;
++	if (!first || !research_coordination_enabled()) return;
++	researchTrackNeural();
++	vehicle_attitude_s attitude{};
++	const hrt_abstime age = hrt_absolute_time() - _research_neural.timestamp;
++	float thrust = 0.f;
++	for (int i = 0; i < 4; i++) thrust += _research_neural.control[i] / 4.f;
++	if (!_research_neural_set || age > 50_ms || !PX4_ISFINITE(thrust) || !_research_attitude_sub.copy(&attitude)) {
++		PX4_WARN("Research velocity integrator coordination unavailable");
++		return;
++	}
++	const Vector3f body_z = matrix::Dcmf(matrix::Quatf(attitude.q)).col(2);
++	const Vector3f before = _control.researchGet();
++	const Vector3f after = _control.researchCoordinate(thrust, body_z);
++	// ULog keeps about 127 characters per message: before and after are printed separately.
++	PX4_INFO("Research velocity integrator coordinated: thrust %.5f age %llu us", (double)thrust, (unsigned long long)age);
++	PX4_INFO("Research vel_int before %.5f %.5f %.5f", (double)before(0), (double)before(1), (double)before(2));
++	PX4_INFO("Research vel_int after %.5f %.5f %.5f", (double)after(0), (double)after(1), (double)after(2));
++}
++#endif
++
+ trajectory_setpoint_s MulticopterPositionControl::generateFailsafeSetpoint(const hrt_abstime &now,
+ 		const PositionControlStates &states, bool warn)
+ {
+diff --git a/src/modules/mc_pos_control/MulticopterPositionControl.hpp b/src/modules/mc_pos_control/MulticopterPositionControl.hpp
+index 8268399..7d18dca 100644
+--- a/src/modules/mc_pos_control/MulticopterPositionControl.hpp
++++ b/src/modules/mc_pos_control/MulticopterPositionControl.hpp
+@@ -36,6 +36,9 @@
+  */
+ 
+ #pragma once
++#ifdef __PX4_POSIX
++#include <lib/handover_research/StateBridge.hpp>
++#endif
+ 
+ #include "PositionControl/PositionControl.hpp"
+ #include "Takeoff/Takeoff.hpp"
+@@ -46,6 +49,7 @@
+ #include <lib/mathlib/math/filter/NotchFilter.hpp>
+ #include <lib/mathlib/math/WelfordMean.hpp>
+ #include <lib/perf/perf_counter.h>
++#include <lib/route_observability/RouteObservability.hpp>
+ #include <lib/slew_rate/SlewRateYaw.hpp>
+ #include <lib/systemlib/mavlink_log.h>
+ #include <px4_platform_common/px4_config.h>
+@@ -65,6 +69,10 @@
+ #include <uORB/topics/vehicle_constraints.h>
+ #include <uORB/topics/vehicle_control_mode.h>
+ #include <uORB/topics/vehicle_land_detected.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_actuator.h>
++#include <uORB/topics/vehicle_attitude.h>
++#endif
+ #include <uORB/topics/vehicle_local_position.h>
+ #include <uORB/topics/vehicle_local_position_setpoint.h>
+ 
+@@ -91,6 +99,9 @@ public:
+ 	bool init();
+ 
+ private:
++#ifdef __PX4_POSIX
++	handover_research::StateBridge _research_state{3, 3, 4.f};
++#endif
+ 	void Run() override;
+ 
+ 	TakeoffHandling _takeoff; /**< state machine and ramp to bring the vehicle off the ground without jumps */
+@@ -100,6 +111,7 @@ private:
+ 	uORB::PublicationData<takeoff_status_s>              _takeoff_status_pub{ORB_ID(takeoff_status)};
+ 	uORB::Publication<vehicle_attitude_setpoint_s>	     _vehicle_attitude_setpoint_pub{ORB_ID(vehicle_attitude_setpoint)};
+ 	uORB::Publication<vehicle_local_position_setpoint_s> _local_pos_sp_pub{ORB_ID(vehicle_local_position_setpoint)};	/**< vehicle local position setpoint publication */
++	uORB::PublicationMulti<route_observability_s>         _route_observability_pub{ORB_ID(route_observability)};
+ 
+ 	uORB::SubscriptionCallbackWorkItem _local_pos_sub{this, ORB_ID(vehicle_local_position)};	/**< vehicle local position */
+ 
+@@ -110,6 +122,14 @@ private:
+ 	uORB::Subscription _vehicle_constraints_sub{ORB_ID(vehicle_constraints)};
+ 	uORB::Subscription _vehicle_control_mode_sub{ORB_ID(vehicle_control_mode)};
+ 	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
++#ifdef __PX4_POSIX
++	void researchTrackNeural();
++	void researchCoordinateTakeover();
++	uORB::Subscription _research_actuator_sub{ORB_ID(research_actuator)};
++	uORB::Subscription _research_attitude_sub{ORB_ID(vehicle_attitude)};
++	research_actuator_s _research_neural{};
++	bool _research_neural_set{false}, _research_controlled{false};
++#endif
+ 
+ 	hrt_abstime _time_stamp_last_loop{0};		/**< time stamp of last loop iteration */
+ 	hrt_abstime _time_position_control_enabled{0};
+@@ -117,6 +137,8 @@ private:
+ 	trajectory_setpoint_s _setpoint{PositionControl::empty_trajectory_setpoint};
+ 	trajectory_setpoint_s _last_valid_setpoint{PositionControl::empty_trajectory_setpoint};
+ 	vehicle_control_mode_s _vehicle_control_mode{};
++	uint32_t _route_observability_sequence{0};
++	hrt_abstime _last_route_observability_pub{0};
+ 
+ 	vehicle_constraints_s _vehicle_constraints {
+ 		.timestamp = 0,
+diff --git a/src/modules/mc_pos_control/PositionControl/PositionControl.cpp b/src/modules/mc_pos_control/PositionControl/PositionControl.cpp
+index 30e35f3..6bfd841 100644
+--- a/src/modules/mc_pos_control/PositionControl/PositionControl.cpp
++++ b/src/modules/mc_pos_control/PositionControl/PositionControl.cpp
+@@ -224,6 +224,22 @@ void PositionControl::_accelerationControl()
+ 	_thr_sp = body_z * collective_thrust;
+ }
+ 
++#ifdef __PX4_POSIX
++matrix::Vector3f PositionControl::researchCoordinate(float thrust, const matrix::Vector3f &body_z)
++{
++	// Inverse of _accelerationControl() for the produced collective thrust and body attitude.
++	const float acc_z = (_hover_thrust - thrust * body_z(2)) * CONSTANTS_ONE_G / _hover_thrust;
++	const float vertical = _decouple_horizontal_and_vertical_acceleration ? CONSTANTS_ONE_G : CONSTANTS_ONE_G - acc_z;
++	const Vector3f acc_target(-vertical * body_z(0) / body_z(2), -vertical * body_z(1) / body_z(2), acc_z);
++	const Vector3f previous = _vel_int;
++	_vel_int += acc_target - _acc_sp;
++	_vel_int(2) = math::constrain(_vel_int(2), -CONSTANTS_ONE_G, CONSTANTS_ONE_G);
++	_acc_sp += _vel_int - previous;
++	_accelerationControl();
++	return _vel_int;
++}
++#endif
++
+ bool PositionControl::_inputValid()
+ {
+ 	bool valid = true;
+diff --git a/src/modules/mc_pos_control/PositionControl/PositionControl.hpp b/src/modules/mc_pos_control/PositionControl/PositionControl.hpp
+index fb467f7..6a997ce 100644
+--- a/src/modules/mc_pos_control/PositionControl/PositionControl.hpp
++++ b/src/modules/mc_pos_control/PositionControl/PositionControl.hpp
+@@ -162,7 +162,15 @@ public:
+ 	 * @see _vel_int
+ 	 */
+ 	void resetIntegral() { _vel_int.setZero(); }
++#ifdef __PX4_POSIX
++	matrix::Vector3f researchGet() const { return _vel_int; }
++	void researchSet(const matrix::Vector3f &v) { _vel_int = v; }
++#endif
+ 	void resetIntegralXY() { _vel_int.xy() = matrix::Vector2f(); }
++#ifdef __PX4_POSIX
++	/** P2 C2: set the velocity integrator so that this cycle's thrust is `thrust` along body z axis `body_z` (NED). */
++	matrix::Vector3f researchCoordinate(float thrust, const matrix::Vector3f &body_z);
++#endif
+ 
+ 	/**
+ 	 * If set, the tilt setpoint is computed by assuming no vertical acceleration
+diff --git a/src/modules/mc_raptor/mc_raptor.cpp b/src/modules/mc_raptor/mc_raptor.cpp
+index df27d92..95c481a 100644
+--- a/src/modules/mc_raptor/mc_raptor.cpp
++++ b/src/modules/mc_raptor/mc_raptor.cpp
+@@ -1,3 +1,7 @@
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_actuator.h>
++#include <lib/handover_research/ActuatorGate.hpp>
++#endif
+ #include "mc_raptor.hpp"
+ #undef OK
+ 
+@@ -5,6 +9,98 @@
+ #include <rl_tools/persist/backends/tar/operations_generic.h>
+ 
+ #include <sys/stat.h>
++#ifdef __PX4_POSIX
++#include <lib/handover_research/StateCli.hpp>
++#include <uORB/topics/research_timing.h>
++#include <time.h>
++void Raptor::research_get(float *v) {
++    auto &hidden = executor.executor.policy_state.content_state.next_content_state.state.state;
++    static_assert(std::remove_reference_t<decltype(hidden)>::SPEC::SIZE == 16, "Frozen checkpoint GRU dimension changed");
++    for (TI i=0;i<16;i++) v[i]=rlt::get(device,hidden,0,i);
++    for (TI i=0;i<4;i++) v[16+i]=previous_action[i];
++    for (TI i=0;i<3;i++) {v[20+i]=_trajectory_setpoint.position[i];v[23+i]=_trajectory_setpoint.velocity[i];}
++}
++void Raptor::research_set(const float *v, bool reset_state) {
++    if(reset_state) this->reset();
++    auto &hidden = executor.executor.policy_state.content_state.next_content_state.state.state;
++    auto &temp = executor.executor.policy_state_temp.content_state.next_content_state.state.state;
++    for (TI i=0;i<16;i++) {rlt::set(device,hidden,v[i],0,i);rlt::set(device,temp,v[i],0,i);}
++    for (TI i=0;i<4;i++) previous_action[i]=v[16+i];
++    for (TI i=0;i<3;i++) {_trajectory_setpoint.position[i]=v[20+i];_trajectory_setpoint.velocity[i]=v[23+i];}
++}
++#endif
++
++#ifdef __PX4_POSIX
++// Only the GRU hidden state and previous action; never RAPTOR's position/velocity target.
++void Raptor::research_set_memory(const float *v) {
++    auto &hidden = executor.executor.policy_state.content_state.next_content_state.state.state;
++    auto &temp = executor.executor.policy_state_temp.content_state.next_content_state.state.state;
++    for (TI i=0;i<handover_research::GRU_DIM;i++) {rlt::set(device,hidden,v[i],0,i);rlt::set(device,temp,v[i],0,i);}
++    for (TI i=0;i<handover_research::ACTION_DIM;i++) previous_action[i]=v[handover_research::GRU_DIM+i];
++}
++// Latest motor command actually published by the classic allocator, in RAPTOR action space.
++bool Raptor::research_classic_action(float *action) {
++    research_actuator_s sample{};
++    while (_research_actuator_sub.update(&sample)) if (sample.owner==2) {_research_classic=sample;_research_classic_set=true;}
++    constexpr hrt_abstime MAX_AGE_US=50000;
++    bool valid=_research_classic_set && hrt_absolute_time()-_research_classic.timestamp<=MAX_AGE_US;
++    if (valid) {
++        const handover_research::ActionConversion r=handover_research::motor_to_action(_research_classic.control,_research_classic_action);
++        _research_clipped_total+=r.clipped;valid=r.valid;
++    }
++    if (!valid) {++_research_classic_unavailable_total;return false;}
++    for (TI i=0;i<4;i++) action[i]=_research_classic_action[i];
++    return true;
++}
++void Raptor::research_teacher_force(bool active) {
++    static const param_t rini=param_find("MC_RAPTOR_RINI"), rsh=param_find("MC_RAPTOR_RSH");
++    int32_t mode=0, enabled=0;param_get(rini,&mode);param_get(rsh,&enabled);
++    _research_mode=enabled?mode:0;_research_teacher_forced=false;
++    if (active || !handover_research::teacher_forcing(_research_mode)) return;
++    float action[4];
++    if (research_classic_action(action)) {
++        for (TI i=0;i<4;i++) previous_action[i]=action[i];
++        _research_teacher_forced=true;
++    }
++}
++void Raptor::research_entry(int32_t mode, const float *before, const float *classic, bool classic_valid) {
++    research_memory_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=research_memory_s::KIND_ENTRY;m.entry_mode=mode;m.active=true;
++    for (TI i=0;i<16;i++) m.gru_before_entry[i]=before[i];
++    for (TI i=0;i<4;i++) {m.previous_action_before_entry[i]=before[16+i];m.classic_action[i]=classic_valid?classic[i]:NAN;}
++    if (mode>=handover_research::ENTRY_CLASSIC_ACTION) {
++        float written[handover_research::MEMORY_DIM]{};
++        m.entry_result=handover_research::entry_memory(mode,before,classic,classic_valid,_research_state.engine.staged,
++            _research_state.engine.staged_dim,_research_exit.memory,_research_exit.valid,RESET_PREVIOUS_ACTION_VALUE,written);
++        if (m.entry_result==handover_research::ENTRY_APPLIED) {
++            research_set_memory(written);
++            PX4_INFO("Research mode-entry treatment %d applied",(int)mode);
++        } else {
++            PX4_ERR("Research mode-entry treatment %d NOT applied: result %d",(int)mode,(int)m.entry_result);
++        }
++    }
++    float after[32]{};research_get(after);
++    for (TI i=0;i<16;i++) m.gru[i]=after[i];
++    for (TI i=0;i<4;i++) m.previous_action[i]=after[16+i];
++    m.classic_actuator_timestamp=_research_classic_set?_research_classic.actuator_timestamp:0;
++    m.clipped_total=_research_clipped_total;m.classic_unavailable_total=_research_classic_unavailable_total;
++    _research_memory_pub.publish(m);
++}
++void Raptor::research_log_step(bool active, const float *previous_action_used, bool native_step) {
++    research_memory_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=research_memory_s::KIND_STEP;m.entry_mode=_research_mode;m.active=active;m.native_step=native_step;
++    m.teacher_forced=_research_teacher_forced;
++    for (TI i=0;i<22;i++) m.policy_input[i]=rlt::get(device,executor.input,0,i);
++    float memory[32]{};research_get(memory);
++    for (TI i=0;i<16;i++) m.gru[i]=memory[i];
++    for (TI i=0;i<4;i++) {m.previous_action[i]=previous_action_used[i];m.classic_action[i]=_research_teacher_forced?_research_classic_action[i]:NAN;}
++    m.classic_actuator_timestamp=_research_teacher_forced?_research_classic.actuator_timestamp:0;
++    m.clipped_total=_research_clipped_total;m.classic_unavailable_total=_research_classic_unavailable_total;
++    _research_memory_pub.publish(m);
++}
++#endif
+ 
+ ModuleBase::Descriptor Raptor::desc{task_spawn, custom_command, print_usage};
+ 
+@@ -34,8 +130,17 @@ Raptor::Raptor(): ModuleParams(nullptr), ScheduledWorkItem(MODULE_NAME, px4::wq_
+ 	internal_reference_activation_position[2] = 0.0f;
+ 	internal_reference_params_changed = false;
+ 
++#ifdef __PX4_POSIX
++    _p11_pub.advertise();
++#endif
+ 	_actuator_motors_pub.advertise();
+ 	_tune_control_pub.advertise();
++#ifdef __PX4_POSIX
++	param_find("MC_RAPTOR_RTGT");
++	param_find("MC_RAPTOR_RTDEC");
++	param_find("MC_RAPTOR_RREC");
++	_research_recovery_pub.advertise();
++#endif
+ }
+ void Raptor::reset()
+ {
+@@ -147,6 +252,9 @@ bool Raptor::test_policy(FILE *f, TI input_offset, TI output_offset)
+ 
+ bool Raptor::init()
+ {
++#ifdef __PX4_POSIX
++    _p12_pub.advertise();
++#endif
+ 	this->init_time = hrt_absolute_time();
+ 
+ 	if (!_vehicle_angular_velocity_sub.registerCallback()) {
+@@ -343,7 +451,34 @@ void rotate_vector(T R[9], T v[3], T v_rotated[3])
+ 
+ void Raptor::observe(rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> &observation)
+ {
++#ifdef __PX4_POSIX
++	// P7: while the rate-limited recovery is active the network observes the virtual target (horizontal position and
++	// velocity) instead of the external setpoint; the setpoint is restored when observe() returns.
++	const ResearchRecoveryView research_recovery_view(*this);
++#endif
+ 	// converting from FRD to FLU
++#ifdef __PX4_POSIX
++    if (_p11_enabled) {
++        struct timespec p11_pre_begin{};clock_gettime(CLOCK_MONOTONIC,&p11_pre_begin);
++        _p11.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        _p11.local_position_sample=_vehicle_local_position.timestamp_sample;
++        _p11.attitude_sample=_vehicle_attitude.timestamp_sample;
++        _p11.stale=previous_trajectory_setpoint_stale;
++        _p11.recovery_active=_research_recovery.active;
++        _p11.target_yaw=_trajectory_setpoint.yaw;
++        float p11_memory[32]{};research_get(p11_memory);
++        for (TI i=0;i<16;i++) _p11.gru_before[i]=p11_memory[i];
++        for (TI i=0;i<4;i++) {_p11.attitude[i]=_vehicle_attitude.q[i];_p11.previous_action_before[i]=previous_action[i];}
++        for (TI i=0;i<3;i++) {
++            _p11.position[i]=position[i];_p11.velocity[i]=linear_velocity[i];
++            _p11.angular_velocity[i]=_vehicle_angular_velocity.xyz[i];
++            _p11.network_target_position[i]=_trajectory_setpoint.position[i];
++            _p11.network_target_velocity[i]=_trajectory_setpoint.velocity[i];
++        }
++        struct timespec p11_pre_end{};clock_gettime(CLOCK_MONOTONIC,&p11_pre_end);
++        _p11_pre_ns=static_cast<uint64_t>(p11_pre_end.tv_sec-p11_pre_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_pre_end.tv_nsec-p11_pre_begin.tv_nsec);
++    }
++#endif
+ 	T Rt_inv[9];
+ 
+ 	{
+@@ -413,6 +548,24 @@ void Raptor::observe(rl_tools::inference::applications::l2f::Observation<EXECUTO
+ }
+ 
+ 
++#ifdef __PX4_POSIX
++void Raptor::research_exit_lifecycle(bool active) {
++    static const param_t rsh=param_find("MC_RAPTOR_RSH");
++    int32_t enabled=0;param_get(rsh,&enabled);
++    if (!enabled || !_research_exit.due(active)) return;
++    float live[32]{};research_get(live);
++    _research_exit.store(live);
++    research_memory_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=research_memory_s::KIND_EXIT;m.entry_mode=_research_mode;m.active=false;
++    for (TI i=0;i<16;i++) m.gru[i]=_research_exit.memory[i];
++    for (TI i=0;i<4;i++) {m.previous_action[i]=_research_exit.memory[16+i];m.classic_action[i]=NAN;}
++    m.clipped_total=_research_clipped_total;m.classic_unavailable_total=_research_classic_unavailable_total;
++    _research_memory_pub.publish(m);
++    PX4_INFO("Research exit memory stored");
++}
++#endif
++
+ void Raptor::updateArmingCheckReply()
+ {
+ 	if (flightmode_state == FlightModeState::CONFIGURED) {
+@@ -482,6 +635,19 @@ void Raptor::Run()
+ 	status.timestamp_sample = current_time;
+ 	status.exit_reason = raptor_status_s::EXIT_REASON_NONE;
+ 	status.substep = 0;
++#ifdef __PX4_POSIX
++    struct timespec p11_cycle_begin{};clock_gettime(CLOCK_MONOTONIC,&p11_cycle_begin);
++    const uint64_t p11_cycle_start=static_cast<uint64_t>(p11_cycle_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_cycle_begin.tv_nsec);
++    static const param_t p11_param=param_find("MC_RAPTOR_P11"), p11_rsh=param_find("MC_RAPTOR_RSH");
++    int32_t p11_enable=0,p11_research=0;
++    param_get(p11_param,&p11_enable);param_get(p11_rsh,&p11_research);
++    _p11_enabled=p11_enable && p11_research;
++    if (_p11_enabled) {
++        _p11=research_p11_s{};_p11.timestamp=current_time;_p11.sequence=++_p11_sequence;
++        struct timespec p11_wall{};clock_gettime(CLOCK_MONOTONIC,&p11_wall);
++        _p11.run_wall_ns=static_cast<uint64_t>(p11_wall.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_wall.tv_nsec);
++    }
++#endif
+ 	status.active = false;
+ 	status.control_interval = NAN;
+ 	status.trajectory_setpoint_dt_mean = NAN;
+@@ -518,8 +684,11 @@ void Raptor::Run()
+ 		timestamp_last_vehicle_status_set = true;
+ 	}
+ 
+-	bool next_active = timestamp_last_vehicle_status_set && _vehicle_status.nav_state == ext_component_mode_id;
++	bool next_active = flightmode_state == FlightModeState::CONFIGURED && timestamp_last_vehicle_status_set && _vehicle_status.nav_state == ext_component_mode_id;
+ 
++#ifdef __PX4_POSIX
++    research_exit_lifecycle(next_active);
++#endif
+ 	if (!previous_active && next_active) {
+ 
+ 		// Activate setpoint type
+@@ -530,7 +699,23 @@ void Raptor::Run()
+ 		setpoint_config.should_apply = true;
+ 		_setpoint_config_pub.publish(setpoint_config);
+ 
+-		this->reset();
++#ifdef __PX4_POSIX
++        int32_t preserve=0, enabled=0;
++        param_get(param_find("MC_RAPTOR_RINI"),&preserve);
++        param_get(param_find("MC_RAPTOR_RSH"),&enabled);
++        float memory[32]{};
++        if(preserve==1 && enabled)research_get(memory);
++        const int32_t entry_mode=enabled?preserve:0;
++        float entry_before[32]{};research_get(entry_before);
++        float entry_classic[4]{};
++        const bool entry_classic_valid=handover_research::needs_classic_action(entry_mode) && research_classic_action(entry_classic);
++#endif
++        this->reset();
++#ifdef __PX4_POSIX
++        if(preserve==1 && enabled)research_set(memory,false);
++        PX4_INFO("Research mode-entry memory: %s",preserve==1 && enabled?"preserved; timing rebased":"reset");
++        research_entry(entry_mode,entry_before,entry_classic,entry_classic_valid);
++#endif
+ 		PX4_INFO("Resetting Inference Executor (Recurrent State)");
+ 
+ 	} else {
+@@ -538,9 +723,16 @@ void Raptor::Run()
+ 			PX4_INFO("inactive");
+ 		}
+ 	}
++#ifdef __PX4_POSIX
++    research_teacher_force(next_active);
++#endif
+ 
+ 	bool angular_velocity_update = false;
+ 	status.subscription_update_angular_velocity = _vehicle_angular_velocity_sub.update(&_vehicle_angular_velocity);
++#ifdef __PX4_POSIX
++    // Schedule another work item until the queue is drained, including early returns.
++    if(_vehicle_angular_velocity_sub.updated())ScheduleNow();
++#endif
+ 
+ 	if (status.subscription_update_angular_velocity) {
+ 		timestamp_last_angular_velocity = current_time;
+@@ -569,9 +761,70 @@ void Raptor::Run()
+ 
+ 	status.timestamp_last_vehicle_attitude = timestamp_last_attitude;
+ 
++#ifdef __PX4_POSIX
++    static const param_t p12_on=param_find("MC_RAPTOR_P12"),p12_ph=param_find("MC_RAPTOR_P12PH"),p12_r=param_find("MC_RAPTOR_P12R");
++    int32_t p12_enable=0,p12_phase=0,p12_repair=0;
++    param_get(p12_on,&p12_enable);param_get(p12_ph,&p12_phase);param_get(p12_r,&p12_repair);
++    _p12_enabled=p12_enable && _p11_enabled;
++    _p12_repair=p12_repair!=0;
++    if (!previous_active && next_active) _p12_seen=false;
++    _p12=research_p12_s{};
++    if (_p12_enabled) {
++        _p12.timestamp=current_time;_p12.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        _p12.active=next_active;_p12.requested_phase=p12_phase;_p12.repair_requested=_p12_repair;
++        _p12.lp_updated=status.subscription_update_local_position;_p12.attitude_updated=status.subscription_update_attitude;
++        _p12.last_gru_sample_before=_last_gru_sample;
++        _p12.call_index_before=executor.executor.intermediate_step;
++        _p12.history_count_before=executor.steps_since_original_control_step;
++        for (TI i=0;i<4;i++) _p12.history_before[i]=executor.action_history[0][i];
++        _p12.predicted_commit=!executor.executor.last_control_timestamp_original_set ||
++            (executor.executor.force_sync_native!=0 && executor.executor.intermediate_step%executor.executor.force_sync_native==0);
++        _p12.gate_pending=_trajectory_setpoint_sub.updated();
++        _p12.gate_permit=handover_research::p12_delivery_allowed(p12_phase,next_active,
++            executor.executor.last_control_timestamp_original_set,executor.executor.intermediate_step,executor.executor.force_sync_native);
++        struct timespec p12_begin{};clock_gettime(CLOCK_MONOTONIC,&p12_begin);
++        _p12.read_begin_wall_ns=static_cast<uint64_t>(p12_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12_begin.tv_nsec);
++    }
++#endif
+ 	trajectory_setpoint_s temp_trajectory_setpoint;
++#ifdef __PX4_POSIX
++    static const param_t p12b_param=param_find("MC_RAPTOR_P12B");
++    int32_t p12b_on=0;param_get(p12b_param,&p12b_on);
++    _p12b_enabled=p12b_on && _p12_enabled;
++    _p12b=research_p12b_s{};
++    if (_p12b_enabled) {
++        _p12b.timestamp=current_time;_p12b.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        _p12b.active=next_active;_p12b.activation=!previous_active && next_active;
++        _p12b.timing_initialized_pre=executor.executor.last_control_timestamp_original_set;
++        _p12b.force_sync_initialized_pre=executor.executor.force_sync_native_initialized;
++        _p12b.call_index_pre=executor.executor.intermediate_step;
++        _p12b.force_sync_pre=executor.executor.force_sync_native;
++        _p12b.control_time_pre=executor.executor.last_control_timestamp;
++        _p12b.original_control_time_pre=executor.executor.last_control_timestamp_original;
++        _p12b.last_valid_read_pre=timestamp_last_trajectory_setpoint_set?timestamp_last_trajectory_setpoint:0;
++        _p12b.requested_phase=p12_phase;_p12b.gate_pending=_p12.gate_pending;
++        _p12b.gate_applicable=next_active && p12_phase!=0 &&
++            executor.executor.last_control_timestamp_original_set && executor.executor.force_sync_native!=0;
++        _p12b.gate_permit=_p12.gate_permit;_p12b.external_seen_pre=_p12_seen;
++        int32_t p12b_ms=-1;param_get(param_find("MC_RAPTOR_P12MS"),&p12b_ms);
++        _p12b.repair_not_before_ms=p12b_ms;
++        struct timespec p12b_wall{};clock_gettime(CLOCK_MONOTONIC,&p12b_wall);
++        _p12b.pre_read_wall_ns=static_cast<uint64_t>(p12b_wall.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12b_wall.tv_nsec);
++    }
++#endif
+ 	bool use_external_reference = !use_internal_reference;
++#ifdef __PX4_POSIX
++    // P12 native-state delivery gate: do not consume on the other phase.
++    // The uORB latest value remains pending; timestamps and the strict guard are untouched.
++    status.subscription_update_trajectory_setpoint = use_external_reference &&
++        (!_p12_enabled || _p12.gate_permit) && _trajectory_setpoint_sub.update(&temp_trajectory_setpoint);
++    if (_p12_enabled) {
++        struct timespec p12_end{};clock_gettime(CLOCK_MONOTONIC,&p12_end);
++        _p12.read_end_wall_ns=static_cast<uint64_t>(p12_end.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12_end.tv_nsec);
++    }
++#else
+ 	status.subscription_update_trajectory_setpoint = use_external_reference && _trajectory_setpoint_sub.update(&temp_trajectory_setpoint);
++#endif
+ 
+ 	if (status.subscription_update_trajectory_setpoint) {
+ 		if (
+@@ -612,7 +865,37 @@ void Raptor::Run()
+ 		}
+ 	}
+ 
++#ifdef __PX4_POSIX
++    if (_p11_enabled) {
++        _p11.subscription_updated=status.subscription_update_trajectory_setpoint;
++        _p11.external_valid=_p11.subscription_updated && status.timestamp_last_trajectory_setpoint==current_time;
++        _p11.external_timestamp=_p11.subscription_updated?temp_trajectory_setpoint.timestamp:0;
++        _p11.last_valid_read_us=timestamp_last_trajectory_setpoint_set?timestamp_last_trajectory_setpoint:0;
++        _p11.invalid_total=trajectory_setpoint_invalid_count;
++        for (TI i=0;i<3;i++) {
++            _p11.external_position[i]=_p11.external_valid?temp_trajectory_setpoint.position[i]:NAN;
++            _p11.external_velocity[i]=_p11.external_valid?temp_trajectory_setpoint.velocity[i]:NAN;
++        }
++        _p11.external_yaw=_p11.external_valid?temp_trajectory_setpoint.yaw:NAN;
++        struct timespec p11_read{};clock_gettime(CLOCK_MONOTONIC,&p11_read);
++        _p11.read_wall_ns=static_cast<uint64_t>(p11_read.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_read.tv_nsec);
++    }
++#endif
+ 	constexpr bool PUBLISH_NON_COMPLETE_STATUS = true;
++#ifdef __PX4_POSIX
++    if (_p12b_enabled) {
++        _p12b.read_updated=status.subscription_update_trajectory_setpoint;
++        _p12b.read_valid=_p12b.read_updated &&
++            PX4_ISFINITE(temp_trajectory_setpoint.position[0]) && PX4_ISFINITE(temp_trajectory_setpoint.position[1]) &&
++            PX4_ISFINITE(temp_trajectory_setpoint.position[2]) && PX4_ISFINITE(temp_trajectory_setpoint.velocity[0]) &&
++            PX4_ISFINITE(temp_trajectory_setpoint.velocity[1]) && PX4_ISFINITE(temp_trajectory_setpoint.velocity[2]) &&
++            PX4_ISFINITE(temp_trajectory_setpoint.yaw) && PX4_ISFINITE(temp_trajectory_setpoint.yawspeed);
++        _p12b.last_valid_read_post=timestamp_last_trajectory_setpoint_set?timestamp_last_trajectory_setpoint:0;
++        _p12b.external_timestamp=_p11.external_timestamp;
++        _p12b.invalid_total=trajectory_setpoint_invalid_count;
++        handover_research::p12b_trace(_p12b);
++    }
++#endif
+ 
+ 	if (!angular_velocity_update) {
+ 		status.exit_reason = raptor_status_s::EXIT_REASON_NO_ANGULAR_VELOCITY_UPDATE;
+@@ -779,6 +1062,9 @@ void Raptor::Run()
+ 			_trajectory_setpoint.velocity[1] = 0;
+ 			_trajectory_setpoint.velocity[2] = 0;
+ 			_trajectory_setpoint.yawspeed = 0;
++#ifdef __PX4_POSIX
++			research_target_capture(!previous_active && next_active, next_active);
++#endif
+ 
+ 			if (!previous_trajectory_setpoint_stale) {
+ 				PX4_WARN("trajectory_setpoint turned stale at: %f %f %f, yaw: %f %llu / %llu us", (double)position[0], (double)position[1],
+@@ -807,12 +1093,101 @@ void Raptor::Run()
+ 
+ 
+ 
++#ifdef __PX4_POSIX
++	research_target_step(next_active, status.trajectory_setpoint_stale);
++	research_recovery_transition(next_active, status.trajectory_setpoint_stale, !previous_active && next_active);
++#endif
+ 	rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;
+ 	rl_tools::inference::applications::l2f::Action<EXECUTOR_SPEC> action;
++#ifdef __PX4_POSIX
++    const auto generation=_vehicle_angular_velocity_sub.get_last_generation();
++    if(_sample_generation && generation-_sample_generation>1)_sample_missed+=generation-_sample_generation-1;
++    _sample_generation=generation;
++    const unsigned input_result=_sample_clock.accept(_vehicle_angular_velocity.timestamp_sample);
++    if(input_result) {
++        research_timing_s skipped{};
++        skipped.timestamp=current_time;skipped.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        skipped.schema_version=2;skipped.active=next_active;skipped.mode_id=ext_component_mode_id;
++        skipped.accepted_total=_sample_clock.accepted;skipped.duplicate_total=_sample_clock.duplicate;
++        skipped.regressed_total=_sample_clock.regressed;skipped.source_missed_total=_sample_missed;
++        skipped.source_generation=generation;skipped.input_result=input_result;
++        skipped.native_total=_native_total;skipped.gru_commit_total=_gru_total;skipped.last_gru_sample=_last_gru_sample;
++        skipped.executor_ok=true;skipped.output_finite=true;
++        handover_research::TimingRecord skipped_record(skipped);
++        perf_end(_loop_perf);return;
++    }
++#endif
++#ifdef __PX4_POSIX
++    for (TI i=0;i<16;i++) _research_state._bounds[i]=1.f;
++    for (TI i=16;i<20;i++) _research_state._bounds[i]=1.f;
++    for (TI i=23;i<26;i++) _research_state._bounds[i]=10.f;
++    _research_state.update(next_active,
++        [this](float *v) { research_get(v); },
++        [this](const float *v, bool reset_state) { research_set(v,reset_state); });
++    struct timespec wall_start{}, wall_end{};
++    clock_gettime(CLOCK_MONOTONIC,&wall_start);
++#endif
+ 	observe(observation);
++#ifdef __PX4_POSIX
++    const uint32_t executor_dt_us=executor.executor.last_control_timestamp_set ?
++        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp)/1000 : 0;
++    const uint32_t native_dt_us=executor.executor.last_control_timestamp_original_set ?
++        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp_original)/1000 : 0;
++    hrt_abstime nanoseconds = _vehicle_angular_velocity.timestamp_sample * 1000;
++#else
+ 	hrt_abstime nanoseconds = current_time * 1000;
++#endif
+ 	auto executor_status = rl_tools::control(device, executor, nanoseconds, policy, observation, action, rng);
++#ifdef __PX4_POSIX
++    clock_gettime(CLOCK_MONOTONIC,&wall_end);
++    research_timing_s timing{};
++    timing.timestamp=current_time;
++    timing.schema_version=2;
++    timing.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    timing.local_position_sample=_vehicle_local_position.timestamp_sample;
++    timing.attitude_sample=_vehicle_attitude.timestamp_sample;
++    timing.control_start_wall_ns=static_cast<uint64_t>(wall_start.tv_sec)*1000000000ULL+wall_start.tv_nsec;
++    timing.control_end_wall_ns=static_cast<uint64_t>(wall_end.tv_sec)*1000000000ULL+wall_end.tv_nsec;
++    timing.accepted_total=_sample_clock.accepted;
++    timing.duplicate_total=_sample_clock.duplicate;
++    timing.regressed_total=_sample_clock.regressed;
++    timing.source_generation=_sample_generation;
++    timing.source_missed_total=_sample_missed;
++    timing.input_dt_us=_sample_clock.dt;
++    timing.executor_dt_us=executor_dt_us;
++    timing.native_dt_us=native_dt_us;
++    timing.executor_called=true;
++    timing.native_step=executor_status.source==decltype(executor_status.source)::CONTROL && executor_status.step_type==decltype(executor_status.step_type)::NATIVE;
++    timing.gru_committed=timing.native_step && !_research_state.engine.holding;
++    if(timing.native_step)++_native_total;
++    if(timing.gru_committed){++_gru_total;_last_gru_sample=timing.timestamp_sample;}
++    timing.native_total=_native_total;timing.gru_commit_total=_gru_total;timing.last_gru_sample=_last_gru_sample;
++    timing.timing_jitter_ok=executor_status.timing_jitter.OK;
++    timing.timing_bias_ok=executor_status.timing_bias.OK;
++    timing.jitter_ratio=executor_status.timing_jitter.MAGNITUDE;
++    timing.bias_ratio=executor_status.timing_bias.MAGNITUDE;
++    timing.timestamp_invalid=executor_status.TIMESTAMP_INVALID;
++    timing.timestamp_order_invalid=executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP;
++    timing.inference_duration_us=(wall_end.tv_sec-wall_start.tv_sec)*1000000+(wall_end.tv_nsec-wall_start.tv_nsec)/1000;
++    timing.active=next_active;
++    timing.executor_ok=executor_status.OK;
++    timing.control_step=executor_status.source==decltype(executor_status.source)::CONTROL;
++    timing.mode_id=ext_component_mode_id;
++    timing.output_finite=true;
++    if(timing.control_step)for(TI i=0;i<4;i++) {timing.action[i]=action.action[i];timing.output_finite &= PX4_ISFINITE(action.action[i]);}
++    handover_research::TimingRecord timing_record(timing);
++    if(_research_state.engine.holding)research_set(_research_state.engine.held,false);
++    if(timing.control_step && (!timing.output_finite || executor_status.TIMESTAMP_INVALID || executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP)) {
++        PX4_ERR("Research guard: invalid inference; actuator publication withheld");
++        can_arm=false;updateArmingCheckReply();return;
++    }
++#endif
+ 
++#ifdef __PX4_POSIX
++    // Logged after the timed observe+control span; the GRU is the committed state after this inference.
++    if (executor_status.source==decltype(executor_status.source)::CONTROL)
++        research_log_step(next_active,observation.previous_action,executor_status.step_type==decltype(executor_status.step_type)::NATIVE);
++#endif
+ 	if (!executor_status.OK) {
+ 		if (executor_status.TIMESTAMP_INVALID) {
+ 			PX4_ERR("RLtools executor error: Timestamp invalid");
+@@ -868,7 +1243,13 @@ void Raptor::Run()
+ 	for (TI action_i = 0; action_i < actuator_motors_s::NUM_CONTROLS; action_i++) {
+ 		if (action_i < EXECUTOR_CONFIG::OUTPUT_DIM) {
+ 			T value = action.action[action_i];
+-			this->previous_action[action_i] = value;
++#ifdef __PX4_POSIX
++            if(!_research_state.engine.holding) {
++                this->previous_action[action_i] = value;
++            }
++#else
++            this->previous_action[action_i] = value;
++#endif
+ 			value = (value + 1) / 2;
+ 			constexpr T training_min = 0;
+ 			constexpr T training_max = 1.0;
+@@ -890,10 +1271,49 @@ void Raptor::Run()
+ 	}
+ 
+ 	if (status.active) {
++#ifdef __PX4_POSIX
++        handover_research::ActuatorGate publication_gate(true);
++        if (publication_gate.allowed()) {
++#endif
+ 		_actuator_motors_pub.publish(actuator_motors);
++#ifdef __PX4_POSIX
++        timing.actuator_published=true;
++        timing.actuator_publish_sim_us=hrt_absolute_time();
++        struct timespec publish_wall{};clock_gettime(CLOCK_MONOTONIC,&publish_wall);
++        timing.actuator_publish_wall_ns=static_cast<uint64_t>(publish_wall.tv_sec)*1000000000ULL+publish_wall.tv_nsec;
++#endif
++#ifdef __PX4_POSIX
++    research_actuator_s ownership{};
++    ownership.timestamp=hrt_absolute_time();ownership.actuator_timestamp=actuator_motors.timestamp;ownership.owner=1;
++    for(unsigned i=0;i<4;i++)ownership.control[i]=actuator_motors.control[i];
++    static uORB::Publication<research_actuator_s> ownership_pub{ORB_ID(research_actuator)};
++    ownership_pub.publish(ownership);
++        } // publication_gate.allowed()
++#endif
+ 	}
+ 
+ 	perf_end(_loop_perf);
++#ifdef __PX4_POSIX
++    struct timespec p11_post_begin{};clock_gettime(CLOCK_MONOTONIC,&p11_post_begin);
++    timing.p11_cycle_wall_start_ns=p11_cycle_start;
++    if (_p11_enabled) {
++        _p11.active=next_active;_p11.activation=!previous_active && next_active;
++        _p11.native_step=timing.native_step;_p11.gru_committed=timing.gru_committed;
++        float p11_after[32]{};research_get(p11_after);
++        for (TI i=0;i<16;i++) _p11.gru_after[i]=p11_after[i];
++        for (TI i=0;i<4;i++) {_p11.previous_action_after[i]=previous_action[i];_p11.executor_action[i]=action.action[i];}
++        for (TI i=0;i<22;i++) _p11.policy_input[i]=rlt::get(device,executor.input,0,i);
++        struct timespec p11_pub_begin{},p11_pub_end{};clock_gettime(CLOCK_MONOTONIC,&p11_pub_begin);
++        _p11_pub.publish(_p11);
++        clock_gettime(CLOCK_MONOTONIC,&p11_pub_end);
++        timing.p11_setup_ns=_p11.run_wall_ns-p11_cycle_start;
++        timing.p11_pre_ns=_p11_pre_ns;
++        timing.p11_post_copy_ns=static_cast<uint64_t>(p11_pub_begin.tv_sec-p11_post_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_pub_begin.tv_nsec-p11_post_begin.tv_nsec);
++        timing.p11_publication_ns=static_cast<uint64_t>(p11_pub_end.tv_sec-p11_pub_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_pub_end.tv_nsec-p11_pub_begin.tv_nsec);
++    }
++    struct timespec p11_cycle_end{};clock_gettime(CLOCK_MONOTONIC,&p11_cycle_end);
++    timing.p11_cycle_wall_end_ns=static_cast<uint64_t>(p11_cycle_end.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_cycle_end.tv_nsec);
++#endif
+ 	previous_active = next_active;
+ 
+ 	if (executor_status.source == decltype(executor_status.source)::CONTROL) {
+@@ -907,6 +1327,20 @@ void Raptor::Run()
+ 		}
+ 	}
+ 
++#ifdef __PX4_POSIX
++    if (_p12_enabled) {
++        if (_p11.external_valid && next_active) _p12_seen=true;
++        _p12.external_seen=_p12_seen;
++        _p12.actual_commit=timing.gru_committed;
++        _p12.call_index_after=executor.executor.intermediate_step;
++        _p12.history_count_after=executor.steps_since_original_control_step;
++        for (TI i=0;i<4;i++) _p12.history_after[i]=executor.action_history[0][i];
++        _p12_pub.publish(_p12);
++    }
++    struct timespec p12_cycle_end{};clock_gettime(CLOCK_MONOTONIC,&p12_cycle_end);
++    // P12 full-cycle envelope includes its own publication and parameter reads.
++    timing.p11_cycle_wall_end_ns=static_cast<uint64_t>(p12_cycle_end.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12_cycle_end.tv_nsec);
++#endif
+ 	if (!this->timestamp_last_policy_frequency_check_set
+ 	    || (current_time - timestamp_last_policy_frequency_check) > POLICY_FREQUENCY_CHECK_INTERVAL) {
+ 		if (this->timestamp_last_policy_frequency_check_set) {
+@@ -960,6 +1394,68 @@ void Raptor::Run()
+ 			&& executor_status.step_type == decltype(executor_status.step_type)::NATIVE;
+ }
+ 
++#ifdef __PX4_POSIX
++// P4-01c: called in the cycle in which RAPTOR captured its target (the original capture has just written the current
++// position and yaw with zero velocity). Mode 1 replaces the zero velocity by the current horizontal velocity in the
++// activation cycle only; research_target_step() then evaluates the profile every cycle while RAPTOR holds that target.
++// P5: mode 2 does the same at activation and at every in-flight setpoint-timeout capture while active.
++void Raptor::research_target_capture(bool activation, bool active) {
++    static const param_t rsh=param_find("MC_RAPTOR_RSH"),rtgt=param_find("MC_RAPTOR_RTGT"),rtdec=param_find("MC_RAPTOR_RTDEC");
++    int32_t enabled=0,mode=0;float decel=0.f;param_get(rsh,&enabled);
++    if (!enabled) return;
++    param_get(rtgt,&mode);param_get(rtdec,&decel);
++    // P12_CAPTURE_OVERLAY: no reset, no hidden/history write, no live parameter change.
++    if (_p12_enabled) mode=handover_research::p12_capture_mode(_p12_repair,activation,active,_p12_seen);
++    // P12_CONT_REPAIR_WINDOW: preserve the complete legacy overlay prefix.
++    if (_p12_enabled) {
++        static const param_t window_param=param_find("MC_RAPTOR_P12MS");
++        int32_t not_before_ms=-1;param_get(window_param,&not_before_ms);
++        if (!handover_research::p12_repair_window_open(_vehicle_angular_velocity.timestamp_sample,not_before_ms)) mode=0;
++    }
++    if (_research_target.active) {_research_target.active=false;research_target_publish(research_target_s::KIND_END,research_target_s::END_RECAPTURE);}
++    _research_target_mode=mode;_research_target_decel=decel;_research_target_activation=activation;
++    _research_target_capture_time=hrt_absolute_time();_research_target_capture_sample=_vehicle_angular_velocity.timestamp_sample;
++    _research_target_local_sample=_vehicle_local_position.timestamp_sample;
++    for (TI i=0;i<3;i++) {_research_target_vehicle_position[i]=position[i];_research_target_vehicle_velocity[i]=linear_velocity[i];}
++    _research_target_phase=handover_research::TARGET_PHASE_HOLD;
++    if (handover_research::speed_matched_capture(mode,activation,active)) {
++        float p[3]={_trajectory_setpoint.position[0],_trajectory_setpoint.position[1],_trajectory_setpoint.position[2]},v[3];
++        if (_research_target.start(_research_target_capture_sample,p,linear_velocity,decel)) {
++            _research_target_phase=_research_target.evaluate(_research_target_capture_sample,p,v);
++            for (TI i=0;i<3;i++) {_trajectory_setpoint.position[i]=p[i];_trajectory_setpoint.velocity[i]=v[i];}
++            PX4_INFO("Research takeover target T1: speed %.3f m/s, decel %.2f m/s^2",(double)_research_target.speed0,(double)decel);
++        } else {
++            PX4_ERR("Research takeover target T1 NOT started (decel %.3f)",(double)decel);
++        }
++    }
++    research_target_publish(research_target_s::KIND_CAPTURE,0);
++}
++void Raptor::research_target_step(bool active, bool stale) {
++    if (!_research_target.active) return;
++    if (!active || !stale) {
++        _research_target.active=false;
++        research_target_publish(research_target_s::KIND_END,active?research_target_s::END_EXTERNAL_SETPOINT:research_target_s::END_INACTIVE);
++        return;
++    }
++    float p[3],v[3];_research_target_phase=_research_target.evaluate(_vehicle_angular_velocity.timestamp_sample,p,v);
++    for (TI i=0;i<3;i++) {_trajectory_setpoint.position[i]=p[i];_trajectory_setpoint.velocity[i]=v[i];}
++    research_target_publish(research_target_s::KIND_PROFILE,0);
++}
++void Raptor::research_target_publish(uint8_t kind, uint8_t end_reason) {
++    research_target_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=kind;m.mode=_research_target_mode;m.activation=_research_target_activation;
++    m.phase=kind==research_target_s::KIND_END?0:_research_target_phase;m.end_reason=end_reason;m.decel=_research_target_decel;
++    m.capture_timestamp=_research_target_capture_time;m.capture_sample=_research_target_capture_sample;m.local_position_sample=_research_target_local_sample;
++    for (TI i=0;i<3;i++) {
++        m.vehicle_position[i]=_research_target_vehicle_position[i];m.vehicle_velocity[i]=_research_target_vehicle_velocity[i];
++        m.position[i]=_trajectory_setpoint.position[i];m.velocity[i]=_trajectory_setpoint.velocity[i];
++    }
++    m.yaw=_trajectory_setpoint.yaw;
++    _research_target_pub.publish(m);
++}
++#endif
++
+ int Raptor::task_spawn(int argc, char *argv[])
+ {
+ 	Raptor *instance = new Raptor();
+@@ -983,6 +1479,71 @@ int Raptor::task_spawn(int argc, char *argv[])
+ 	return PX4_ERROR;
+ }
+ 
++#ifdef __PX4_POSIX
++// P7: called every cycle after the takeover-target step. Arms at an in-flight setpoint-timeout capture while active (not
++// at the activation capture), starts the virtual target in the cycle the setpoint is fresh again (MC_RAPTOR_RREC > 0),
++// ends it at a new timeout or when RAPTOR becomes inactive.
++void Raptor::research_recovery_transition(bool active, bool stale, bool activation) {
++    const bool was_stale=_research_recovery_previous_stale;
++    _research_recovery_previous_stale=stale;
++    if (!active) {
++        _research_recovery_armed=false;
++        if (_research_recovery.active) {_research_recovery.active=false;research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_INACTIVE);}
++        return;
++    }
++    if (stale) {
++        if (activation) _research_recovery_armed=false;
++        else if (!was_stale) _research_recovery_armed=true;
++        if (_research_recovery.active) {_research_recovery.active=false;research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_STALE);}
++        return;
++    }
++    if (!was_stale || !_research_recovery_armed) return;
++    _research_recovery_armed=false;
++    static const param_t rsh=param_find("MC_RAPTOR_RSH"),rrec=param_find("MC_RAPTOR_RREC");
++    int32_t enabled=0;float rate=0.f;param_get(rsh,&enabled);param_get(rrec,&rate);
++    if (!enabled || !(rate>0.f)) return;
++    const float p[3]={position[0],position[1],position[2]},v[3]={linear_velocity[0],linear_velocity[1],linear_velocity[2]};
++    if (!_research_recovery.start(_vehicle_angular_velocity.timestamp_sample,p,v,rate)) {PX4_ERR("Research recovery NOT started (rate %.3f)",(double)rate);return;}
++    for (TI i=0;i<3;i++) {_research_recovery_vehicle_position[i]=p[i];_research_recovery_vehicle_velocity[i]=v[i];}
++    _research_recovery_last=handover_research::RecoveryStep{};
++    research_recovery_publish(research_recovery_s::KIND_START,0);
++    PX4_INFO("Research recovery: virtual target, rate %.2f m/s^2",(double)rate);
++}
++// Inside observe(): one step of the virtual target against the external setpoint in force; the network then observes it.
++bool Raptor::research_recovery_apply(float saved[4]) {
++    if (!_research_recovery.active) return false;
++    const float sp_p[2]={_trajectory_setpoint.position[0],_trajectory_setpoint.position[1]};
++    const float sp_v[2]={_trajectory_setpoint.velocity[0],_trajectory_setpoint.velocity[1]};
++    _research_recovery_last=_research_recovery.step(_vehicle_angular_velocity.timestamp_sample,sp_p,sp_v);
++    if (!_research_recovery.active) {research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_CONVERGED);return false;}
++    research_recovery_publish(research_recovery_s::KIND_STEP,0);
++    for (TI i=0;i<2;i++) {
++        saved[i]=sp_p[i];saved[2+i]=sp_v[i];
++        _trajectory_setpoint.position[i]=float(_research_recovery.p[i]);_trajectory_setpoint.velocity[i]=float(_research_recovery.v[i]);
++    }
++    return true;
++}
++void Raptor::research_recovery_restore(const float saved[4]) {
++    for (TI i=0;i<2;i++) {_trajectory_setpoint.position[i]=saved[i];_trajectory_setpoint.velocity[i]=saved[2+i];}
++}
++void Raptor::research_recovery_publish(uint8_t kind, uint8_t end_reason) {
++    research_recovery_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=kind;m.end_reason=end_reason;m.rate=float(_research_recovery.rate);m.omega=float(handover_research::RecoveryTarget::OMEGA);
++    const handover_research::RecoveryStep &s=_research_recovery_last;
++    m.dt=float(s.dt);m.limited=s.limited;m.acc[0]=float(s.acc[0]);m.acc[1]=float(s.acc[1]);m.acc_unlimited_norm=float(s.acc_unlimited);
++    m.position_difference=float(s.position_difference);m.velocity_difference=float(s.velocity_difference);m.start_sample=_research_recovery.start_us;
++    const bool step=kind==research_recovery_s::KIND_STEP;
++    for (TI i=0;i<3;i++) {
++        m.setpoint_position[i]=_trajectory_setpoint.position[i];m.setpoint_velocity[i]=_trajectory_setpoint.velocity[i];
++        m.target_position[i]=i<2 && (step || kind==research_recovery_s::KIND_START)?float(_research_recovery.p[i]):_trajectory_setpoint.position[i];
++        m.target_velocity[i]=i<2 && (step || kind==research_recovery_s::KIND_START)?float(_research_recovery.v[i]):_trajectory_setpoint.velocity[i];
++        m.vehicle_position[i]=_research_recovery_vehicle_position[i];m.vehicle_velocity[i]=_research_recovery_vehicle_velocity[i];
++    }
++    _research_recovery_pub.publish(m);
++}
++#endif
++
+ int Raptor::print_status()
+ {
+ 	perf_print_counter(_loop_perf);
+@@ -994,6 +1555,9 @@ int Raptor::print_status()
+ 
+ int Raptor::custom_command(int argc, char *argv[])
+ {
++#ifdef __PX4_POSIX
++    if(argc>=1 && strcmp(argv[0],"state")==0)return handover_research::state_command(argc,argv);
++#endif
+ 	if (argc >= 2 && strcmp(argv[0], "intref") == 0) {
+ 		if (strcmp(argv[1], "lissajous") == 0) {
+ 			// Usage: mc_raptor intref lissajous <A> <B> <C> <fa> <fb> <fc> <duration> <ramp>
+diff --git a/src/modules/mc_raptor/mc_raptor.hpp b/src/modules/mc_raptor/mc_raptor.hpp
+index fcd3203..5581fea 100644
+--- a/src/modules/mc_raptor/mc_raptor.hpp
++++ b/src/modules/mc_raptor/mc_raptor.hpp
+@@ -1,4 +1,7 @@
+ #pragma once
++#ifdef __PX4_POSIX
++#include <lib/handover_research/StateBridge.hpp>
++#endif
+ 
+ #include "trajectories/lissajous.hpp"
+ 
+@@ -18,15 +21,43 @@
+ #include <uORB/topics/vehicle_odometry.h>
+ #include <uORB/topics/vehicle_attitude.h>
+ #include <uORB/topics/vehicle_angular_velocity.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_angular_velocity.h>
++#endif
+ #include <uORB/topics/actuator_motors.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_actuator.h>
++#include <uORB/topics/research_memory.h>
++#include <lib/handover_research/ActionMap.hpp>
++#include <lib/handover_research/MemoryInit.hpp>
++#endif
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_target.h>
++#include <lib/handover_research/TargetProfile.hpp>
++#endif
+ #include <uORB/topics/trajectory_setpoint.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_recovery.h>
++#include <lib/handover_research/RecoveryTarget.hpp>
++#endif
+ #include <uORB/topics/register_ext_component_request.h>
+ #include <uORB/topics/register_ext_component_reply.h>
+ #include <uORB/topics/unregister_ext_component.h>
+ #include <uORB/topics/vehicle_status.h>
+ #include <uORB/topics/raptor_status.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_p12.h>
++#include <lib/handover_research/P12Controls.hpp>
++#endif
+ #include <uORB/topics/raptor_input.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_p11.h>
++#endif
+ #include <uORB/topics/tune_control.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_p12b.h>
++#include <lib/handover_research/P12bTrace.hpp>
++#endif
+ #include <uORB/topics/setpoint_config.h>
+ #include <uORB/topics/arming_check_request.h>
+ #include <uORB/topics/arming_check_reply.h>
+@@ -91,6 +122,14 @@ public:
+ 	int print_status() override;
+ 
+ private:
++#ifdef __PX4_POSIX
++	handover_research::StateBridge _research_state{1, 26, 100.f};
++	void research_get(float *values);
++	void research_set(const float *values, bool reset_state);
++    handover_research::SampleClock _sample_clock{};
++    unsigned _sample_generation{0};
++    uint64_t _sample_missed{0}, _native_total{0}, _gru_total{0}, _last_gru_sample{0};
++#endif
+ #ifdef __PX4_POSIX
+ 	using DEVICE = rlt::devices::DefaultCPU;
+ #else
+@@ -115,9 +154,18 @@ private:
+ 	T max_position_error = 0.5;
+ 	T max_velocity_error = 1.0;
+ 
++#ifdef __PX4_POSIX
++    bool _p12_enabled{false}, _p12_seen{false}, _p12_repair{false};
++    research_p12_s _p12{};
++    uORB::Publication<research_p12_s> _p12_pub{ORB_ID(research_p12)};
++#endif
+ 	void Run() override;
++#ifdef __PX4_POSIX
++    bool _p12b_enabled{false};
++    research_p12b_s _p12b{};
++#endif
+ 
+-	decltype(register_ext_component_reply_s::mode_id) ext_component_mode_id;
++	decltype(register_ext_component_reply_s::mode_id) ext_component_mode_id = 255;
+ 	decltype(register_ext_component_reply_s::arming_check_id) ext_component_arming_check_id;
+ 
+ 	enum class FlightModeState : TI {
+@@ -130,7 +178,11 @@ private:
+ 
+ 	// node state
+ 	vehicle_local_position_s _vehicle_local_position{};
++#ifdef __PX4_POSIX
++    research_angular_velocity_s _vehicle_angular_velocity{};
++#else
+ 	vehicle_angular_velocity_s _vehicle_angular_velocity{};
++#endif
+ 	vehicle_attitude_s _vehicle_attitude{};
+ 	vehicle_status_s _vehicle_status{};
+ 	trajectory_setpoint_s _trajectory_setpoint{};
+@@ -140,6 +192,13 @@ private:
+ 	     timestamp_last_trajectory_setpoint_set = false, timestamp_last_manual_control_input_set = false, timestamp_last_vehicle_status_set = false;
+ 	bool timeout_message_sent = false;
+ 	bool previous_trajectory_setpoint_stale = false;
++#ifdef __PX4_POSIX
++    bool _p11_enabled{false};
++    uint64_t _p11_sequence{0};
++    uint64_t _p11_pre_ns{0};
++    research_p11_s _p11{};
++    uORB::Publication<research_p11_s> _p11_pub{ORB_ID(research_p11)};
++#endif
+ 	bool previous_active = false;
+ 
+ 	T position[3];
+@@ -151,7 +210,11 @@ private:
+ 	uORB::Subscription _trajectory_setpoint_sub{ORB_ID(trajectory_setpoint)};
+ 	uORB::Subscription _arming_check_request_sub{ORB_ID(arming_check_request)};
+ 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
++#ifdef __PX4_POSIX
++    uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(research_angular_velocity)};
++#else
+ 	uORB::SubscriptionCallbackWorkItem _vehicle_angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};
++#endif
+ 	uORB::Publication<actuator_motors_s> _actuator_motors_pub{ORB_ID(actuator_motors)};
+ 	uORB::Publication<raptor_status_s> _raptor_status_pub{ORB_ID(raptor_status)};
+ 	uORB::Publication<raptor_input_s> _raptor_input_pub{ORB_ID(raptor_input)};
+@@ -231,7 +294,31 @@ private:
+ #endif
+ 
+ 	void reset();
++#ifdef __PX4_POSIX
++    // P3 N3: memory held unchanged since RAPTOR's most recent exit (SITL research only).
++    void research_exit_lifecycle(bool active);
++    handover_research::ExitMemory _research_exit{};
++#endif
+ 	void observe(rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> &observation);
++#ifdef __PX4_POSIX
++    // P7 rate-limited recovery (SITL research only).
++    void research_recovery_transition(bool active, bool stale, bool activation);
++    bool research_recovery_apply(float saved[4]);
++    void research_recovery_restore(const float saved[4]);
++    void research_recovery_publish(uint8_t kind, uint8_t end_reason);
++    struct ResearchRecoveryView {
++        Raptor &raptor;
++        float saved[4]{};
++        bool on;
++        explicit ResearchRecoveryView(Raptor &r) : raptor(r), on(r.research_recovery_apply(saved)) {}
++        ~ResearchRecoveryView() {if (on) raptor.research_recovery_restore(saved);}
++    };
++    uORB::Publication<research_recovery_s> _research_recovery_pub{ORB_ID(research_recovery)};
++    handover_research::RecoveryTarget _research_recovery{};
++    handover_research::RecoveryStep _research_recovery_last{};
++    bool _research_recovery_previous_stale{false}, _research_recovery_armed{false};
++    float _research_recovery_vehicle_position[3]{}, _research_recovery_vehicle_velocity[3]{};
++#endif
+ 
+ 	static constexpr bool REMAP_FROM_CRAZYFLIE =
+ 		true; // Policy (Crazyflie assignment) => Quadrotor (PX4 Quadrotor X assignment) PX4 SIH assumes the Quadrotor X configuration, which assumes different rotor positions than the crazyflie mapping (from crazyflie outputs to PX4): 1=>1, 2=>4, 3=>2, 4=>3
+@@ -263,6 +350,34 @@ private:
+ 	TI trajectory_setpoint_invalid_count = 0;
+ 
+ 	float previous_action[EXECUTOR_SPEC::OUTPUT_DIM];
++#ifdef __PX4_POSIX
++    // P2 mode-entry treatments and recurrent-memory evidence (SITL research only).
++    void research_set_memory(const float *values);
++    bool research_classic_action(float *action);
++    void research_teacher_force(bool active);
++    void research_entry(int32_t mode, const float *before, const float *classic, bool classic_valid);
++    void research_log_step(bool active, const float *previous_action_used, bool native_step);
++    uORB::Subscription _research_actuator_sub{ORB_ID(research_actuator)};
++    uORB::Publication<research_memory_s> _research_memory_pub{ORB_ID(research_memory)};
++    research_actuator_s _research_classic{};
++    bool _research_classic_set{false}, _research_teacher_forced{false};
++    int32_t _research_mode{0};
++    float _research_classic_action[4]{};
++    uint32_t _research_clipped_total{0}, _research_classic_unavailable_total{0};
++#endif
++#ifdef __PX4_POSIX
++    // P4-01c takeover target (SITL research only).
++    void research_target_capture(bool activation, bool active);
++    void research_target_step(bool active, bool stale);
++    void research_target_publish(uint8_t kind, uint8_t end_reason);
++    uORB::Publication<research_target_s> _research_target_pub{ORB_ID(research_target)};
++    handover_research::TargetProfile _research_target{};
++    int32_t _research_target_mode{0};
++    float _research_target_decel{0.f}, _research_target_vehicle_position[3]{}, _research_target_vehicle_velocity[3]{};
++    bool _research_target_activation{false};
++    uint8_t _research_target_phase{0};
++    hrt_abstime _research_target_capture_time{0}, _research_target_capture_sample{0}, _research_target_local_sample{0};
++#endif
+ 	bool use_internal_reference = false;
+ 	bool internal_reference_params_changed = false;
+ 	T internal_reference_activation_position[3];
+diff --git a/src/modules/mc_raptor/module.yaml b/src/modules/mc_raptor/module.yaml
+index 2b61df8..b5246b3 100644
+--- a/src/modules/mc_raptor/module.yaml
++++ b/src/modules/mc_raptor/module.yaml
+@@ -1,5 +1,70 @@
+ module_name: mc_raptor
+ parameters:
++    - group: Handover Research Observation
++      definitions:
++        MC_RAPTOR_P11:
++            description:
++                short: SITL read-only P11 full inference observation
++            type: boolean
++            default: false
++    - group: Handover Research
++      definitions:
++        MC_RAPTOR_RINI:
++            description:
++                short: SITL research mode-entry memory treatment
++                long: 0 original reset, 1 preserve shadow memory, 2 GRU reset with classic previous action, 3 teacher-forced GRU, 4 teacher-forced GRU with classic previous action, 5 staged memory, 6 memory held unchanged since the most recent exit
++            type: int32
++            min: 0
++            max: 6
++            default: 0
++    - group: Handover Research
++      definitions:
++        MC_RAPTOR_RSH:
++            description:
++                short: Enable SITL controller state research interface
++            type: boolean
++            default: false
++    - group: Handover Research
++      definitions:
++        MC_RAPTOR_NCO:
++            description:
++                short: SITL research N-to-C velocity integrator coordination
++                long: 0 original classic takeover, 1 set the classic velocity integrator on the first position-control cycle after RAPTOR so that its thrust equals RAPTOR's last applied collective thrust along the current body z axis
++            type: int32
++            min: 0
++            max: 1
++            default: 0
++    - group: Handover Research
++      definitions:
++        MC_RAPTOR_RTGT:
++            description:
++                short: SITL research RAPTOR takeover target
++                long: 0 original activation capture (current position and yaw, zero velocity); 1 speed-matched target (same capture with the current horizontal velocity, then a fixed deceleration MC_RAPTOR_RTDEC along that direction to zero, position integrated from the target velocity); 2 the same speed-matched target at activation and at every in-flight setpoint-timeout capture while active. Only active with MC_RAPTOR_RSH.
++            type: int32
++            min: 0
++            max: 2
++            default: 0
++        MC_RAPTOR_RTDEC:
++            description:
++                short: SITL research deceleration of the speed-matched takeover target
++            type: float
++            unit: m/s^2
++            min: 0.1
++            max: 10.0
++            decimal: 2
++            default: 2.0
++    - group: Handover Research Recovery
++      definitions:
++        MC_RAPTOR_RREC:
++            description:
++                short: SITL research rate-limited recovery after a setpoint timeout
++                long: 0 original behaviour (the target jumps back to the external setpoint when it is fresh again). Greater than 0, after an in-flight setpoint-timeout capture the network observes a virtual target that starts at the vehicle's horizontal position and velocity and approaches the setpoint with acc = w^2 dp + 2 w dv (w 1.5), limited to this horizontal acceleration, until both differences are below 0.02. Only active with MC_RAPTOR_RSH.
++            type: float
++            unit: m/s^2
++            min: 0.0
++            max: 10.0
++            decimal: 2
++            default: 0.0
+     - group: Multicopter Raptor
+       definitions:
+         MC_RAPTOR_ENABLE:
+@@ -41,3 +106,41 @@ parameters:
+                 1: Lissajous
+             default: 0
+             category: System
++
++    - group: Handover P12 Experiment
++      definitions:
++        MC_RAPTOR_P12:
++            description:
++                short: SITL P12 observation and experiment enable
++            type: boolean
++            default: false
++        MC_RAPTOR_P12PH:
++            description:
++                short: P12 delivery gate 0 original 1 native 2 intermediate
++            type: int32
++            default: 0
++            min: 0
++            max: 2
++        MC_RAPTOR_P12R:
++            description:
++                short: P12 repair only after activation and external read
++            type: boolean
++            default: false
++
++    - group: Handover P12 Continuation
++      definitions:
++        MC_RAPTOR_P12MS:
++            description:
++                short: Repair sample ms gate -1 legacy 0 inhibited positive threshold
++            type: int32
++            default: -1
++            min: -1
++            max: 2000000000
++
++    - group: Handover P12b Observation
++      definitions:
++        MC_RAPTOR_P12B:
++            description:
++                short: P12b passive pre-read contract observation
++            type: boolean
++            default: false
+diff --git a/src/modules/mc_rate_control/MulticopterRateControl.cpp b/src/modules/mc_rate_control/MulticopterRateControl.cpp
+index 7bfb830..7329852 100644
+--- a/src/modules/mc_rate_control/MulticopterRateControl.cpp
++++ b/src/modules/mc_rate_control/MulticopterRateControl.cpp
+@@ -149,6 +149,12 @@ MulticopterRateControl::Run()
+ 		}
+ 
+ 		_vehicle_status_sub.update(&_vehicle_status);
++#ifdef __PX4_POSIX
++        _rate_control.researchLimit().copyTo(_research_state._bounds);
++        _research_state.update(_vehicle_control_mode.flag_armed && _vehicle_control_mode.flag_control_rates_enabled,
++            [this](float *v) { _rate_control.researchGet().copyTo(v); },
++            [this](const float *v, bool) { _rate_control.researchSet(Vector3f(v)); });
++#endif
+ 
+ 		// use rates setpoint topic
+ 		vehicle_rates_setpoint_s vehicle_rates_setpoint{};
+@@ -183,10 +189,22 @@ MulticopterRateControl::Run()
+ 			_rates_setpoint(1) = PX4_ISFINITE(vehicle_rates_setpoint.pitch) ? vehicle_rates_setpoint.pitch : rates(1);
+ 			_rates_setpoint(2) = PX4_ISFINITE(vehicle_rates_setpoint.yaw)   ? vehicle_rates_setpoint.yaw   : rates(2);
+ 			_thrust_setpoint = Vector3f(vehicle_rates_setpoint.thrust_body);
++
++			if (!_vehicle_control_mode.flag_control_attitude_enabled) {
++				_last_external_rates_setpoint = vehicle_rates_setpoint.timestamp;
++			}
+ 		}
+ 
+ 		// run the rate controller
+ 		if (_vehicle_control_mode.flag_control_rates_enabled) {
++			if (!_vehicle_control_mode.flag_control_attitude_enabled && _last_external_rates_setpoint > 0) {
++				route_observability::publish(
++					_route_observability_pub, _route_observability_sequence, _last_setpoint_observability_pub,
++					route_observability_s::EVENT_SETPOINT_CONSUMED,
++					route_observability_s::SOURCE_EXTERNAL_RATE,
++					route_observability_s::TOPIC_VEHICLE_RATES_SETPOINT,
++					route_observability_s::WRITER_UNKNOWN, _last_external_rates_setpoint);
++			}
+ 
+ 			// reset integral if disarmed
+ 			if (!_vehicle_control_mode.flag_armed || _vehicle_status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
+@@ -262,12 +280,21 @@ MulticopterRateControl::Run()
+ 			vehicle_torque_setpoint.timestamp_sample = angular_velocity.timestamp_sample;
+ 			vehicle_torque_setpoint.timestamp = hrt_absolute_time();
+ 			_vehicle_torque_setpoint_pub.publish(vehicle_torque_setpoint);
++			route_observability::publish(
++				_route_observability_pub, _route_observability_sequence, _last_route_observability_pub,
++				route_observability_s::EVENT_ALLOCATOR_INPUT_PUBLISHED,
++				route_observability_s::SOURCE_MC_RATE_CONTROL,
++				route_observability_s::TOPIC_VEHICLE_TORQUE_SETPOINT,
++				route_observability_s::WRITER_MC_RATE_CONTROL, vehicle_torque_setpoint.timestamp);
+ 
+ 			updateActuatorControlsStatus(vehicle_torque_setpoint, dt);
+ 
+ 		}
+ 	}
+ 
++#ifdef __PX4_POSIX
++    if (_research_state.engine.holding) _rate_control.researchSet(Vector3f(_research_state.engine.held));
++#endif
+ 	perf_end(_loop_perf);
+ }
+ 
+diff --git a/src/modules/mc_rate_control/MulticopterRateControl.hpp b/src/modules/mc_rate_control/MulticopterRateControl.hpp
+index 44c6c13..1aa0747 100644
+--- a/src/modules/mc_rate_control/MulticopterRateControl.hpp
++++ b/src/modules/mc_rate_control/MulticopterRateControl.hpp
+@@ -32,11 +32,15 @@
+  ****************************************************************************/
+ 
+ #pragma once
++#ifdef __PX4_POSIX
++#include <lib/handover_research/StateBridge.hpp>
++#endif
+ 
+ #include <lib/rate_control/rate_control.hpp>
+ #include <lib/mathlib/math/filter/AlphaFilter.hpp>
+ #include <lib/matrix/matrix/math.hpp>
+ #include <lib/perf/perf_counter.h>
++#include <lib/route_observability/RouteObservability.hpp>
+ #include <px4_platform_common/defines.h>
+ #include <px4_platform_common/module.h>
+ #include <px4_platform_common/module_params.h>
+@@ -83,6 +87,9 @@ public:
+ 	bool init();
+ 
+ private:
++#ifdef __PX4_POSIX
++	handover_research::StateBridge _research_state{2, 3, 0.3f};
++#endif
+ 	void Run() override;
+ 
+ 	/**
+@@ -111,6 +118,7 @@ private:
+ 	uORB::Publication<vehicle_rates_setpoint_s>	_vehicle_rates_setpoint_pub{ORB_ID(vehicle_rates_setpoint)};
+ 	uORB::Publication<vehicle_thrust_setpoint_s>	_vehicle_thrust_setpoint_pub;
+ 	uORB::Publication<vehicle_torque_setpoint_s>	_vehicle_torque_setpoint_pub;
++	uORB::PublicationMulti<route_observability_s> _route_observability_pub{ORB_ID(route_observability)};
+ 
+ 	vehicle_control_mode_s	_vehicle_control_mode{};
+ 	vehicle_status_s	_vehicle_status{};
+@@ -128,9 +136,13 @@ private:
+ 
+ 	float _battery_status_scale{0.0f};
+ 	matrix::Vector3f _thrust_setpoint{};
++	hrt_abstime _last_external_rates_setpoint{0};
+ 
+ 	float _energy_integration_time{0.0f};
+ 	float _control_energy[4] {};
++	uint32_t _route_observability_sequence{0};
++	hrt_abstime _last_route_observability_pub{0};
++	hrt_abstime _last_setpoint_observability_pub{0};
+ 
+ 	AlphaFilter<float> _output_lpf_yaw;
+ 
+diff --git a/src/modules/rover_ackermann/AckermannActControl/AckermannActControl.cpp b/src/modules/rover_ackermann/AckermannActControl/AckermannActControl.cpp
+index 391b197..c8a7579 100644
+--- a/src/modules/rover_ackermann/AckermannActControl/AckermannActControl.cpp
++++ b/src/modules/rover_ackermann/AckermannActControl/AckermannActControl.cpp
+@@ -76,6 +76,12 @@ void AckermannActControl::updateActControl()
+ 					     _param_ro_decel_limit.get(), _param_ro_max_thr_speed.get(), dt);
+ 		actuator_motors.timestamp = _timestamp;
+ 		_actuator_motors_pub.publish(actuator_motors);
++		route_observability::publish(
++			_route_observability_pub, _route_observability_sequence, _last_route_observability_pub,
++			route_observability_s::EVENT_ACTUATOR_OUTPUT_PUBLISHED,
++			route_observability_s::SOURCE_ROVER_ACKERMANN,
++			route_observability_s::TOPIC_ACTUATOR_MOTORS,
++			route_observability_s::WRITER_ROVER_ACKERMANN, actuator_motors.timestamp);
+ 
+ 	}
+ 
+@@ -118,6 +124,12 @@ void AckermannActControl::stopVehicle()
+ 	actuator_motors.control[0] = 0.f;
+ 	actuator_motors.timestamp = _timestamp;
+ 	_actuator_motors_pub.publish(actuator_motors);
++	route_observability::publish(
++		_route_observability_pub, _route_observability_sequence, _last_route_observability_pub,
++		route_observability_s::EVENT_ACTUATOR_OUTPUT_PUBLISHED,
++		route_observability_s::SOURCE_ROVER_ACKERMANN,
++		route_observability_s::TOPIC_ACTUATOR_MOTORS,
++		route_observability_s::WRITER_ROVER_ACKERMANN, actuator_motors.timestamp);
+ 	actuator_servos_s actuator_servos{};
+ 	actuator_servos.control[0] = 0.f;
+ 	actuator_servos.timestamp = _timestamp;
+diff --git a/src/modules/rover_ackermann/AckermannActControl/AckermannActControl.hpp b/src/modules/rover_ackermann/AckermannActControl/AckermannActControl.hpp
+index fb3630c..127e116 100644
+--- a/src/modules/rover_ackermann/AckermannActControl/AckermannActControl.hpp
++++ b/src/modules/rover_ackermann/AckermannActControl/AckermannActControl.hpp
+@@ -38,6 +38,7 @@
+ 
+ // Libraries
+ #include <lib/rover_control/RoverControl.hpp>
++#include <lib/route_observability/RouteObservability.hpp>
+ #include <lib/slew_rate/SlewRate.hpp>
+ #include <math.h>
+ 
+@@ -89,9 +90,12 @@ private:
+ 	// uORB publications
+ 	uORB::Publication<actuator_motors_s> 	     _actuator_motors_pub{ORB_ID(actuator_motors)};
+ 	uORB::Publication<actuator_servos_s> 	     _actuator_servos_pub{ORB_ID(actuator_servos)};
++	uORB::PublicationMulti<route_observability_s> _route_observability_pub{ORB_ID(route_observability)};
+ 
+ 	// Variables
+ 	hrt_abstime _timestamp{0};
++	hrt_abstime _last_route_observability_pub{0};
++	uint32_t _route_observability_sequence{0};
+ 	float _throttle_setpoint{NAN};
+ 	float _steering_setpoint{NAN};
+ 
+diff --git a/src/modules/rover_differential/DifferentialActControl/DifferentialActControl.cpp b/src/modules/rover_differential/DifferentialActControl/DifferentialActControl.cpp
+index f460aef..cc785b8 100644
+--- a/src/modules/rover_differential/DifferentialActControl/DifferentialActControl.cpp
++++ b/src/modules/rover_differential/DifferentialActControl/DifferentialActControl.cpp
+@@ -80,6 +80,12 @@ void DifferentialActControl::updateActControl()
+ 		computeInverseKinematics(adjusted_throttle_setpoint, _speed_diff_setpoint).copyTo(actuator_motors.control);
+ 		actuator_motors.timestamp = _timestamp;
+ 		_actuator_motors_pub.publish(actuator_motors);
++		route_observability::publish(
++			_route_observability_pub, _route_observability_sequence, _last_route_observability_pub,
++			route_observability_s::EVENT_ACTUATOR_OUTPUT_PUBLISHED,
++			route_observability_s::SOURCE_ROVER_DIFFERENTIAL,
++			route_observability_s::TOPIC_ACTUATOR_MOTORS,
++			route_observability_s::WRITER_ROVER_DIFFERENTIAL, actuator_motors.timestamp);
+ 
+ 	}
+ 
+@@ -107,4 +113,10 @@ void DifferentialActControl::stopVehicle()
+ 	actuator_motors.control[1] = 0.f;
+ 	actuator_motors.timestamp = _timestamp;
+ 	_actuator_motors_pub.publish(actuator_motors);
++	route_observability::publish(
++		_route_observability_pub, _route_observability_sequence, _last_route_observability_pub,
++		route_observability_s::EVENT_ACTUATOR_OUTPUT_PUBLISHED,
++		route_observability_s::SOURCE_ROVER_DIFFERENTIAL,
++		route_observability_s::TOPIC_ACTUATOR_MOTORS,
++		route_observability_s::WRITER_ROVER_DIFFERENTIAL, actuator_motors.timestamp);
+ }
+diff --git a/src/modules/rover_differential/DifferentialActControl/DifferentialActControl.hpp b/src/modules/rover_differential/DifferentialActControl/DifferentialActControl.hpp
+index 2076542..b413702 100644
+--- a/src/modules/rover_differential/DifferentialActControl/DifferentialActControl.hpp
++++ b/src/modules/rover_differential/DifferentialActControl/DifferentialActControl.hpp
+@@ -38,6 +38,7 @@
+ 
+ // Libraries
+ #include <lib/rover_control/RoverControl.hpp>
++#include <lib/route_observability/RouteObservability.hpp>
+ #include <lib/slew_rate/SlewRate.hpp>
+ #include <math.h>
+ 
+@@ -94,9 +95,12 @@ private:
+ 
+ 	// uORB publications
+ 	uORB::Publication<actuator_motors_s> 	     _actuator_motors_pub{ORB_ID(actuator_motors)};
++	uORB::PublicationMulti<route_observability_s> _route_observability_pub{ORB_ID(route_observability)};
+ 
+ 	// Variables
+ 	hrt_abstime _timestamp{0};
++	hrt_abstime _last_route_observability_pub{0};
++	uint32_t _route_observability_sequence{0};
+ 	float _throttle_setpoint{NAN};
+ 	float _speed_diff_setpoint{NAN};
+ 
+diff --git a/src/modules/rover_mecanum/MecanumActControl/MecanumActControl.cpp b/src/modules/rover_mecanum/MecanumActControl/MecanumActControl.cpp
+index 2f3280e..fd17825 100644
+--- a/src/modules/rover_mecanum/MecanumActControl/MecanumActControl.cpp
++++ b/src/modules/rover_mecanum/MecanumActControl/MecanumActControl.cpp
+@@ -87,6 +87,12 @@ void MecanumActControl::updateActControl()
+ 					 _speed_diff_setpoint).copyTo(actuator_motors.control);
+ 		actuator_motors.timestamp = _timestamp;
+ 		_actuator_motors_pub.publish(actuator_motors);
++		route_observability::publish(
++			_route_observability_pub, _route_observability_sequence, _last_route_observability_pub,
++			route_observability_s::EVENT_ACTUATOR_OUTPUT_PUBLISHED,
++			route_observability_s::SOURCE_ROVER_MECANUM,
++			route_observability_s::TOPIC_ACTUATOR_MOTORS,
++			route_observability_s::WRITER_ROVER_MECANUM, actuator_motors.timestamp);
+ 
+ 	}
+ 
+@@ -126,4 +132,10 @@ void MecanumActControl::stopVehicle()
+ 	actuator_motors.control[3] = 0.f;
+ 	actuator_motors.timestamp = _timestamp;
+ 	_actuator_motors_pub.publish(actuator_motors);
++	route_observability::publish(
++		_route_observability_pub, _route_observability_sequence, _last_route_observability_pub,
++		route_observability_s::EVENT_ACTUATOR_OUTPUT_PUBLISHED,
++		route_observability_s::SOURCE_ROVER_MECANUM,
++		route_observability_s::TOPIC_ACTUATOR_MOTORS,
++		route_observability_s::WRITER_ROVER_MECANUM, actuator_motors.timestamp);
+ }
+diff --git a/src/modules/rover_mecanum/MecanumActControl/MecanumActControl.hpp b/src/modules/rover_mecanum/MecanumActControl/MecanumActControl.hpp
+index 63aa155..d834e31 100644
+--- a/src/modules/rover_mecanum/MecanumActControl/MecanumActControl.hpp
++++ b/src/modules/rover_mecanum/MecanumActControl/MecanumActControl.hpp
+@@ -38,6 +38,7 @@
+ 
+ // Libraries
+ #include <lib/rover_control/RoverControl.hpp>
++#include <lib/route_observability/RouteObservability.hpp>
+ #include <lib/slew_rate/SlewRate.hpp>
+ #include <math.h>
+ 
+@@ -94,9 +95,12 @@ private:
+ 
+ 	// uORB publications
+ 	uORB::Publication<actuator_motors_s> _actuator_motors_pub{ORB_ID(actuator_motors)};
++	uORB::PublicationMulti<route_observability_s> _route_observability_pub{ORB_ID(route_observability)};
+ 
+ 	// Variables
+ 	hrt_abstime _timestamp{0};
++	hrt_abstime _last_route_observability_pub{0};
++	uint32_t _route_observability_sequence{0};
+ 	float _throttle_x_setpoint{NAN};
+ 	float _throttle_y_setpoint{NAN};
+ 	float _speed_diff_setpoint{NAN};
+diff --git a/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp b/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp
+index 23111d2..e8c4a3e 100644
+--- a/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp
++++ b/src/modules/sensors/vehicle_angular_velocity/VehicleAngularVelocity.cpp
+@@ -32,6 +32,9 @@
+  ****************************************************************************/
+ 
+ #include "VehicleAngularVelocity.hpp"
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_angular_velocity.h>
++#endif
+ 
+ #include <px4_platform_common/log.h>
+ 
+@@ -903,6 +906,18 @@ void VehicleAngularVelocity::Run()
+ 					angular_acceleration_uncalibrated(axis) = FilterAngularAcceleration(axis, inverse_dt_s, data);
+ 				}
+ 
++#ifdef __PX4_POSIX
++                // Preserve each filtered acquisition, including batched source samples.
++                static uORB::Publication<research_angular_velocity_s> research_pub{ORB_ID(research_angular_velocity)};
++                static uint64_t last_research_sample=0;
++                if(sensor_data.timestamp_sample >= last_research_sample + _publish_interval_min_us) {
++                    research_angular_velocity_s sample{};
++                    sample.timestamp=hrt_absolute_time();sample.timestamp_sample=sensor_data.timestamp_sample;
++                    (_calibration.Correct(angular_velocity_uncalibrated)-_bias).copyTo(sample.xyz);
++                    (_calibration.rotation()*angular_acceleration_uncalibrated).copyTo(sample.xyz_derivative);
++                    research_pub.publish(sample);last_research_sample=sample.timestamp_sample;
++                }
++#endif
+ 				// Publish
+ 				if (!_sensor_sub.updated()) {
+ 					if (CalibrateAndPublish(sensor_data.timestamp_sample,
+diff --git a/src/modules/simulation/gz_bridge/GZBridge.cpp b/src/modules/simulation/gz_bridge/GZBridge.cpp
+index 21279f0..582a0c7 100644
+--- a/src/modules/simulation/gz_bridge/GZBridge.cpp
++++ b/src/modules/simulation/gz_bridge/GZBridge.cpp
+@@ -392,6 +392,7 @@ void GZBridge::opticalFlowCallback(const px4::msgs::OpticalFlow &msg)
+ 
+ void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg)
+ {
++    _research_mag_callbacks.fetch_add(1, std::memory_order_relaxed);
+ 	const uint64_t timestamp = hrt_absolute_time();
+ 
+ 	_px4_mag.set_temperature(_temperature); // this will be static if no airspeed sensor is on the model.
+@@ -404,6 +405,7 @@ void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg)
+ 
+ void GZBridge::airPressureCallback(const gz::msgs::FluidPressure &msg)
+ {
++    _research_baro_callbacks.fetch_add(1, std::memory_order_relaxed);
+ 	_px4_baro.set_temperature(_temperature); // this will be static if no airspeed sensor is on the model.
+ 	_px4_baro.update(hrt_absolute_time(), msg.pressure());
+ }
+@@ -431,7 +433,8 @@ void GZBridge::airspeedCallback(const gz::msgs::AirSpeed &msg)
+ 
+ void GZBridge::imuCallback(const gz::msgs::IMU &msg)
+ {
+-	const uint64_t timestamp = hrt_absolute_time();
++	const uint64_t timestamp = static_cast<uint64_t>(msg.header().stamp().sec()) * 1000000ULL + msg.header().stamp().nsec() / 1000;
++    _research_imu_callbacks.fetch_add(1, std::memory_order_relaxed);
+ 
+ 	// FLU -> FRD
+ 	static const auto q_FLU_to_FRD = gz::math::Quaterniond(0, 1, 0, 0);
+@@ -947,6 +950,7 @@ int GZBridge::task_spawn(int argc, char *argv[])
+ 
+ int GZBridge::print_status()
+ {
++    PX4_INFO("Research callbacks: imu=%llu baro=%llu mag=%llu", (unsigned long long)_research_imu_callbacks.load(), (unsigned long long)_research_baro_callbacks.load(), (unsigned long long)_research_mag_callbacks.load());
+ 	PX4_INFO_RAW("ESC outputs:\n");
+ 	_mixing_interface_esc.mixingOutput().printStatus();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZBridge.hpp b/src/modules/simulation/gz_bridge/GZBridge.hpp
+index 93183ef..6272870 100644
+--- a/src/modules/simulation/gz_bridge/GZBridge.hpp
++++ b/src/modules/simulation/gz_bridge/GZBridge.hpp
+@@ -67,6 +67,7 @@
+ #include <uORB/topics/vehicle_local_position.h>
+ #include <uORB/topics/vehicle_odometry.h>
+ 
++#include <atomic>
+ #include <gz/math.hh>
+ #include <gz/msgs.hh>
+ #include <gz/transport.hh>
+@@ -107,6 +108,7 @@ public:
+ 	int print_status() override;
+ 
+ private:
++    std::atomic<uint64_t> _research_imu_callbacks{0}, _research_baro_callbacks{0}, _research_mag_callbacks{0};
+ 
+ 	void Run() override;
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZGimbal.cpp b/src/modules/simulation/gz_bridge/GZGimbal.cpp
+index f5bc488..a265bc5 100644
+--- a/src/modules/simulation/gz_bridge/GZGimbal.cpp
++++ b/src/modules/simulation/gz_bridge/GZGimbal.cpp
+@@ -51,7 +51,6 @@ bool GZGimbal::init(const std::string &world_name, const std::string &model_name
+ 		return false;
+ 	}
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	updateParameters();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZGimbal.hpp b/src/modules/simulation/gz_bridge/GZGimbal.hpp
+index a2a7965..0d34bc9 100644
+--- a/src/modules/simulation/gz_bridge/GZGimbal.hpp
++++ b/src/modules/simulation/gz_bridge/GZGimbal.hpp
+@@ -37,7 +37,7 @@ private:
+ 	friend class GZBridge;
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	uORB::Subscription _gimbal_device_set_attitude_sub{ORB_ID(gimbal_device_set_attitude)};
+ 	uORB::Subscription _gimbal_controls_sub{ORB_ID(gimbal_controls)};
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+index b92fe96..ab0bbdc 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+@@ -32,6 +32,8 @@
+  ****************************************************************************/
+ 
+ #include "GZMixingInterfaceESC.hpp"
++#include <uORB/topics/research_output.h>
++#include <time.h>
+ 
+ bool GZMixingInterfaceESC::init(const std::string &model_name)
+ {
+@@ -55,7 +57,6 @@ bool GZMixingInterfaceESC::init(const std::string &model_name)
+ 
+ 	_esc_status_pub.advertise();
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	ScheduleNow();
+ 
+@@ -87,7 +88,47 @@ bool GZMixingInterfaceESC::updateOutputs(float outputs[MAX_ACTUATORS], unsigned
+ 		}
+ 
+ 		if (_actuators_pub.Valid()) {
+-			return _actuators_pub.Publish(rotor_velocity_message);
++            // Sample ID travels to Gazebo in the header; the motor model ignores headers.
++            const uint64_t research_sample=_mixing_output.researchSelectedSampleTimestamp();
++            rotor_velocity_message.mutable_header()->mutable_stamp()->set_sec(research_sample/1000000ULL);
++            rotor_velocity_message.mutable_header()->mutable_stamp()->set_nsec((research_sample%1000000ULL)*1000ULL);
++            const bool published=_actuators_pub.Publish(rotor_velocity_message);
++            // This confirms bridge selection and transport publication, NOT motor physics consumption.
++            static uint64_t attempts=0, successes=0, repeated=0, regressed=0, negative=0, previous=0;
++            static uint64_t bins[8]{};
++            const uint64_t sample=_mixing_output.researchSelectedSampleTimestamp();
++            const uint64_t now=hrt_absolute_time();
++            const int64_t age=static_cast<int64_t>(now)-static_cast<int64_t>(sample);
++            ++attempts;if(published)++successes;
++            if(sample && previous==sample)++repeated;
++            if(sample && previous && sample<previous)++regressed;
++            if(sample) {
++                previous=sample;
++                if(age<0)++negative;
++                else {
++                    const int64_t limits[7]={0,4000,8000,12000,20000,40000,100000};
++                    unsigned i=0;while(i<7 && age>limits[i])++i;++bins[i];
++                }
++            }
++            struct timespec wall{};clock_gettime(CLOCK_MONOTONIC,&wall);
++            research_output_s trace{};
++            trace.timestamp=now;trace.timestamp_sample=sample;
++            trace.wall_monotonic_ns=static_cast<uint64_t>(wall.tv_sec)*1000000000ULL+wall.tv_nsec;
++            trace.attempts_total=attempts;trace.published_total=successes;
++            trace.repeated_sample_total=repeated;trace.regressed_sample_total=regressed;trace.negative_age_total=negative;
++            for(unsigned i=0;i<8;i++)trace.age_bins[i]=bins[i];
++            trace.transport_published=published;trace.armed=_mixing_output.armed().armed;
++            static uint64_t skipped=0;static unsigned previous_generation=0;static bool generation_seen=false;
++            unsigned generation=0;
++            if(_mixing_output.researchSelectedGeneration(generation)) {
++                if(generation_seen && generation!=previous_generation)skipped+=generation-previous_generation-1;
++                previous_generation=generation;generation_seen=true;
++            }
++            trace.skipped_publication_total=skipped;
++            for(unsigned i=0;i<4 && i<active_output_count;i++)trace.motor_speed[i]=outputs[i];
++            static uORB::Publication<research_output_s> trace_pub{ORB_ID(research_output)};
++            trace_pub.publish(trace);
++            return published;
+ 		}
+ 	}
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
+index c55c743..19f407c 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.hpp
+@@ -75,7 +75,7 @@ private:
+ 	void motorSpeedCallback(const gz::msgs::Actuators &actuators);
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	MixingOutput _mixing_output{"SIM_GZ_EC", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
+index b90ec97..7c5622d 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.cpp
+@@ -123,7 +123,6 @@ bool GZMixingInterfaceServo::init(const std::string &model_name)
+ 		_angular_range_rad.push_back(max_val - min_val);
+ 	}
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	ScheduleNow();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
+index 6182de8..bd32d50 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceServo.hpp
+@@ -81,7 +81,7 @@ private:
+ 	float get_servo_angle_min(const size_t index);
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	MixingOutput _mixing_output{"SIM_GZ_SV", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
+index 3c1af26..990201f 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.cpp
+@@ -51,7 +51,6 @@ bool GZMixingInterfaceWheel::init(const std::string &model_name)
+ 		return false;
+ 	}
+ 
+-	pthread_mutex_init(&_node_mutex, nullptr);
+ 
+ 	_wheel_encoders_pub.advertise();
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
+index 7b40889..90d5f56 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceWheel.hpp
+@@ -76,7 +76,7 @@ private:
+ 	void wheelSpeedCallback(const gz::msgs::Actuators &actuators);
+ 
+ 	gz::transport::Node &_node;
+-	pthread_mutex_t _node_mutex;
++	pthread_mutex_t _node_mutex = PTHREAD_MUTEX_INITIALIZER;
+ 
+ 	MixingOutput _mixing_output{"SIM_GZ_WH", MAX_ACTUATORS, *this, MixingOutput::SchedulingPolicy::Auto, false, false};
+ 
+diff --git a/src/modules/simulation/gz_plugins/CMakeLists.txt b/src/modules/simulation/gz_plugins/CMakeLists.txt
+index 8699e8d..f9ca1fe 100644
+--- a/src/modules/simulation/gz_plugins/CMakeLists.txt
++++ b/src/modules/simulation/gz_plugins/CMakeLists.txt
+@@ -79,11 +79,12 @@ if (gz-transport_FOUND)
+     add_subdirectory(spacecraft_thruster)
+     add_subdirectory(motor_failure)
+     add_subdirectory(airspeed)
++    add_subdirectory(research_motor_model)
+ 
+     # Add an alias target for each plugin
+     if (TARGET GstCameraSystem)
+-        add_custom_target(px4_gz_plugins ALL DEPENDS OpticalFlowSystem MovingPlatformController TemplatePlugin GenericMotorModelPlugin BuoyancySystemPlugin GstCameraSystem SpacecraftThrusterModelPlugin MotorFailurePlugin AirSpeedPlugin)
++        add_custom_target(px4_gz_plugins ALL DEPENDS OpticalFlowSystem MovingPlatformController TemplatePlugin GenericMotorModelPlugin BuoyancySystemPlugin GstCameraSystem SpacecraftThrusterModelPlugin MotorFailurePlugin AirSpeedPlugin ResearchMulticopterMotorModel)
+     else()
+-        add_custom_target(px4_gz_plugins ALL DEPENDS OpticalFlowSystem MovingPlatformController TemplatePlugin GenericMotorModelPlugin BuoyancySystemPlugin SpacecraftThrusterModelPlugin MotorFailurePlugin AirSpeedPlugin)
++        add_custom_target(px4_gz_plugins ALL DEPENDS OpticalFlowSystem MovingPlatformController TemplatePlugin GenericMotorModelPlugin BuoyancySystemPlugin SpacecraftThrusterModelPlugin MotorFailurePlugin AirSpeedPlugin ResearchMulticopterMotorModel)
+     endif()
+ endif()
+diff --git a/src/modules/uxrce_dds_client/dds_topics.yaml b/src/modules/uxrce_dds_client/dds_topics.yaml
+index 40ab2b7..6121d81 100644
+--- a/src/modules/uxrce_dds_client/dds_topics.yaml
++++ b/src/modules/uxrce_dds_client/dds_topics.yaml
+@@ -4,6 +4,15 @@
+ #
+ #####
+ publications:
++  # Preparation readiness: actual raw and selected barometer data.
++  - topic: /fmu/out/sensor_baro
++    type: px4_msgs::msg::SensorBaro
++  - topic: /fmu/out/vehicle_air_data
++    type: px4_msgs::msg::VehicleAirData
++  - topic: /fmu/out/raptor_status
++    type: px4_msgs::msg::RaptorStatus
++  - topic: /fmu/out/raptor_input
++    type: px4_msgs::msg::RaptorInput
+ 
+   - topic: /fmu/out/register_ext_component_reply
+     type: px4_msgs::msg::RegisterExtComponentReply

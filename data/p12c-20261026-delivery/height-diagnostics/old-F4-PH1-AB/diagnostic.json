@@ -1,0 +1,99 @@
+{
+  "schema": "p12c-height-process-known-input-diagnostic-1",
+  "old_or_preparation_case": "b2-ph1-AB",
+  "results": [
+    {
+      "name": "truth_attitude_callback_W",
+      "initial_W_COM_estimate": 0.00018825926235876977,
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_abs_error_max_m": 0.13138789840287446,
+          "H_signed_end_error_m": -0.13138789840287446
+        },
+        {
+          "segment": "A_to_B",
+          "rows": 228,
+          "H_abs_error_max_m": 0.16742128291346203,
+          "H_signed_end_error_m": -0.1673567756249632
+        },
+        {
+          "segment": "after_B",
+          "rows": 3897,
+          "H_abs_error_max_m": 1.1512293620640135,
+          "H_signed_end_error_m": -1.1512293620640135
+        }
+      ],
+      "replacement": "actual future consumed-force trace and named attitude stream; one initial H/W only; no state resets after task0",
+      "limitations": "missing aerodynamic/other vertical force, discrete integration and asynchronous callback/force stages; initial W is finite-difference/LP estimate, not exact physical COM velocity; not causally attributed to solver or scored as forecast"
+    },
+    {
+      "name": "cached_attitude_callback_W",
+      "initial_W_COM_estimate": 0.00018825926235876977,
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_abs_error_max_m": 0.1419781476627775,
+          "H_signed_end_error_m": -0.1419781476627775
+        },
+        {
+          "segment": "A_to_B",
+          "rows": 228,
+          "H_abs_error_max_m": 0.1782804991277911,
+          "H_signed_end_error_m": -0.17730579665125434
+        },
+        {
+          "segment": "after_B",
+          "rows": 3897,
+          "H_abs_error_max_m": 1.0223784640084383,
+          "H_signed_end_error_m": -1.0223784640084383
+        }
+      ],
+      "replacement": "actual future consumed-force trace and named attitude stream; one initial H/W only; no state resets after task0",
+      "limitations": "missing aerodynamic/other vertical force, discrete integration and asynchronous callback/force stages; initial W is finite-difference/LP estimate, not exact physical COM velocity; not causally attributed to solver or scored as forecast"
+    },
+    {
+      "name": "truth_attitude_LP_W",
+      "initial_W_COM_estimate": -0.00016376093844883144,
+      "segments": [
+        {
+          "segment": "pre_A",
+          "rows": 3224,
+          "H_abs_error_max_m": 0.12684965011768323,
+          "H_signed_end_error_m": -0.12684965011768323
+        },
+        {
+          "segment": "A_to_B",
+          "rows": 228,
+          "H_abs_error_max_m": 0.16261831321882925,
+          "H_signed_end_error_m": -0.1624974829400414
+        },
+        {
+          "segment": "after_B",
+          "rows": 3897,
+          "H_abs_error_max_m": 1.140882754988047,
+          "H_signed_end_error_m": -1.140882754988047
+        }
+      ],
+      "replacement": "actual future consumed-force trace and named attitude stream; one initial H/W only; no state resets after task0",
+      "limitations": "missing aerodynamic/other vertical force, discrete integration and asynchronous callback/force stages; initial W is finite-difference/LP estimate, not exact physical COM velocity; not causally attributed to solver or scored as forecast"
+    }
+  ],
+  "B_before_at_common_absolute_time": {
+    "profile_s": 13.80401657,
+    "truth_H_model_m": 2.404503345489502,
+    "LP_H_m": 2.2761390209198,
+    "truth_LP_height_difference_m": 0.12836432456970215,
+    "truth_callback_W_m_s": 1.160865068435669,
+    "LP_W_m_s": 1.2202069759368896,
+    "COM_geometry_velocity_term_fd_m_s": 0.01655498577634873,
+    "truth_cache_SO3_deg": 0.12669885660608304
+  },
+  "H_geometry": "H_COM=H_model+ez R r; W_model=W_COM+ez R(omega_cross_r); FD geometry derivative is noisy/held estimate, not direct omega truth",
+  "scope": "diagnostic known future inputs, no fit/new candidate/forecast improvement; all prefixes retained, no height or D reset",
+  "gravity": 9.8,
+  "frozen_model_gravity_unchanged": 9.80665,
+  "new_SITL_starts": 0
+}

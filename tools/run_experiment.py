@@ -192,6 +192,7 @@ class Experiment:
         plugins=self.runtime/'src/modules/simulation/gz_plugins' if (self.runtime/'src').exists() else self.runtime/'plugins'
         plugin_paths=str(plugins)+(':'+str(plugins/'optical_flow') if (plugins/'optical_flow').is_dir() else '')
         self.env['GZ_SIM_SYSTEM_PLUGIN_PATH']=plugin_paths
+        if self.cfg.get('p12b',{}).get('read_trace_schema')=='direct-v2':self.env['HANDOVER_P12B_READ_TRACE']=str(self.out/'gz-motor/read-p12b.bin')
         self.env['LD_LIBRARY_PATH']=plugin_paths+':'+self.env.get('LD_LIBRARY_PATH','')
         if self.variant=='classic':
             self.env.pop('PX4_PARAM_MC_RAPTOR_ENABLE',None)
@@ -225,6 +226,11 @@ class Experiment:
         print(event_name,values,flush=True)
 
     def spawn(self,name,argv,cwd=None):
+        if name=='gazebo' and self.cfg.get('p12b',{}).get('solver_observe'):
+            lib=ROOT/self.cfg['p12b']['solver_library']
+            if not lib.is_file():raise RuntimeError('P12b solver observer missing')
+            argv=['env','LD_PRELOAD='+str(lib),'HANDOVER_P12B_SOLVER_TRACE='+str(self.out/'gz-motor')]+list(argv)
+            self.metadata['p12b_solver_observer']={'path':str(lib),'sha256':digest(lib),'semantics':'passive installed DART symbol interposition, solver arguments unchanged'}
         cores=self.affinity.get(name.split('-')[0]) if getattr(self,'affinity',None) else None
         if cores:argv=['taskset','-c',cores]+list(argv)  # taskset execs the target: same pid
         log=(self.out/'logs'/(name+'.log')).open('w');self.files.append(log)
@@ -702,6 +708,13 @@ class Experiment:
                 if not re.search(r'MC_RAPTOR_P12MS\s*\[[^\]]*\]\s*:\s*0(?:\s|$)',shown):
                     raise RuntimeError('P12 repair window initial inhibit readback failed')
             self.event('p12_parameters_before_arming',parameters=self.cfg['p12'])
+        if 'p12b' in self.cfg:
+            value=int(self.cfg['p12b']['observe'])
+            self.command('param','set','MC_RAPTOR_P12B',str(value))
+            shown_b=self.command('param','show','MC_RAPTOR_P12B')
+            if not re.search(r'MC_RAPTOR_P12B\s*\[[^\]]*\]\s*:\s*'+str(value)+r'(?:\s|$)',shown_b):
+                raise RuntimeError('P12b observer parameter readback failed')
+            self.event('p12b_parameters_before_arming',parameters=self.cfg['p12b'])
         shown={}
         for name_ in ['MC_RAPTOR_RINI','MC_RAPTOR_NCO','MC_RAPTOR_RSH']+(['MC_RAPTOR_RTGT','MC_RAPTOR_RTDEC'] if target else [])+(['MC_RAPTOR_RREC'] if recovery else []):
             text=self.command('param','show',name_);match=re.search(name_+r'\s*\[[^\]]*\]\s*:\s*(-?\d+(?:\.\d+)?)',text)
@@ -994,6 +1007,7 @@ class Experiment:
             names+=['research_p11','vehicle_local_position_groundtruth','vehicle_attitude_groundtruth','vehicle_angular_velocity_groundtruth']
         if self.cfg.get('p12',{}).get('observe'):
             names+=['research_p12']
+        if self.cfg.get('p12b',{}).get('observe'):names+=['research_p12b']
         (logging/'logger_topics.txt').write_text(''.join(n+' 0 0\n' for n in names)+(''.join(f'route_observability 0 {i}\n' for i in range(1,10)) if self.variant=='raptor' else ''))
         self.spawn('agent',[str(LAB/'scripts/MicroXRCEAgent'),'udp4','-p',str(self.cfg['agent_port']),'-v','4'])
         self.spawn('gazebo',['gz','sim','-r','-s','-v','3']+(['--seed',str(self.sim_seed)] if self.sim_seed is not None else [])+[str(self.source/'Tools/simulation/gz/worlds/default.sdf')])

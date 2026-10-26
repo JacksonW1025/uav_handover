@@ -1,0 +1,146 @@
+module_name: mc_raptor
+parameters:
+    - group: Handover Research Observation
+      definitions:
+        MC_RAPTOR_P11:
+            description:
+                short: SITL read-only P11 full inference observation
+            type: boolean
+            default: false
+    - group: Handover Research
+      definitions:
+        MC_RAPTOR_RINI:
+            description:
+                short: SITL research mode-entry memory treatment
+                long: 0 original reset, 1 preserve shadow memory, 2 GRU reset with classic previous action, 3 teacher-forced GRU, 4 teacher-forced GRU with classic previous action, 5 staged memory, 6 memory held unchanged since the most recent exit
+            type: int32
+            min: 0
+            max: 6
+            default: 0
+    - group: Handover Research
+      definitions:
+        MC_RAPTOR_RSH:
+            description:
+                short: Enable SITL controller state research interface
+            type: boolean
+            default: false
+    - group: Handover Research
+      definitions:
+        MC_RAPTOR_NCO:
+            description:
+                short: SITL research N-to-C velocity integrator coordination
+                long: 0 original classic takeover, 1 set the classic velocity integrator on the first position-control cycle after RAPTOR so that its thrust equals RAPTOR's last applied collective thrust along the current body z axis
+            type: int32
+            min: 0
+            max: 1
+            default: 0
+    - group: Handover Research
+      definitions:
+        MC_RAPTOR_RTGT:
+            description:
+                short: SITL research RAPTOR takeover target
+                long: 0 original activation capture (current position and yaw, zero velocity); 1 speed-matched target (same capture with the current horizontal velocity, then a fixed deceleration MC_RAPTOR_RTDEC along that direction to zero, position integrated from the target velocity); 2 the same speed-matched target at activation and at every in-flight setpoint-timeout capture while active. Only active with MC_RAPTOR_RSH.
+            type: int32
+            min: 0
+            max: 2
+            default: 0
+        MC_RAPTOR_RTDEC:
+            description:
+                short: SITL research deceleration of the speed-matched takeover target
+            type: float
+            unit: m/s^2
+            min: 0.1
+            max: 10.0
+            decimal: 2
+            default: 2.0
+    - group: Handover Research Recovery
+      definitions:
+        MC_RAPTOR_RREC:
+            description:
+                short: SITL research rate-limited recovery after a setpoint timeout
+                long: 0 original behaviour (the target jumps back to the external setpoint when it is fresh again). Greater than 0, after an in-flight setpoint-timeout capture the network observes a virtual target that starts at the vehicle's horizontal position and velocity and approaches the setpoint with acc = w^2 dp + 2 w dv (w 1.5), limited to this horizontal acceleration, until both differences are below 0.02. Only active with MC_RAPTOR_RSH.
+            type: float
+            unit: m/s^2
+            min: 0.0
+            max: 10.0
+            decimal: 2
+            default: 0.0
+    - group: Multicopter Raptor
+      definitions:
+        MC_RAPTOR_ENABLE:
+            description:
+                short: Enable Raptor flight mode
+                long: |
+                    When enabled, the Raptor flight mode will be available. Please set MC_RAPTOR_OFFB according to your use case.
+            type: boolean
+            default: false
+            category: System
+        MC_RAPTOR_VERBOS:
+            description:
+                short: Enable verbose output
+                long: |
+                    When enabled, the Raptor flight mode will print verbose output to the console.
+            type: boolean
+            default: false
+            category: System
+
+        MC_RAPTOR_OFFB:
+            description:
+                short: Enable Offboard mode replacement
+                long: |
+                    When enabled, the Raptor mode will replace the Offboard mode.
+                    If disabled, the Raptor mode will be available as a separate external mode. In the latter case, Raptor will just hold the position, without requiring external setpoints. When Raptor replaces the Offboard mode, it requires external setpoints to be activated.
+            type: boolean
+            default: false
+            category: System
+
+        MC_RAPTOR_INTREF:
+            description:
+                short: Use internal reference instead of trajectory_setpoint
+                long: |
+                    When enabled, instead of using the trajectory_setpoint, the position and yaw of the vehicle at the point when the Raptor mode is activated will be used as reference.
+                    Use `mc_raptor intref lissajous <A> <B> <C> <fa> <fb> <fc> <duration> <ramp>` to configure the trajectory.
+            type: enum
+            values:
+                0: None
+                1: Lissajous
+            default: 0
+            category: System
+
+    - group: Handover P12 Experiment
+      definitions:
+        MC_RAPTOR_P12:
+            description:
+                short: SITL P12 observation and experiment enable
+            type: boolean
+            default: false
+        MC_RAPTOR_P12PH:
+            description:
+                short: P12 delivery gate 0 original 1 native 2 intermediate
+            type: int32
+            default: 0
+            min: 0
+            max: 2
+        MC_RAPTOR_P12R:
+            description:
+                short: P12 repair only after activation and external read
+            type: boolean
+            default: false
+
+    - group: Handover P12 Continuation
+      definitions:
+        MC_RAPTOR_P12MS:
+            description:
+                short: Repair sample ms gate -1 legacy 0 inhibited positive threshold
+            type: int32
+            default: -1
+            min: -1
+            max: 2000000000
+
+    - group: Handover P12b Observation
+      definitions:
+        MC_RAPTOR_P12B:
+            description:
+                short: P12b passive pre-read contract observation
+            type: boolean
+            default: false

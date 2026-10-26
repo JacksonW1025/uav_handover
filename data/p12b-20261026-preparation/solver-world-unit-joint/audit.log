@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p12b/solver.py", line 74, in <module>
+    p=argparse.ArgumentParser();p.add_argument('trace',type=Path);p.add_argument('--output',type=Path,required=True);p.add_argument('--unit',action='store_true');a=p.parse_args();raise SystemExit(analyze(a.trace,a.output,a.unit)['status']!='PASS')
+                                                                                                                                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p12b/solver.py", line 24, in analyze
+    for typ,step,wall,sim,raw in read(path):
+  File "/home/car/uav_handover/tools/p12b/solver.py", line 10, in read
+    with path.open('rb') as f:
+         ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data/p12b-20261026-preparation/solver-world-unit-joint/dart-solver-20.bin'

@@ -1,0 +1,20 @@
+--- a/src/modules/mc_raptor/mc_raptor.cpp
++++ b/src/modules/mc_raptor/mc_raptor.cpp
+@@ -897,16 +897,7 @@
+         handover_research::p12b_trace(_p12b);
+     }
+ #endif
+-#ifdef __PX4_POSIX
+-    if (_p12b_enabled) {
+-        _p12b.read_updated=status.subscription_update_trajectory_setpoint;
+-        _p12b.read_valid=_p11.external_valid;
+-        _p12b.last_valid_read_post=timestamp_last_trajectory_setpoint_set?timestamp_last_trajectory_setpoint:0;
+-        _p12b.external_timestamp=_p11.external_timestamp;
+-        _p12b.invalid_total=trajectory_setpoint_invalid_count;
+-        _p12b_pub.publish(_p12b);
+-    }
+-#endif
++
+ 
+ 	if (!angular_velocity_update) {
+ 		status.exit_reason = raptor_status_s::EXIT_REASON_NO_ANGULAR_VELOCITY_UPDATE;

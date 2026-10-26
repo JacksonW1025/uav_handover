@@ -922,3 +922,5 @@ from apply_p12 import apply as apply_p12
 apply_p12()
 from apply_p12c import apply as apply_p12c
 apply_p12c()
+from apply_p12b import apply as apply_p12b
+apply_p12b()

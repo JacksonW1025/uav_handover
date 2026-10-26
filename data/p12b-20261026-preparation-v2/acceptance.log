@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/data/p12b-20261026-analysis-source/preparation_acceptance.py", line 47, in <module>
+    if __name__=='__main__':raise SystemExit(main()['experimental_engineering_status']!='PASS')
+                                             ^^^^^^
+  File "/home/car/uav_handover/data/p12b-20261026-analysis-source/preparation_acceptance.py", line 31, in main
+    g=json.load(open(a/'engineering.json'));native=json.load(open(a/'native/native-audit.json'));solver=json.load(open(P/'solver-recheck'/r['id']/'solver-audit.json'));seed=json.load(open(a/'actual-seed.json'));engineering[r['id']]={'engineering':g['engineering_status'],'pre_read':native['status'],'solver':solver['status'],'seed':seed['metadata_seed'],'canonical_rows':native['pre_read_contract']['same_call_rows'],'ULog_redundancy_status':native['pre_read_contract']['ULog_redundancy_status'],'whole':result['task_outcome']};tests[r['id']+'_engineering']=g['engineering_status']=='PASS' and native['status']=='PASS' and solver['status']=='PASS' and seed['metadata_seed'] in [x['seed'] for x in seed['setter_calls']]
+                                                                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/car/uav_handover/data/p12b-20261026-preparation-v2/solver-recheck/prep08-F4-ph2-REPAIR-on-direct-v2/solver-audit.json'

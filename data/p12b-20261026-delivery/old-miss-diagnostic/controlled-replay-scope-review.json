@@ -1,0 +1,24 @@
+{
+  "schema": "p12b-old-miss-controlled-replay-scope-review-1",
+  "original_diagnostic": "diagnostic.json retained",
+  "domain_review": {
+    "actual_filter": {
+      "first_empirical_envelope_exit_profile_s": 2.664059019,
+      "valid_prefix_rows_before_exit": 667,
+      "whole_horizon_error_scope": "OUTSIDE_EMPIRICAL_ENVELOPE; full arrays retained, no safety/attribution inference from later tail"
+    },
+    "actual_joint": {
+      "first_empirical_envelope_exit_profile_s": 2.672062669,
+      "valid_prefix_rows_before_exit": 669,
+      "whole_horizon_error_scope": "OUTSIDE_EMPIRICAL_ENVELOPE; full arrays retained, no safety/attribution inference from later tail"
+    }
+  },
+  "common_valid_prefix_filter_vs_joint_max_tilt_difference_deg": 0.30682704650759973,
+  "all_horizon_difference_is_not_causal_evidence": true,
+  "conditional_one_step_tilt_error_abs_deg": {
+    "max": 1.1663203581546462,
+    "p95": 0.01644748421212802
+  },
+  "conditional_one_step_scope": "resets true controller cache/exogenous actuator inputs each step; includes sampling/cache mismatch; not a standalone plant error or blind prediction",
+  "conclusion": "known-command execution/filter errors are numerically small in the observed records, while the empirical body/cache mapping cannot sustain known-actuator free replay over the original domain. This localizes a model/interface deficiency but does not uniquely separate solver, body, estimator or timing causality; no new model or relabeling."
+}

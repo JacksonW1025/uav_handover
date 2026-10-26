@@ -1,0 +1,163 @@
+{
+  "schema": "p12b-conditional-event-margin-map-1",
+  "no_formal_fit": true,
+  "source_material": {
+    "source": "uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/models/x500_base/model.sdf",
+    "sha256": "e807dca3406f7cd5cb3d545898601c3ec17e0e5242e25cf467a69df1812cf436",
+    "links": [
+      {
+        "name": "base_link",
+        "mass": "2",
+        "z_base_m": "0"
+      },
+      {
+        "name": "rotor_0",
+        "mass": "643076923076923/40000000000000000",
+        "z_base_m": "3/50"
+      },
+      {
+        "name": "rotor_1",
+        "mass": "643076923076923/40000000000000000",
+        "z_base_m": "3/50"
+      },
+      {
+        "name": "rotor_2",
+        "mass": "643076923076923/40000000000000000",
+        "z_base_m": "3/50"
+      },
+      {
+        "name": "rotor_3",
+        "mass": "643076923076923/40000000000000000",
+        "z_base_m": "3/50"
+      }
+    ],
+    "total_mass_exact": "20643076923076923/10000000000000000",
+    "total_mass_kg": 2.0643076923076924,
+    "COM_offset_base_z_exact": "643076923076923/344051282051282050",
+    "COM_offset_base_z_m": 0.0018691310180354746,
+    "condition": "rotor revolute axes pass through their inertial centers; no unlisted links or payload; model origin is not reset at capture"
+  },
+  "GZ_gravity_m_s2": 9.8,
+  "unchanged_M3_M4_gravity_m_s2": 9.80665,
+  "gravity_scope": "physical world SDF uses9.8; original frozen predictor9.80665 unchanged, no refit",
+  "world_height_reference": "truth model origin, not COM; resolved merge frame adds0.24m, COM offset from model origin0.241869131m",
+  "geometry_budget_scope": "example .075 includes conservative model-origin/COM geometry rotation span up to45deg plus an assumed .004 integration budget, not verified future coverage",
+  "whole_segment_constraint_example": {
+    "remaining_margin_m": 0.5,
+    "initial_down_m_s": 0.2,
+    "whole_segment_T_s": 1.16,
+    "theta_upper_deg": 45,
+    "assumed_joint_abs_error_rad_s": 1.0,
+    "assumed_other_force_down_N": 0.6451424,
+    "assumed_geometry_and_integration_budget_m": 0.075,
+    "permitted_down_acc_m_s2": 0.2868608799048752,
+    "required_total_thrust_N": 28.68476049624325,
+    "sufficient_each_filter_floor_rad_s": 916.9012004337413,
+    "configured_command_ceiling_rad_s": 1000,
+    "algebraic_feasibility_below_command_ceiling": true,
+    "assumption_validation": "NOT_ESTABLISHED_FOR_ACTUAL_FUTURE; illustrative independent domain, not fitted or used to relabel experiments"
+  },
+  "tilt_only_counterexample": {
+    "same_tilt_peak_deg": 17,
+    "gravity_exact": "49/5",
+    "deceleration_down_exact": "49/20",
+    "recovery_up_exact": "441/400",
+    "single": [
+      {
+        "mode": "low_thrust",
+        "duration_s": 0.36,
+        "acc_down_m_s2": 2.45,
+        "loss_m": 0.15876,
+        "down_velocity_m_s": 0.882,
+        "historical_max_loss_m": 0.15876,
+        "current_margin_m": 0.84124,
+        "history_margin_m": 0.84124,
+        "ever_height_failed": false
+      },
+      {
+        "mode": "recovery",
+        "duration_s": 0.8,
+        "acc_down_m_s2": -1.1025,
+        "loss_m": 0.51156,
+        "down_velocity_m_s": 0.0,
+        "historical_max_loss_m": 0.51156,
+        "current_margin_m": 0.48844,
+        "history_margin_m": 0.48844,
+        "ever_height_failed": false
+      },
+      {
+        "mode": "post_hold",
+        "duration_s": 1.0,
+        "acc_down_m_s2": 0.0,
+        "loss_m": 0.51156,
+        "down_velocity_m_s": 0.0,
+        "historical_max_loss_m": 0.51156,
+        "current_margin_m": 0.48844,
+        "history_margin_m": 0.48844,
+        "ever_height_failed": false
+      }
+    ],
+    "AB": [
+      {
+        "mode": "A_low",
+        "duration_s": 0.36,
+        "acc_down_m_s2": 2.45,
+        "loss_m": 0.15876,
+        "down_velocity_m_s": 0.882,
+        "historical_max_loss_m": 0.15876,
+        "current_margin_m": 0.84124,
+        "history_margin_m": 0.84124,
+        "ever_height_failed": false
+      },
+      {
+        "mode": "partial_A_recovery_before_B",
+        "duration_s": 0.55,
+        "acc_down_m_s2": -1.1025,
+        "loss_m": 0.477106875,
+        "down_velocity_m_s": 0.275625,
+        "historical_max_loss_m": 0.477106875,
+        "current_margin_m": 0.522893125,
+        "history_margin_m": 0.522893125,
+        "ever_height_failed": false
+      },
+      {
+        "mode": "B_low",
+        "duration_s": 0.36,
+        "acc_down_m_s2": 2.45,
+        "loss_m": 0.735091875,
+        "down_velocity_m_s": 1.157625,
+        "historical_max_loss_m": 0.735091875,
+        "current_margin_m": 0.264908125,
+        "history_margin_m": 0.264908125,
+        "ever_height_failed": false
+      },
+      {
+        "mode": "B_recovery",
+        "duration_s": 0.8,
+        "acc_down_m_s2": -1.1025,
+        "loss_m": 1.308391875,
+        "down_velocity_m_s": 0.275625,
+        "historical_max_loss_m": 1.308391875,
+        "current_margin_m": -0.308391875,
+        "history_margin_m": -0.308391875,
+        "ever_height_failed": true
+      },
+      {
+        "mode": "post_hold",
+        "duration_s": 1.0,
+        "acc_down_m_s2": 0.0,
+        "loss_m": 1.584016875,
+        "down_velocity_m_s": 0.275625,
+        "historical_max_loss_m": 1.584016875,
+        "current_margin_m": -0.584016875,
+        "history_margin_m": -0.584016875,
+        "ever_height_failed": true
+      }
+    ],
+    "meaning": "counterexample to tilt-peak-only or reset-height-at-event inference in declared thrust/kinematic envelope, not a proven reachable NN/Gazebo trajectory; filter transients, integration and closed-loop domains must be bounded before claiming physical system coverage"
+  },
+  "height_composition": "L_out=L_in+V_in*T+integral_0^T (T-s)*a_down(s)ds+integration_defect; V_out=V_in+integral a_down + velocity_jumps; D_out=max(D_in,sup L_prefix); NEVER reset L or D at capture/resume",
+  "future_theory": "conditional event relation, not complete verified NN/solver/body/cache domain or A4 exclusion",
+  "network_history": "mode-dependent H/X/action and previous/mean/count update must propagate with same target/cache/clock word; action box2 is conservative, not an experiment rejection",
+  "A4": "NOT_PROVEN_EXCLUDED"
+}

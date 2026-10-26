@@ -1,0 +1,644 @@
+{
+  "seed": 42,
+  "instance": 21,
+  "ros_domain_id": 71,
+  "agent_port": 18888,
+  "startup_timeout_s": 90,
+  "takeoff_timeout_s": 45,
+  "landing_timeout_s": 60,
+  "hover_s": 10,
+  "neural_s": 5,
+  "repetitions": 3,
+  "altitude_m": 3,
+  "hover_max_error_m": 1.0,
+  "hover_max_tilt_deg": 15,
+  "safety_radius_m": 10,
+  "safety_altitude_m": 8,
+  "safety_tilt_deg": 45,
+  "safety_angular_rate_rad_s": 8,
+  "inference_p99_us": 2500,
+  "settling_band_m": 0.2,
+  "settling_dwell_s": 2.0,
+  "joint_recovery": {
+    "position_reference": "active_controller_target",
+    "position_reference_note": "Same rule as P0 (the controller's own position target), extended to RAPTOR: its internal target is not published on trajectory_setpoint, so while RAPTOR owns the actuators the target is its logged capture (activation reset or setpoint-stale hold); classic stages use trajectory_setpoint as in P0. trajectory_setpoint-only and fixed NED results are kept as comparisons.",
+    "position_reference_ned_m": [
+      0,
+      0,
+      -3
+    ],
+    "velocity_reference_ned_m_s": [
+      0,
+      0,
+      0
+    ],
+    "angular_velocity_reference_frd_rad_s": [
+      0,
+      0,
+      0
+    ],
+    "position_threshold_m": 0.2,
+    "velocity_threshold_m_s": 0.1,
+    "angular_velocity_threshold_rad_s": 0.1,
+    "dwell_s": 2.0,
+    "max_observation_gap_s": 0.02
+  },
+  "p0_strict": true,
+  "short_stage_rule": {
+    "exempt_below_dwell": true,
+    "rule": "A recovery stage (P0 definition: between actual owner changes, truncated at the next request) shorter than joint_recovery.dwell_s cannot reach SETTLED by definition. Such a stage is reported as INSUFFICIENT_OBSERVATION and marked planned_short_stage instead of failing the run verdict. All thresholds are unchanged. In P3 only the D1 classic deactivation (0.3 s) is pre-registered as short; p3_metrics requires every other stage of the run to be SETTLED and the exempt stage to be exactly that one."
+  },
+  "p2": {
+    "purpose": "Unchanged from config/p5.json (frozen thresholds read by the shared analyzers); P6 flies no P2 kinds.",
+    "conditions": {},
+    "profile_overrides": [
+      "start_offset_m",
+      "cruise_s",
+      "accel_s",
+      "reference_hold_s",
+      "decel_to_m_s",
+      "decel_m_s2",
+      "raptor_baseline_stop_early_s",
+      "raptor_baseline_final_setpoint_ahead_s",
+      "motion_axis_ned"
+    ],
+    "treatments": {},
+    "motion_axis_ned": [
+      1,
+      0,
+      0
+    ],
+    "reference_hold_s": 3.0,
+    "accel_s": 2.0,
+    "cruise_s": 4.0,
+    "offboard_prestream_s": 1.0,
+    "setpoint_period_s": 0.02,
+    "post_handover_s": 10.0,
+    "return_hold_s": 8.0,
+    "reposition": {
+      "speed_m_s": 0.5,
+      "accel_m_s2": 0.5
+    },
+    "reference": "Before the subject event the outgoing controller tracks one runner-published trajectory_setpoint (position ramp, velocity and acceleration feed-forward, constant yaw) starting from its own current target: classic through OFFBOARD, RAPTOR through its external trajectory_setpoint input. At the event the stream stops and the incoming controller uses its original mechanism: RAPTOR captures its takeover target in the activation cycle (T0: activation position/yaw with zero velocity; T1: same capture with the current horizontal velocity, then a fixed deceleration); classic AUTO_LOITER brakes to the navigator loiter point.",
+    "baselines": "p1_baseline_classic: classic OFFBOARD motion then AUTO_LOITER (same takeover mechanism, no controller switch). p1_baseline_raptor: RAPTOR external-setpoint motion then the stream stops; after RAPTOR's 200 ms setpoint timeout it holds its position (same capture rule as mode entry, no reset or switch).",
+    "motor_saturation": {
+      "upper": 0.999,
+      "lower": 0.001,
+      "note": "actuator_motors control in [0,1]; upper/lower limit within 1e-3"
+    },
+    "motor_step_window_s": [
+      -0.1,
+      0.5
+    ],
+    "motor_rms_window_s": [
+      0.0,
+      0.5
+    ],
+    "motor_rms_definition": "RMS over [change, change+0.5 s] and the four motors of (run actuator_motors - in-batch baseline mean curve), zero-order hold on a 1 ms grid aligned at each run's actual change; baseline = same-controller baseline of the same condition in the same batch.",
+    "elimination_ratio_definition": "(N0 - Nx) / (N0 - baseline) per metric, from in-batch group means (motor step at change, max altitude loss, motor RMS deviation).",
+    "entry_check": {
+      "value_tolerance": 1e-05,
+      "classic_command_max_age_ms": 50,
+      "teacher_forcing_check_window_s": 1.0,
+      "teacher_forced_min_fraction": 0.99
+    },
+    "exploration": {
+      "failure_criteria": {
+        "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+        "no_joint_recovery_s": 10.0,
+        "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+        "motor_saturation_continuous_s": 0.5,
+        "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+        "ground_altitude_m": 0.2,
+        "ground": "altitude <= 0.2 m inside [trigger, window end]"
+      },
+      "note": "only failure_criteria are used (P2 flight_outcome); P4 has no exploration levels"
+    },
+    "host": {
+      "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+      "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+      "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+    },
+    "planned_path_check": {
+      "radius_margin_m": 2.0,
+      "braking_allowance_m": 1.0,
+      "braking_deceleration_m_s2": 2.0,
+      "rule": "Before the reference motion starts the runner checks that origin + planned path to the event point (ramp + cruise) + the speed-matched target's stop distance v^2/(2a) (a = 2.0 m/s^2) + the 1.0 m margin stays inside safety_radius_m - radius_margin_m = 8 m; otherwise the run fails before moving. A level that cannot fit is not flown. Cruise lengths are chosen so that every level fits (conditions.*.safety_budget_m)."
+    }
+  },
+  "p3": {
+    "purpose": "P4-01a (D2 hover re-entry, statistical confirmation) and P4-01b M3 (second C->N during classic 1 m/s cruise): P3 sequence and measurement.",
+    "sequence": {
+      "classic_hold_s": 3.0,
+      "offboard_prestream_s": 1.0,
+      "neural_s": 5.0,
+      "treatment_parameter_after_entry_s": 1.0,
+      "post_handover_s": 10.0,
+      "return_hold_s": 8.0,
+      "setpoint_period_s": 0.02,
+      "listener_lead_min_s": 0.15,
+      "mechanism": "Every C->N starts from classic OFFBOARD tracking one runner-published stationary trajectory_setpoint at the current target; the stream stops and RAPTOR's mode is requested at once (P2 S1 mechanism), so RAPTOR captures its target in the activation cycle (activation_reset_hold, zero velocity). After the first C->N the runner restarts the stationary stream at RAPTOR's exact captured position and yaw (RAPTOR external setpoint input, no target change). N->C requests OFFBOARD with that stream running: the classic takeover target is RAPTOR's own target (NCO=0, no state intervention). Rationale: AUTO_LOITER republishes valid trajectory_setpoints that RAPTOR then follows for its 200 ms timeout before capturing (seen in P2 setup entries), and a 0.3 s deactivation cannot pass through AUTO_LOITER and back into OFFBOARD. The final N->C before landing is AUTO_LOITER as in P1/P2 (not measured)."
+    },
+    "conditions": {
+      "D2": {
+        "deactivation_s": 10.0,
+        "description": "10 s classic deactivation at the hover point"
+      },
+      "R": {
+        "deactivation_s": 10.0,
+        "baseline_only": true,
+        "description": "RAPTOR continuous hover baseline: after the first C->N RAPTOR keeps tracking the stationary stream for the D2-equivalent 10 s, then the stream stops and RAPTOR re-captures after its 200 ms setpoint timeout (virtual second takeover, P2 S1 baseline mechanism)"
+      },
+      "M3": {
+        "deactivation_s": 9.0,
+        "motion": {
+          "type": "ramp_cruise",
+          "start_after_s": 3.0,
+          "axis_ned": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "speed_m_s": 1.0,
+          "accel_s": 2.0,
+          "cruise_s": 4.0,
+          "braking_allowance_m": 1.0
+        },
+        "description": "P3 sequence; after the N->C at the hover point the classic holds 3 s (the N->C stage settles before any motion), then follows the P2 S3 profile along +N (2 s linear ramp to 1.0 m/s, 4 s cruise); the second C->N is requested 9 s after the N->C request, during the cruise. Same state at the event as an M1 C->N; the old exit memory (N3) was formed in hover."
+      }
+    },
+    "safety_check": {
+      "radius_margin_m": 2.0,
+      "rule": "Before the deactivation motion the runner checks that the planned point at the second C->N (ramp_cruise: the cruise position at deactivation_s; D3: the trapezoid end) plus the braking allowance (if given) lies inside safety_radius_m - radius_margin_m from the origin; otherwise the run fails before moving."
+    },
+    "treatments": {
+      "N0": {
+        "rini": 0,
+        "description": "original reset at the second entry"
+      },
+      "N3": {
+        "rini": 6,
+        "description": "old memory: GRU and previous action stored by RAPTOR on the first inactive cycle after the first exit, held unchanged during the deactivation, written back at re-entry"
+      },
+      "N2s": {
+        "rini": 1,
+        "description": "memory formed by the shadow inference during the deactivation (own unexecuted actions as previous action), kept at re-entry"
+      },
+      "N2": {
+        "rini": 4,
+        "description": "teacher forcing during the deactivation (classic applied motors as previous action); at re-entry GRU kept and previous action = classic last applied command"
+      },
+      "B": {
+        "rini": 0,
+        "description": "RAPTOR continuous hover baseline (no deactivation)"
+      }
+    },
+    "treatment_rule": "MC_RAPTOR_RINI=0 and MC_RAPTOR_NCO=0 are set before arming (first C->N is N0 for every run). The treatment value is set (param set, read back) 1 s after the first entry while RAPTOR is active, so it is in force for the whole deactivation and the second entry. Teacher forcing only acts while RAPTOR is inactive; mode-entry writes only at entry.",
+    "motor_saturation": {
+      "upper": 0.999,
+      "lower": 0.001,
+      "note": "actuator_motors control in [0,1]; upper/lower limit within 1e-3"
+    },
+    "motor_step_window_s": [
+      -0.1,
+      0.5
+    ],
+    "motor_rms_window_s": [
+      0.0,
+      0.5
+    ],
+    "motor_rms_definition": "RMS over [change, change+0.5 s] and the four motors of (run actuator_motors - in-batch RAPTOR continuous-hover baseline mean curve aligned at its re-capture), 1 ms zero-order hold. N->C: RMS against the run's own classic mean command in the 0.5 s before the first C->N request, over [change, min(change+0.5 s, next request)).",
+    "elimination_ratio_definition": "(N0 - Nx) / (N0 - baseline) per metric and deactivation condition, from in-batch group means (second C->N).",
+    "entry_check": {
+      "value_tolerance": 1e-05,
+      "classic_command_max_age_ms": 50,
+      "teacher_forced_min_fraction": 0.99,
+      "exit_row_max_offset_ms": 30,
+      "teacher_forcing_window": "inactive inference rows strictly after the N->C owner change and before the second C->N owner change (the shadow inference in the owner-change tick runs before the classic first command and is reported separately)"
+    },
+    "gru_distance_offsets_s": [
+      0.0,
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.0
+    ],
+    "memory_length": {
+      "threshold": 0.05,
+      "method": "Exact offline replay of the frozen policy (Dense 22-16 ReLU, GRU 16, Dense 16-4) on logged SITL inputs: raptor_input observation and research_memory previous_action averaged over the control calls since the last native step (rl_tools executor action_history), native steps only. Validated per run by reproducing the logged GRU from the logged state. Memory length = native steps (and seconds) after which the GRU replayed from a different initial memory stays within the threshold of the GRU with the complete history, on the same logged inputs.",
+      "sitl_teacher_forcing": "N2 runs: teacher forcing starts at the N->C; distance of the logged teacher-forced GRU to the replay with the complete teacher-forced history is undefined in closed loop, so the measured quantity is the replay of the logged deactivation inputs from zero and from the exit memory against the logged GRU, plus the direct research_memory distance to the late-deactivation mean (D2)."
+    },
+    "flight_failures": {
+      "criteria": {
+        "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+        "no_joint_recovery_s": 10.0,
+        "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+        "motor_saturation_continuous_s": 0.5,
+        "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+        "ground_altitude_m": 0.2,
+        "ground": "altitude <= 0.2 m inside [trigger, window end]"
+      },
+      "rule": "Pre-registered flight failures (frozen criteria above, all infrastructure checks passing) are results and do not stop the batch, as approved for the P2 N->C batches; any infrastructure or evidence failure stops the batch."
+    },
+    "equivalence": {
+      "purpose": "New candidate (adds MC_RAPTOR_RINI=6 and the exit-memory store) must reproduce P2 S1 with the P2 kinds and config before P3.",
+      "groups": "p2_c_to_n:S1:N0:2@config/p2.json,p2_c_to_n:S1:N2:2@config/p2.json",
+      "reference_batches": [
+        "data/p2-20261015-batch-s1a",
+        "data/p2-20261015-batch-s1b"
+      ],
+      "metric_tolerance": {
+        "motor_step_at_change": 0.02,
+        "max_altitude_loss_m": 0.01,
+        "recovery_from_change_s": 0.15,
+        "max_tilt_deg": 0.5,
+        "trigger_to_change_ms": 8.0
+      },
+      "metric_rule": "each run inside [min - t, max + t] of the P2 group with the same treatment (N0: s1a+s1b, N2: s1a), t = max(tolerance, half the reference spread)",
+      "required": [
+        "all batch checks accepted",
+        "P2 entry and teacher-forcing evidence VERIFIED, capture activation_reset_hold with zero target velocity",
+        "written GRU norm (N2) inside the P2 range with the same rule (tolerance 0.05)"
+      ]
+    },
+    "dev_latency": {
+      "runs": 10,
+      "rule": "10 P3 sequences on the final binary before freezing; every run's maximum applied-command age must stay <= 8 ms (P2 dev-04 level) with the frozen gate unchanged (p99 4 ms, max 12 ms, 2 consecutive steps)."
+    },
+    "host": {
+      "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+      "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+      "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+    }
+  },
+  "p4c": {
+    "purpose": "E1 takeover-target evidence and metrics (tools/p4c_metrics.py, unchanged definitions).",
+    "memory_treatment": "N2 (MC_RAPTOR_RINI=4) in every run: teacher forcing while inactive, GRU kept and previous action = classic last applied command at entry. Only the takeover target differs.",
+    "source_check": {
+      "date": "2026-10-16",
+      "observation": "mc_raptor.cpp observe(): position error = position - _trajectory_setpoint.position and velocity error = linear_velocity - _trajectory_setpoint.velocity (NED, FRD->FLU sign change), both rotated into the target-yaw frame (Rt_inv from _trajectory_setpoint.yaw), then clipped per axis to +-max_position_error (0.5 m) and +-max_velocity_error (1.0 m/s) (mc_raptor.hpp). The internal target's velocity therefore enters the observation; clipping is the last step before the observation is handed to the executor (research_memory.policy_input[0:3] position, [12:15] velocity).",
+      "capture": "Run(): at activation reset() clears timestamp_last_trajectory_setpoint_set, so in the activation cycle the stale branch captures position, yaw (from the attitude) and zero velocity; afterwards the stale branch keeps that target until an external setpoint arrives. T1 hooks into exactly that capture (activation cycle only) and advances the target every following stale cycle.",
+      "clipping": "unchanged (PX4 defaults 0.5 m / 1.0 m/s)"
+    },
+    "parameters": {
+      "MC_RAPTOR_RTGT": "0 original (default), 1 speed-matched",
+      "MC_RAPTOR_RTDEC": 2.0,
+      "gating": "effective only with MC_RAPTOR_RSH=1 (all research code); RTGT=0 leaves the original code path unchanged (capture rows are logged only)"
+    },
+    "target_check": {
+      "position_tolerance_m": 0.0001,
+      "velocity_tolerance_m_s": 0.0001,
+      "initial_velocity_tolerance_m_s": 1e-05,
+      "decel_tolerance_m_s2": 1e-05,
+      "rule": "Per run from research_target: exactly one activation capture at the C->N owner change (within 50 ms) with mode = planned RTGT and decel = planned RTDEC; T0: target velocity 0 and no profile rows; T1: initial target velocity = the vehicle_local_position sample RAPTOR used (vx, vy; vertical 0), every profile row equal to the closed-form profile (speed0 - a t along the captured direction, position the integral), phase change at speed0/a, final point at speed0^2/(2a); the state read after entry equals the logged target of that cycle."
+    },
+    "clipping": {
+      "position_limit_m": 0.5,
+      "velocity_limit_m_s": 1.0,
+      "policy_input_position": [
+        0,
+        3
+      ],
+      "policy_input_velocity": [
+        12,
+        15
+      ],
+      "relative_tolerance": 1e-06,
+      "definition": "research_memory inference rows while RAPTOR is active in [change, window end]: a component is clipped when |value| >= limit*(1-1e-6). Reported separately for position and velocity: rows, total duration (zero-order hold to the next row), first and last clipped time after the change, longest continuous span."
+    },
+    "settle": {
+      "speed_threshold_m_s": 0.1,
+      "definition": "first vehicle_local_position sample (timestamp_sample) after the change from which the 3D speed stays below 0.1 m/s until the window end (change + post_handover_s); settle time from the change; distance = horizontal and along-axis distance from the position at the change to the position at the settle time. None if the speed is not below the threshold at the window end or the flight failed."
+    },
+    "metrics": [
+      "max_tilt_deg",
+      "max_altitude_loss_m",
+      "motor_step_at_change",
+      "motor_saturation_any_s",
+      "flight_failure",
+      "settle_time_s",
+      "settle_distance_m",
+      "position/velocity clipping duration"
+    ],
+    "capture_cost_reference": {
+      "batch": "data/p4-20261016-batch-01b",
+      "baseline_group": "p2_baseline_raptor:M1:B",
+      "n2_group": "p2_c_to_n:M1:N2",
+      "definition": "At 1.0 m/s the capture part of the C->N cost is the absolute value of the acceleration-matched 01b M1 RAPTOR baseline (zero-velocity capture with intact memory; 01b: 86% of the N0 step, 93% of the altitude loss, 99% of the tilt). Part of it removed by T1 = (T0 - T1) / baseline, T0 and T1 from batch 01c (both N2 memory), 95% bootstrap over the three groups. In-batch T0 is compared with 01b M1 N2 (same profile and memory). Cross-batch reference as requested, not an acceptance splice."
+    },
+    "offline_reference": {
+      "source": "out-of-repo l2f simulation with mc_raptor error clipping (position +-0.5 m, velocity +-1 m/s), user correction 2026-10-16",
+      "zero_velocity_capture": "no flip at >=3 m/s, but tilt above 45 deg from 2 m/s on (matches P2 SITL explore-02); about 0.9 m altitude loss at 5 m/s for the heavy airframe",
+      "speed_matched_fixed_deceleration": "tilt about 17 deg"
+    },
+    "statistics": "per group (level x target) mean and 95% t interval over the runs that did not fail (n reported); T0 - T1 difference with 95% percentile bootstrap (20000 resamples, numpy default_rng(master_seed)); flight failures counted per group.",
+    "equivalence": {
+      "purpose": "New candidate (adds MC_RAPTOR_RTGT/RTDEC and research_target) with RTGT=0 must reproduce P2 S1 and P4 01b M1 before P4-01c.",
+      "groups": "p2_c_to_n:S1:N0:2@config/p2.json,p2_c_to_n:S1:N2:2@config/p2.json,p2_c_to_n:M1:N2:2@config/p4.json",
+      "reference": {
+        "S1": [
+          "data/p2-20261015-batch-s1a",
+          "data/p2-20261015-batch-s1b"
+        ],
+        "M1": [
+          "data/p4-20261016-batch-01b"
+        ]
+      },
+      "metric_tolerance": {
+        "motor_step_at_change": 0.02,
+        "max_altitude_loss_m": 0.01,
+        "recovery_from_change_s": 0.15,
+        "max_tilt_deg": 0.5,
+        "trigger_to_change_ms": 8.0
+      },
+      "metric_rule": "each run inside [min - t, max + t] of the reference group with the same kind, condition and treatment, t = max(tolerance, half the reference spread)",
+      "required": [
+        "all batch checks accepted",
+        "P2 entry and teacher-forcing evidence VERIFIED, capture activation_reset_hold with zero target velocity",
+        "written GRU norm (N2) inside the reference range (tolerance 0.05)",
+        "MC_RAPTOR_RTGT = 0 in force, research_target activation capture with mode 0 and zero target velocity, no profile rows"
+      ]
+    },
+    "dev_latency": {
+      "runs": 10,
+      "groups": "p4.groups.dev_10",
+      "rule": "10 P4-01c runs (every level and target) on the final candidate before freezing; every run maximum applied-command age <= 8 ms with the frozen gate unchanged (P3/P4 rule). A pre-registered flight failure (2.0 m/s T0) is a result; the following runs confirm a clean restart after the runner safety abort."
+    }
+  },
+  "p7_note": "P9: p7 section supplies unchanged legacy recovery/lag measurement definitions only; this is not a P7 acceptance batch.",
+  "p5": {
+    "purpose": "P7 (kind p5_gap, P5 mechanism unchanged): RAPTOR tracks a runner-published straight line through its external trajectory_setpoint input; the runner stops publishing inside pre-registered windows and resumes on the same time-parameterized line. N2 memory (RINI=4). T0: zero-velocity in-flight timeout capture (RTGT=0); T1a3: speed-matched target at in-flight timeout captures (RTGT=2) with RTDEC 3.0; T1a3r2: T1a3 with the rate-limited recovery MC_RAPTOR_RREC = 2.0. Every P7 treatment sets MC_RAPTOR_RREC explicitly.",
+    "profile": {
+      "motion_axis_ned": [
+        1,
+        0,
+        0
+      ],
+      "reference_hold_s": 3.0,
+      "accel_s": 1.0,
+      "pre_gap_s": 1.0,
+      "post_gap_s": 2.0,
+      "decel_to_m_s": 0.0,
+      "decel_m_s2": 2.0,
+      "end_hold_s": 6.0,
+      "post_stream_s": 5.0,
+      "return_hold_s": 5.0,
+      "setpoint_period_s": 0.02,
+      "reposition": {
+        "speed_m_s": 1.0,
+        "accel_m_s2": 0.5
+      },
+      "motor_saturation": {
+        "upper": 0.999,
+        "lower": 0.001,
+        "note": "actuator_motors control in [0,1]; upper/lower limit within 1e-3"
+      },
+      "note": "Profile time: reposition from RAPTOR's hover capture to the start offset (-L/2 along the axis, trapezoid 1.0 m/s, 0.5 m/s^2), hold 3 s, 1 s linear ramp to 2.0 m/s, cruise = pre_gap_s + count*D + (count-1)*recover + post_gap_s, linear deceleration to rest at decel_m_s2, then end_hold_s of stationary setpoints. Gap k covers profile times [cruise start + pre_gap_s + k*(D + recover), + D); no setpoint is published inside a gap; the trajectory time keeps running."
+    },
+    "profile_overrides": [
+      "end_hold_s",
+      "motion_axis_ned",
+      "post_gap_s",
+      "pre_gap_s"
+    ],
+    "conditions": {
+      "p11-case": {
+        "speed_m_s": 1.8,
+        "motion_axis_ned": [
+          0.707106781,
+          0.707106781,
+          0.0
+        ],
+        "gaps": {
+          "windows_s": [
+            [
+              0.0,
+              0.36
+            ],
+            [
+              0.91,
+              1.27
+            ],
+            [
+              2.24,
+              2.6
+            ]
+          ]
+        },
+        "pre_gap_s": 1.0,
+        "post_gap_s": 2.0,
+        "flight_failures_are_results": true,
+        "description": "P9-v1 fixed trajectory; explicit condition; no shrinking",
+        "safety_budget_m": {
+          "path_m": 11.79,
+          "radius_at_spawn_m": 6.895,
+          "interruption_drift_m": 0.0,
+          "hover_offset_allowance_m": 0.1,
+          "radius_m": 6.995,
+          "limit_m": 8.0,
+          "inside": true
+        }
+      }
+    },
+    "treatments": {
+      "P11-Z": {
+        "rini": 4,
+        "nco": 0,
+        "rtgt": 0,
+        "rtdec": 2.0,
+        "rrec": 0.0,
+        "description": "P11 unchanged T0"
+      },
+      "P11-C": {
+        "rini": 4,
+        "nco": 0,
+        "rtgt": 2,
+        "rtdec": 2.0,
+        "rrec": 0.0,
+        "description": "P11 existing speed-matched all captures; RTDEC2"
+      }
+    },
+    "planned_path_check": {
+      "radius_margin_m": 2.0,
+      "braking_allowance_m": 1.0,
+      "stale_timeout_s": 0.2,
+      "worst_case_deceleration_m_s2": 0.75,
+      "rule": "P6 rule unchanged (P5 runner path check, drift term with 0.75 m/s^2) at the spawn point + 0.1 m hover-offset allowance <= 8 m; see p7.budget_rule.",
+      "hover_offset_allowance_m": 0.1
+    },
+    "gap_timing": {
+      "early_s": 0.01,
+      "late_s": 0.06,
+      "capture_delay_s": [
+        0.2,
+        0.216
+      ],
+      "rule": "per gap, the setpoint-free interval (setpoint arrivals = logged trajectory_setpoint rows merged with raptor_status reception cycles: first arrival after the gap minus last arrival before it) must lie in [D - 0.01 s, D + 0.06 s] (one 20 ms setpoint period plus runner pump granularity); RAPTOR must make exactly one in-flight capture per gap (research_target KIND_CAPTURE, activation 0) 200-216 ms after the last arrival (200 ms timeout counted from RAPTOR's reception cycle, which follows the arrival within one 4 ms cycle, plus the 4 ms cycle quantization of the timeout), with the planned mode and deceleration; T1: profile rows equal to the closed-form profile and an END row (external setpoint) at the resume; T0: zero target velocity and no profile rows."
+    },
+    "catch_up": {
+      "position_m": 0.2,
+      "velocity_m_s": 0.2,
+      "dwell_s": 0.5,
+      "rule": "after a resume: first time from which RAPTOR's observed horizontal position error and velocity error (research_memory.policy_input [0:2] and [12:14], the exact executor input, relative to the latest received setpoint) stay <= 0.2 m and <= 0.2 m/s for 0.5 s; searched until the next gap or the end of the cruise (E2: 3.0 s); none if not reached. Both thresholds are below the clipping limits, so the clipped input equals the true error when the criterion holds."
+    },
+    "settle": {
+      "speed_threshold_m_s": 0.1,
+      "definition": "first vehicle_local_position sample (timestamp_sample) after the change from which the 3D speed stays below 0.1 m/s until the window end (change + post_handover_s); settle time from the change; distance = horizontal and along-axis distance from the position at the change to the position at the settle time. None if the speed is not below the threshold at the window end or the flight failed."
+    },
+    "clipping": {
+      "position_limit_m": 0.5,
+      "velocity_limit_m_s": 1.0,
+      "policy_input_position": [
+        0,
+        3
+      ],
+      "policy_input_velocity": [
+        12,
+        15
+      ],
+      "relative_tolerance": 1e-06,
+      "definition": "research_memory inference rows while RAPTOR is active in [change, window end]: a component is clipped when |value| >= limit*(1-1e-6). Reported separately for position and velocity: rows, total duration (zero-order hold to the next row), first and last clipped time after the change, longest continuous span."
+    },
+    "failure_criteria": {
+      "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+      "no_joint_recovery_s": 10.0,
+      "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+      "motor_saturation_continuous_s": 0.5,
+      "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+      "ground_altitude_m": 0.2,
+      "ground": "altitude <= 0.2 m inside [trigger, window end]",
+      "window": "[first gap start, end of the post_stream phase] (truncated at an abort); no_joint_recovery is judged from RAPTOR's capture after the final stream stop at rest (frozen P0 thresholds) instead of an owner change"
+    },
+    "metrics": [
+      "max_tilt_deg",
+      "max_altitude_loss_m",
+      "motor_saturation_any_s",
+      "flight_failure",
+      "settle_time_s (after the line comes to rest)",
+      "catch_up_s",
+      "position/velocity clipping per axis and duration",
+      "target jump at resume vs 0.5*a*D^2 and vs the exact T1 prediction",
+      "E3: altitude change and along-track lag at every cycle end"
+    ]
+  },
+  "p7": {
+    "recovery": {
+      "parameter": "MC_RAPTOR_RREC",
+      "rate_m_s2": 1.0,
+      "omega_rad_s": 1.5,
+      "exit_position_m": 0.02,
+      "exit_velocity_m_s": 0.02,
+      "max_dt_s": 0.05,
+      "definition": "MC_RAPTOR_RREC (m/s^2, default 0 = original one-step jump back to the setpoint). With RREC > 0, in the RAPTOR cycle in which the external setpoint is fresh again after an in-flight setpoint-timeout capture while RAPTOR is active (not after the activation capture), a virtual target starts at the vehicle's horizontal position and velocity (the vehicle_local_position sample of that cycle, the state RAPTOR observes). Every RAPTOR cycle: acc = w^2 (sp_pos - vt_pos) + 2 w (sp_vel - vt_vel), w = 1.5, scaled to |acc| = RREC (horizontal norm) when larger; vt_vel += acc dt; vt_pos += vt_vel dt, dt from the gyro sample time of the cycle (<= 0.05 s); sp = the latest external setpoint RAPTOR read. The network observes the virtual target's horizontal position and velocity (vertical position/velocity and yaw from the setpoint). When the horizontal position and velocity differences are both < 0.02 after the update, the virtual target ends and the network observes the setpoint directly (same cycle). A new setpoint timeout during the recovery ends it; the original 200 ms timeout and capture rules (RTGT/RTDEC) apply. Equals R(a_r) of the project's l2f experiments (notes/target-interface/experiments/common.py, not present on this machine; implemented from the task text).",
+      "implementation": "research/state/RecoveryTarget.hpp (unit test tests/recovery_target_test.cpp); tools/apply_research.py: research_recovery_transition() after the takeover-target step, the virtual target is swapped into _trajectory_setpoint only for the duration of observe() (RAII guard), evidence on uORB research_recovery (KIND_START / KIND_STEP every cycle / KIND_END with CONVERGED, STALE or INACTIVE). RREC = 0: no row, the observation code path is untouched."
+    },
+    "lag": {
+      "window_s": 6.0,
+      "definition": "Per resume (first setpoint reception after an interruption): along-track lag = (original trajectory point - vehicle position) projected on the motion axis (positive = behind) and horizontal distance |trajectory - vehicle|, over [resume, resume + 6 s] (vehicle_local_position samples); maximum and the value at the window end. Original trajectory point at t = the latest logged trajectory_setpoint row at or before t advanced by its velocity (exact on the cruise and inside later interruptions; at rest after the stream end). A window cut by a later interruption is reported in full and marked; a window cut by the end of the record (abort) is truncated and marked."
+    },
+    "task_failure_criterion": {
+      "tilt_deg": 45.0,
+      "altitude_loss_m": 1.0,
+      "rule": "Task text (P6/P7): failure = tilt > 45 deg or altitude loss > 1 m. The frozen pre-registered flight outcome (p5.failure_criteria: safety envelope incl. tilt >= 45 deg, runner abort, motor saturation, ground, no joint recovery) has no altitude-loss term and stays the primary outcome (not changed). p7_metrics additionally reports task_outcome = FAILURE when whole-window max tilt >= 45 deg or max altitude loss > 1.0 m (same windows as the frozen outcome), and every run where the two differ is listed. Added after development run dev-01 q4-D0.6-g0.15 T1a3 (altitude loss 1.53 m, with tilt 46.3 deg, a failure under both), before the equivalence and the formal batches."
+    }
+  },
+  "p4": {
+    "purpose": "P9 uses explicit plan.json slots and own audit; old P7 batch groups do not apply.",
+    "independence": {
+      "master_seed": 202610249,
+      "sim_seed": "Every P4 batch run gets its own Gazebo seed (gz sim --seed): first 31 bits of sha256(batch prefix + run id + master_seed), recorded in plan.json, config.json and the Gazebo command line. Gazebo sensor noise (IMU, barometer, magnetometer) is drawn from this seed; without --seed it is drawn from std::random_device.",
+      "initial_yaw": {
+        "range_deg": [
+          -20.0,
+          20.0
+        ],
+        "conditions": [],
+        "rule": "P7 draws no random heading: every run spawns at yaw 0 (PX4 heading 96.0 deg).",
+        "heading_at_zero_deg": 96.0,
+        "heading_rule": "Gazebo yaw is counter-clockwise from East (ENU); PX4 heading is clockwise from North (NED) incl. the world magnetic declination. At spawn yaw 0 the PX4 heading is 96.0 deg (P3 batch-01 first C->N 95.99-96.05 deg; P4 dev-01 95.9 deg), so the expected heading before arming is 96.0 - initial_yaw_deg (tolerance 3 deg)."
+      },
+      "hover_point": "Not perturbed: the local frame origin is the spawn point and the Gazebo world is flat and translation invariant, so a horizontal offset of the hover point changes nothing the controllers or the physics see; the hover altitude stays the frozen 3 m (analysis references).",
+      "verification": "Before the batches: (1) startup-only runs with seeds A, A, B compare the at-rest raw gyro noise (sensor_gyro) sample by sample: same seed identical, different seed different; (2) development flights with different seeds/headings give different measured values; (3) every batch run checks that its Gazebo command carried the planned seed and that the heading at takeoff equals the planned heading (tolerance 3 deg).",
+      "default_settings": "Every P7 batch run (incl. the equivalence) gets its own Gazebo seed."
+    },
+    "statistics": {
+      "group_ci": "mean and two-sided 95% t interval (Student t, n-1 dof) over the runs of one group",
+      "ratio_ci": "(N0 - Nx)/(N0 - baseline) from group means; 95% percentile bootstrap interval resampling runs with replacement within each of the three groups independently, 20000 resamples, numpy default_rng(master_seed); resamples with |N0 - baseline| < 1e-9 dropped",
+      "note": "n = 5 (01a treatments) or 3 (01b, baselines); intervals describe run-to-run variation of this SITL setup under independent seeds and headings, not real-flight variation"
+    },
+    "host": {
+      "cpu_affinity": "px4=8-11;gazebo=12-13;agent=6-7;runner=4-5",
+      "clocks": "jetson_clocks applied 2026-10-15 (all 14 CPUs 2601 MHz, CPU idle states off, EMC 4266 MHz, nvpmodel 120W); verified before each batch from /sys and recorded in the batch host.json",
+      "note": "taskset pinning of the processes the runner starts; other host processes are not isolated (no isolcpus). Remote desktop disconnected during batches."
+    },
+    "dev_latency": {
+      "rule": "Development batch on the candidate covering every new code path (A q4 sequence T0 A45 and T1a3 A0, a B random sequence, C single and multi-event with MC_RAPTOR_RREC 2, v2.5); every run with maximum applied-command age <= 8 ms under the frozen gate (P3-P6 rule). Development runs are never results."
+    },
+    "groups": {}
+  },
+  "p11": {
+    "schema": "p12b-independent-1",
+    "observe": true,
+    "runner_trace": true,
+    "ulog_storage": "hardlink_after_shutdown",
+    "source": {
+      "path": "config/p9.json",
+      "sha256": "055239fd8494882832717690d9c0b1be696b8c05b804868414723d08a90de416",
+      "condition": "p9-B-P9-Z-h45-g0.55",
+      "spec_sha256": "b6317b1221418e7d5702f78196bd204769023988c26561df6ba95c3e794ce8c8"
+    },
+    "budget": {
+      "old_P12_starts": 48,
+      "preparation_cap": 8,
+      "formal_cap": 45,
+      "P12b_cap": 53,
+      "all_P12_cap": 101
+    },
+    "event_mask": [],
+    "event_shift_s": 0.0,
+    "group": "G45",
+    "model_split": "heldout",
+    "original_p5_frozen_criterion": {
+      "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+      "no_joint_recovery_s": 10.0,
+      "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+      "motor_saturation_continuous_s": 0.5,
+      "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+      "ground_altitude_m": 0.2,
+      "ground": "altitude <= 0.2 m inside [trigger, window end]",
+      "window": "[first gap start, end of the post_stream phase] (truncated at an abort); no_joint_recovery is judged from RAPTOR's capture after the final stream stop at rest (frozen P0 thresholds) instead of an owner change"
+    },
+    "task_criterion": {
+      "tilt_deg": 45.0,
+      "tilt_operator": ">",
+      "altitude_loss_m": 1.0,
+      "altitude_loss_operator": ">"
+    },
+    "observation_version": "complete-hook-v2",
+    "prediction_terminal_slack_s": 0.5
+  },
+  "p12": {
+    "schema": "p12-cont-frozen-1",
+    "observe": true,
+    "phase": 1,
+    "repair": false,
+    "common_world_reference": {
+      "position_ned_m": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "yaw_rad": 1.6755160819145563
+    },
+    "native_stream_anchor": true,
+    "repair_sample_window": true
+  },
+  "p12b": {
+    "schema": "p12b-direct-read-v2",
+    "observe": true,
+    "solver_observe": true,
+    "solver_library": "data/p12b-20261026-source-local/libP12bDartTrace.so",
+    "read_trace_schema": "direct-v2"
+  }
+}

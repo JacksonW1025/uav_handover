@@ -1,0 +1,115 @@
+{
+  "schema": "p12b-old-miss-diagnostic-2",
+  "execution_phase": "both streams use the SAME completed PreUpdate force phase: filter_before versus abs(actual_scaled_joint), not filter_after versus old joint",
+  "old_case": "b2-ph1-AB",
+  "now_seen_material": true,
+  "original_frozen_score_unchanged": {
+    "tilt": "DANGER_MISS",
+    "height": "AGREEMENT",
+    "task_OR": "AGREEMENT",
+    "M4_peak_deg": 44.2252384980115,
+    "observed_controller_peak_deg": 46.06366570788506,
+    "frozen_full_topic_peak_deg": 46.065060589769715
+  },
+  "first_sampled_tilt_crossing": {
+    "last_observed_nonfailed_profile_s": 13.303996413,
+    "first_observed_failed_profile_s": 13.308018121,
+    "controller_cache_angle_deg": 45.318732437056724,
+    "scope": "sampled controller attitude crossing bracket; frozen full-topic outcome retained separately"
+  },
+  "initial_interfaces": {
+    "sample_us": 53744000,
+    "LP_position_vs_world_pose_m": [
+      -0.012488173320889473,
+      -0.011476689949631691,
+      -0.012116670608520508
+    ],
+    "held_truth_age_us": 0,
+    "filter_initial": "actual last completed before initial cutoff; not steady command",
+    "unobserved_initial": "full solver/transport/EKF state not snapshotted"
+  },
+  "mode_timing_comparison": [
+    {
+      "actual_sample_us": 66840000,
+      "predicted_sample_us": 66840000,
+      "actual_minus_predicted_us": 0,
+      "actual_phase": "CAPTURE_ON_INTERMEDIATE_AFTER_PRIOR_COMMIT",
+      "source_guard_age_us": 204000
+    },
+    {
+      "actual_sample_us": 67744000,
+      "predicted_sample_us": 67752000,
+      "actual_minus_predicted_us": -8000,
+      "actual_phase": "CAPTURE_ON_INTERMEDIATE_AFTER_PRIOR_COMMIT",
+      "source_guard_age_us": 204000
+    },
+    {
+      "actual_sample_us": 78368000,
+      "predicted_sample_us": 78344000,
+      "actual_minus_predicted_us": 24000,
+      "actual_phase": "CAPTURE_ON_INTERMEDIATE_AFTER_PRIOR_COMMIT",
+      "source_guard_age_us": 204000
+    }
+  ],
+  "error_growth": [
+    {
+      "segment": "pre_A",
+      "rows": 125,
+      "tilt_abs_error_max_deg": 2.8492942251602473,
+      "signed_tilt_error_mean_deg": -0.5051382079475324
+    },
+    {
+      "segment": "A_and_resume_to_B",
+      "rows": 228,
+      "tilt_abs_error_max_deg": 4.38400345408655,
+      "signed_tilt_error_mean_deg": -0.4530764699455234
+    },
+    {
+      "segment": "after_B",
+      "rows": 3897,
+      "tilt_abs_error_max_deg": 12.374449331064806,
+      "signed_tilt_error_mean_deg": -0.61559247545791
+    }
+  ],
+  "known_input_neural_replay": {
+    "status": "PASS",
+    "single_step": {
+      "rows": 8742,
+      "native": 4371,
+      "h_max": 4.4477859117986185e-07,
+      "action_max": 6.014233188134099e-07,
+      "previous_action_write_max": 0.0,
+      "unclipped_peak": 1.4950689176531442
+    },
+    "continuous": null
+  },
+  "known_command_execution_replay": {
+    "status": "PASS",
+    "maximum_filter_error_rad_s": 3.410605131648481e-13
+  },
+  "controlled_body_replays": {
+    "actual_filter": {
+      "known_future_actuator_input": true,
+      "point_peak_deg": 168.29667340084995,
+      "tilt_RMSE_to_controller_cached_att_deg": 93.39683931149096,
+      "position_RMSE_to_estimator_cache_m": 1036.4378212638258,
+      "diagnosis_scope": "single initial reset then free empirical body model with actual future execution inputs; not autonomous forecast or a causal flight intervention"
+    },
+    "actual_joint": {
+      "known_future_actuator_input": true,
+      "point_peak_deg": 168.29667340074903,
+      "tilt_RMSE_to_controller_cached_att_deg": 93.39683931148107,
+      "position_RMSE_to_estimator_cache_m": 1036.4378212633005,
+      "diagnosis_scope": "single initial reset then free empirical body model with actual future execution inputs; not autonomous forecast or a causal flight intervention"
+    }
+  },
+  "filter_vs_actual_joint_input_plant_replay_max_tilt_difference_deg": 2.97542612770485e-09,
+  "physical_gravity": 9.8,
+  "unchanged_predictor_gravity": 9.80665,
+  "attribution": "known-input network/target/filter calculations are accurate; future actual actuator-input body replays and one-step cache residuals are diagnostics only. Remaining plant/estimator/cache/delivery feedback cannot be uniquely causally separated; task OR agreement does not remove tilt miss. No re-fit, new candidate, or claimed improvement.",
+  "inputs_sha256": {
+    "packed": "37e3566b5da6e653bb91ab7bdcff49314a6b7fdcb20366607bdd47c8fc467eb3",
+    "prediction_M4": "6e698f4e0206d01e1376dd988553c86b689af9bbabf0c533c52c491ea4e69618",
+    "score": "898ab21b20852e7bcc3054045614da62a733a96baf535415c65f8ebe69c40b45"
+  }
+}

@@ -1,0 +1,441 @@
+......................................................FF.FFF............ [ 28%]
+...F...................F................................................ [ 56%]
+........................................................................ [ 84%]
+.......................................                                  [100%]
+=================================== FAILURES ===================================
+________ test_real_native_read_equality_and_transition_before_duplicate ________
+
+    def test_real_native_read_equality_and_transition_before_duplicate():
+>       o=src.Oracle();a=Adapter()
+
+tests/test_p10_a3.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tools/p10a3/source.py:187: in __init__
+    subprocess.run(['g++','-std=c++17','-O2','-Wall','-Wextra','-I',str(ROOT),str(p/'oracle.cpp'),'-o',str(p/'oracle')],check=True,capture_output=True,text=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['g++', '-std=c++17', '-O2', '-Wall', '-Wextra', '-I', ...],)
+kwargs = {'stderr': -1, 'stdout': -1, 'text': True}
+process = <Popen: returncode: 1 args: ['g++', '-std=c++17', '-O2', '-Wall', '-Wextra',...>
+stdout = ''
+stderr = '/tmp/p10a3-oracle-ul5u58do/oracle.cpp: In member function ‘void Raptor::research_target_capture(bool, bool)’:\n/tmp/p...ar_velocity.timestamp_sample,not_before_ms)) mode=0;\n      |                                 ^~~~~~~~~~~~~~~~~~~~~~\n'
+retcode = 1
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['g++', '-std=c++17', '-O2', '-Wall', '-Wextra', '-I', '/home/car/uav_handover', '/tmp/p10a3-oracle-ul5u58do/oracle.cpp', '-o', '/tmp/p10a3-oracle-ul5u58do/oracle']' returned non-zero exit status 1.
+
+/usr/lib/python3.12/subprocess.py:571: CalledProcessError
+___________ test_invalid_updated_message_does_not_refresh_read_clock ___________
+
+    def test_invalid_updated_message_does_not_refresh_read_clock():
+>       o=src.Oracle()
+
+tests/test_p10_a3.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tools/p10a3/source.py:187: in __init__
+    subprocess.run(['g++','-std=c++17','-O2','-Wall','-Wextra','-I',str(ROOT),str(p/'oracle.cpp'),'-o',str(p/'oracle')],check=True,capture_output=True,text=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['g++', '-std=c++17', '-O2', '-Wall', '-Wextra', '-I', ...],)
+kwargs = {'stderr': -1, 'stdout': -1, 'text': True}
+process = <Popen: returncode: 1 args: ['g++', '-std=c++17', '-O2', '-Wall', '-Wextra',...>
+stdout = ''
+stderr = '/tmp/p10a3-oracle-fgtfaq43/oracle.cpp: In member function ‘void Raptor::research_target_capture(bool, bool)’:\n/tmp/p...ar_velocity.timestamp_sample,not_before_ms)) mode=0;\n      |                                 ^~~~~~~~~~~~~~~~~~~~~~\n'
+retcode = 1
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['g++', '-std=c++17', '-O2', '-Wall', '-Wextra', '-I', '/home/car/uav_handover', '/tmp/p10a3-oracle-fgtfaq43/oracle.cpp', '-o', '/tmp/p10a3-oracle-fgtfaq43/oracle']' returned non-zero exit status 1.
+
+/usr/lib/python3.12/subprocess.py:571: CalledProcessError
+_____________ test_wrong_ge_guard_changes_source_event_at_equality _____________
+
+    def test_wrong_ge_guard_changes_source_event_at_equality():
+        snap=src.snapshot();snap['guard']=snap['guard'].replace(' > TRAJECTORY_SETPOINT_TIMEOUT',' >= TRAJECTORY_SETPOINT_TIMEOUT')
+>       o=src.Oracle(snap)
+
+tests/test_p10_a3.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tools/p10a3/source.py:187: in __init__
+    subprocess.run(['g++','-std=c++17','-O2','-Wall','-Wextra','-I',str(ROOT),str(p/'oracle.cpp'),'-o',str(p/'oracle')],check=True,capture_output=True,text=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['g++', '-std=c++17', '-O2', '-Wall', '-Wextra', '-I', ...],)
+kwargs = {'stderr': -1, 'stdout': -1, 'text': True}
+process = <Popen: returncode: 1 args: ['g++', '-std=c++17', '-O2', '-Wall', '-Wextra',...>
+stdout = ''
+stderr = '/tmp/p10a3-oracle-u2mpefqx/oracle.cpp: In member function ‘void Raptor::research_target_capture(bool, bool)’:\n/tmp/p...ar_velocity.timestamp_sample,not_before_ms)) mode=0;\n      |                                 ^~~~~~~~~~~~~~~~~~~~~~\n'
+retcode = 1
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['g++', '-std=c++17', '-O2', '-Wall', '-Wextra', '-I', '/home/car/uav_handover', '/tmp/p10a3-oracle-u2mpefqx/oracle.cpp', '-o', '/tmp/p10a3-oracle-u2mpefqx/oracle']' returned non-zero exit status 1.
+
+/usr/lib/python3.12/subprocess.py:571: CalledProcessError
+__________ test_real_target_profile_uses_gyro_elapsed_not_hrt_elapsed __________
+
+    def test_real_target_profile_uses_gyro_elapsed_not_hrt_elapsed():
+>       o=src.Oracle()
+
+tests/test_p10_a3.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tools/p10a3/source.py:187: in __init__
+    subprocess.run(['g++','-std=c++17','-O2','-Wall','-Wextra','-I',str(ROOT),str(p/'oracle.cpp'),'-o',str(p/'oracle')],check=True,capture_output=True,text=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['g++', '-std=c++17', '-O2', '-Wall', '-Wextra', '-I', ...],)
+kwargs = {'stderr': -1, 'stdout': -1, 'text': True}
+process = <Popen: returncode: 1 args: ['g++', '-std=c++17', '-O2', '-Wall', '-Wextra',...>
+stdout = ''
+stderr = '/tmp/p10a3-oracle-wumwtm_q/oracle.cpp: In member function ‘void Raptor::research_target_capture(bool, bool)’:\n/tmp/p...ar_velocity.timestamp_sample,not_before_ms)) mode=0;\n      |                                 ^~~~~~~~~~~~~~~~~~~~~~\n'
+retcode = 1
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['g++', '-std=c++17', '-O2', '-Wall', '-Wextra', '-I', '/home/car/uav_handover', '/tmp/p10a3-oracle-wumwtm_q/oracle.cpp', '-o', '/tmp/p10a3-oracle-wumwtm_q/oracle']' returned non-zero exit status 1.
+
+/usr/lib/python3.12/subprocess.py:571: CalledProcessError
+____________ test_complete_source_and_exact_nonzero_prefix_refusal _____________
+
+    def test_complete_source_and_exact_nonzero_prefix_refusal():
+>       a=checker.verify(DATA,COMP);f=a['first_certificate_failure']
+
+tests/test_p10_a3.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+directory = PosixPath('/home/car/uav_handover/data/p10-20261025-a3/source-08')
+compatibility = PosixPath('/home/car/uav_handover/data/p10-20261025-a3/compatibility-02/compatibility.json')
+
+    def verify(directory, compatibility):
+        directory=directory.resolve();compatibility=compatibility.resolve()
+        manifest=json.loads((directory/'manifest.json').read_text())
+        for name,digest in manifest['files'].items():
+            if sha(directory/name)!=digest:raise ValueError('INPUT_HASH_MISMATCH: '+name)
+        ledger=json.loads((directory/'source-ledger.json').read_text())
+        assert not ledger['oracle_adapter_mismatches'], 'SOURCE_ORACLE_ADAPTER_MISMATCH'
+        snap=json.loads((directory/'source-snapshot.json').read_text())
+>       assert snap==snapshot(), 'SOURCE_SNAPSHOT_NOT_CURRENT_OR_INCOMPLETE'
+E       AssertionError: SOURCE_SNAPSHOT_NOT_CURRENT_OR_INCOMPLETE
+
+tools/p10a3/verify.py:77: AssertionError
+_________ test_uniform_ball_counterexample_survives_real_queue_updates _________
+
+    def test_uniform_ball_counterexample_survives_real_queue_updates():
+>       r=cc.calculate();b=b4.load();y=b['center'][0].copy();w=np.array([float(F(x)) for x in r['per_step_w_p_v_q']]);rho=np.exp(-.05)
+
+tests/test_p10_a4.py:123: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tools/p10a4/contract_counterexample.py:24: in calculate
+    b=load();raw=json.loads((ROOT/'data/p10-20261024-a2/construction-reviewed/certificate.json').read_text())['P_integer']
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def load():
+        base=ROOT/'data/p10-20261025-a3/source-08'
+        source_manifest=json.loads((base/'manifest.json').read_text())
+        for name,digest in source_manifest['files'].items():assert sha(base/name)==digest,'A3_SOURCE_ARTIFACT_CHANGED'
+>       for path,digest in source_manifest['source_sha256'].items():assert sha(ROOT/path)==digest,'A3_SOURCE_DEPENDENCY_CHANGED'
+E       AssertionError: A3_SOURCE_DEPENDENCY_CHANGED
+
+tools/p10a4/bench.py:13: AssertionError
+_____________ test_reproducible_audit_and_refuse_output_overwrite ______________
+
+tmp_path = PosixPath('/tmp/pytest-of-car/pytest-102/test_reproducible_audit_and_re0')
+
+    def test_reproducible_audit_and_refuse_output_overwrite(tmp_path):
+        gate = ROOT/'config/p10_a_gate.json'
+>       v.run(tmp_path/'first', gate);v.run(tmp_path/'second', gate)
+
+tests/test_p10_review.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+output = PosixPath('/tmp/pytest-of-car/pytest-102/test_reproducible_audit_and_re0/first')
+gate_path = PosixPath('/home/car/uav_handover/config/p10_a_gate.json')
+
+    def run(output, gate_path):
+        require_declaration(json.loads(gate_path.read_text()))
+        inputs = list(SOURCE_HASHES) + ['config/p9.json', 'config/p10_a2_events.json',
+            'data/p10-20261024-a2/source-map-final.json',
+            'data/p10-20261024-a2/source-map-evidence.json',
+            'data/p10-20261024-a2/construction-reviewed/certificate.json',
+            'data/p10-20261024-a2/construction-reviewed/trace.csv.gz',
+            'data/p10-20261024-a2/complete-decision.json', 'config/p10_a_gate.json']
+        for name, expected in SOURCE_HASHES.items():
+            if sha(ROOT/name) != expected:
+>               raise ValueError('SOURCE_CHANGED_REQUIRES_NEW_REVIEW: '+name)
+E               ValueError: SOURCE_CHANGED_REQUIRES_NEW_REVIEW: tools/run_experiment.py
+
+tools/p10review/verify.py:291: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_p10_a3.py::test_real_native_read_equality_and_transition_before_duplicate
+FAILED tests/test_p10_a3.py::test_invalid_updated_message_does_not_refresh_read_clock
+FAILED tests/test_p10_a3.py::test_wrong_ge_guard_changes_source_event_at_equality
+FAILED tests/test_p10_a3.py::test_real_target_profile_uses_gyro_elapsed_not_hrt_elapsed
+FAILED tests/test_p10_a3.py::test_complete_source_and_exact_nonzero_prefix_refusal
+FAILED tests/test_p10_a4.py::test_uniform_ball_counterexample_survives_real_queue_updates
+FAILED tests/test_p10_review.py::test_reproducible_audit_and_refuse_output_overwrite
+7 failed, 248 passed in 26.73s

@@ -1,0 +1,18 @@
+P12B_START preparation 2 prep02-F2-ph2-NORMAL0-on old48
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p12b/campaign.py", line 87, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/car/uav_handover/tools/p12b/campaign.py", line 78, in main
+    execute(json.load(open(P/'protocol.json'))['rows'][a.prep-1],'preparation')
+  File "/home/car/uav_handover/tools/p12b/campaign.py", line 63, in execute
+    measured=process(target/'run',target/'analysis',models)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p12b/workflow.py", line 11, in process
+    for s,args,label in [('p12/observe.py',[run,'--output',out/'observation'],'observation'),('p12b/audit.py',[run,'--output',out/'native'],'native'),('p12/execution.py',[run,'--output',out/'execution'],'execution'),('p12c/target_replay.py',[sync,'--config',run/'config.json','--output',out/'target'],'target'),('p11/synchronize.py',[run,'--output',out/'send-read'],'send-read'),('p12c/pack.py',[run,'--sync',sync,'--output',out/'packed'],'pack'),('p11/pack.py',['measure',run,'--sync',sync,'--output',out/'measured'],'measure'),('p12c/isolated.py',['--packed',out/'packed','--models',models,'--output',out/'prediction'],'prediction'),('p12/score.py',['--predictions',out/'prediction','--packed',out/'packed','--measurement',out/'measured/measurement.json','--output',out/'score'],'score'),('p12c/validate.py',['--run',run,'--analysis',out,'--output',out/'engineering.json'],'engineering')]:tool(s,args,label)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           ^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p12b/workflow.py", line 9, in tool
+    subprocess.run(['taskset','-c','0-3',str(PY),str(ROOT/'tools'/name),*map(str,args)],cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
+  File "/usr/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['taskset', '-c', '0-3', '/home/car/uav_handover/uav_lab/.local/venv/bin/python', '/home/car/uav_handover/tools/p12b/audit.py', '/home/car/uav_handover/data/p12b-20261026-development/prep02-F2-ph2-NORMAL0-on/run', '--output', '/home/car/uav_handover/data/p12b-20261026-development/prep02-F2-ph2-NORMAL0-on/analysis/native']' returned non-zero exit status 1.

@@ -1,0 +1,692 @@
+diff --git a/src/modules/mc_raptor/mc_raptor.cpp b/src/modules/mc_raptor/mc_raptor.cpp
+index df27d92..a6329f1 100644
+--- a/src/modules/mc_raptor/mc_raptor.cpp
++++ b/src/modules/mc_raptor/mc_raptor.cpp
+@@ -1,3 +1,7 @@
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_actuator.h>
++#include <lib/handover_research/ActuatorGate.hpp>
++#endif
+ #include "mc_raptor.hpp"
+ #undef OK
+ 
+@@ -5,6 +9,98 @@
+ #include <rl_tools/persist/backends/tar/operations_generic.h>
+ 
+ #include <sys/stat.h>
++#ifdef __PX4_POSIX
++#include <lib/handover_research/StateCli.hpp>
++#include <uORB/topics/research_timing.h>
++#include <time.h>
++void Raptor::research_get(float *v) {
++    auto &hidden = executor.executor.policy_state.content_state.next_content_state.state.state;
++    static_assert(std::remove_reference_t<decltype(hidden)>::SPEC::SIZE == 16, "Frozen checkpoint GRU dimension changed");
++    for (TI i=0;i<16;i++) v[i]=rlt::get(device,hidden,0,i);
++    for (TI i=0;i<4;i++) v[16+i]=previous_action[i];
++    for (TI i=0;i<3;i++) {v[20+i]=_trajectory_setpoint.position[i];v[23+i]=_trajectory_setpoint.velocity[i];}
++}
++void Raptor::research_set(const float *v, bool reset_state) {
++    if(reset_state) this->reset();
++    auto &hidden = executor.executor.policy_state.content_state.next_content_state.state.state;
++    auto &temp = executor.executor.policy_state_temp.content_state.next_content_state.state.state;
++    for (TI i=0;i<16;i++) {rlt::set(device,hidden,v[i],0,i);rlt::set(device,temp,v[i],0,i);}
++    for (TI i=0;i<4;i++) previous_action[i]=v[16+i];
++    for (TI i=0;i<3;i++) {_trajectory_setpoint.position[i]=v[20+i];_trajectory_setpoint.velocity[i]=v[23+i];}
++}
++#endif
++
++#ifdef __PX4_POSIX
++// Only the GRU hidden state and previous action; never RAPTOR's position/velocity target.
++void Raptor::research_set_memory(const float *v) {
++    auto &hidden = executor.executor.policy_state.content_state.next_content_state.state.state;
++    auto &temp = executor.executor.policy_state_temp.content_state.next_content_state.state.state;
++    for (TI i=0;i<handover_research::GRU_DIM;i++) {rlt::set(device,hidden,v[i],0,i);rlt::set(device,temp,v[i],0,i);}
++    for (TI i=0;i<handover_research::ACTION_DIM;i++) previous_action[i]=v[handover_research::GRU_DIM+i];
++}
++// Latest motor command actually published by the classic allocator, in RAPTOR action space.
++bool Raptor::research_classic_action(float *action) {
++    research_actuator_s sample{};
++    while (_research_actuator_sub.update(&sample)) if (sample.owner==2) {_research_classic=sample;_research_classic_set=true;}
++    constexpr hrt_abstime MAX_AGE_US=50000;
++    bool valid=_research_classic_set && hrt_absolute_time()-_research_classic.timestamp<=MAX_AGE_US;
++    if (valid) {
++        const handover_research::ActionConversion r=handover_research::motor_to_action(_research_classic.control,_research_classic_action);
++        _research_clipped_total+=r.clipped;valid=r.valid;
++    }
++    if (!valid) {++_research_classic_unavailable_total;return false;}
++    for (TI i=0;i<4;i++) action[i]=_research_classic_action[i];
++    return true;
++}
++void Raptor::research_teacher_force(bool active) {
++    static const param_t rini=param_find("MC_RAPTOR_RINI"), rsh=param_find("MC_RAPTOR_RSH");
++    int32_t mode=0, enabled=0;param_get(rini,&mode);param_get(rsh,&enabled);
++    _research_mode=enabled?mode:0;_research_teacher_forced=false;
++    if (active || !handover_research::teacher_forcing(_research_mode)) return;
++    float action[4];
++    if (research_classic_action(action)) {
++        for (TI i=0;i<4;i++) previous_action[i]=action[i];
++        _research_teacher_forced=true;
++    }
++}
++void Raptor::research_entry(int32_t mode, const float *before, const float *classic, bool classic_valid) {
++    research_memory_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=research_memory_s::KIND_ENTRY;m.entry_mode=mode;m.active=true;
++    for (TI i=0;i<16;i++) m.gru_before_entry[i]=before[i];
++    for (TI i=0;i<4;i++) {m.previous_action_before_entry[i]=before[16+i];m.classic_action[i]=classic_valid?classic[i]:NAN;}
++    if (mode>=handover_research::ENTRY_CLASSIC_ACTION) {
++        float written[handover_research::MEMORY_DIM]{};
++        m.entry_result=handover_research::entry_memory(mode,before,classic,classic_valid,_research_state.engine.staged,
++            _research_state.engine.staged_dim,_research_exit.memory,_research_exit.valid,RESET_PREVIOUS_ACTION_VALUE,written);
++        if (m.entry_result==handover_research::ENTRY_APPLIED) {
++            research_set_memory(written);
++            PX4_INFO("Research mode-entry treatment %d applied",(int)mode);
++        } else {
++            PX4_ERR("Research mode-entry treatment %d NOT applied: result %d",(int)mode,(int)m.entry_result);
++        }
++    }
++    float after[32]{};research_get(after);
++    for (TI i=0;i<16;i++) m.gru[i]=after[i];
++    for (TI i=0;i<4;i++) m.previous_action[i]=after[16+i];
++    m.classic_actuator_timestamp=_research_classic_set?_research_classic.actuator_timestamp:0;
++    m.clipped_total=_research_clipped_total;m.classic_unavailable_total=_research_classic_unavailable_total;
++    _research_memory_pub.publish(m);
++}
++void Raptor::research_log_step(bool active, const float *previous_action_used, bool native_step) {
++    research_memory_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=research_memory_s::KIND_STEP;m.entry_mode=_research_mode;m.active=active;m.native_step=native_step;
++    m.teacher_forced=_research_teacher_forced;
++    for (TI i=0;i<22;i++) m.policy_input[i]=rlt::get(device,executor.input,0,i);
++    float memory[32]{};research_get(memory);
++    for (TI i=0;i<16;i++) m.gru[i]=memory[i];
++    for (TI i=0;i<4;i++) {m.previous_action[i]=previous_action_used[i];m.classic_action[i]=_research_teacher_forced?_research_classic_action[i]:NAN;}
++    m.classic_actuator_timestamp=_research_teacher_forced?_research_classic.actuator_timestamp:0;
++    m.clipped_total=_research_clipped_total;m.classic_unavailable_total=_research_classic_unavailable_total;
++    _research_memory_pub.publish(m);
++}
++#endif
+ 
+ ModuleBase::Descriptor Raptor::desc{task_spawn, custom_command, print_usage};
+ 
+@@ -34,8 +130,17 @@ Raptor::Raptor(): ModuleParams(nullptr), ScheduledWorkItem(MODULE_NAME, px4::wq_
+ 	internal_reference_activation_position[2] = 0.0f;
+ 	internal_reference_params_changed = false;
+ 
++#ifdef __PX4_POSIX
++    _p11_pub.advertise();
++#endif
+ 	_actuator_motors_pub.advertise();
+ 	_tune_control_pub.advertise();
++#ifdef __PX4_POSIX
++	param_find("MC_RAPTOR_RTGT");
++	param_find("MC_RAPTOR_RTDEC");
++	param_find("MC_RAPTOR_RREC");
++	_research_recovery_pub.advertise();
++#endif
+ }
+ void Raptor::reset()
+ {
+@@ -147,6 +252,9 @@ bool Raptor::test_policy(FILE *f, TI input_offset, TI output_offset)
+ 
+ bool Raptor::init()
+ {
++#ifdef __PX4_POSIX
++    _p12_pub.advertise();
++#endif
+ 	this->init_time = hrt_absolute_time();
+ 
+ 	if (!_vehicle_angular_velocity_sub.registerCallback()) {
+@@ -343,7 +451,34 @@ void rotate_vector(T R[9], T v[3], T v_rotated[3])
+ 
+ void Raptor::observe(rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> &observation)
+ {
++#ifdef __PX4_POSIX
++	// P7: while the rate-limited recovery is active the network observes the virtual target (horizontal position and
++	// velocity) instead of the external setpoint; the setpoint is restored when observe() returns.
++	const ResearchRecoveryView research_recovery_view(*this);
++#endif
+ 	// converting from FRD to FLU
++#ifdef __PX4_POSIX
++    if (_p11_enabled) {
++        struct timespec p11_pre_begin{};clock_gettime(CLOCK_MONOTONIC,&p11_pre_begin);
++        _p11.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        _p11.local_position_sample=_vehicle_local_position.timestamp_sample;
++        _p11.attitude_sample=_vehicle_attitude.timestamp_sample;
++        _p11.stale=previous_trajectory_setpoint_stale;
++        _p11.recovery_active=_research_recovery.active;
++        _p11.target_yaw=_trajectory_setpoint.yaw;
++        float p11_memory[32]{};research_get(p11_memory);
++        for (TI i=0;i<16;i++) _p11.gru_before[i]=p11_memory[i];
++        for (TI i=0;i<4;i++) {_p11.attitude[i]=_vehicle_attitude.q[i];_p11.previous_action_before[i]=previous_action[i];}
++        for (TI i=0;i<3;i++) {
++            _p11.position[i]=position[i];_p11.velocity[i]=linear_velocity[i];
++            _p11.angular_velocity[i]=_vehicle_angular_velocity.xyz[i];
++            _p11.network_target_position[i]=_trajectory_setpoint.position[i];
++            _p11.network_target_velocity[i]=_trajectory_setpoint.velocity[i];
++        }
++        struct timespec p11_pre_end{};clock_gettime(CLOCK_MONOTONIC,&p11_pre_end);
++        _p11_pre_ns=static_cast<uint64_t>(p11_pre_end.tv_sec-p11_pre_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_pre_end.tv_nsec-p11_pre_begin.tv_nsec);
++    }
++#endif
+ 	T Rt_inv[9];
+ 
+ 	{
+@@ -413,6 +548,24 @@ void Raptor::observe(rl_tools::inference::applications::l2f::Observation<EXECUTO
+ }
+ 
+ 
++#ifdef __PX4_POSIX
++void Raptor::research_exit_lifecycle(bool active) {
++    static const param_t rsh=param_find("MC_RAPTOR_RSH");
++    int32_t enabled=0;param_get(rsh,&enabled);
++    if (!enabled || !_research_exit.due(active)) return;
++    float live[32]{};research_get(live);
++    _research_exit.store(live);
++    research_memory_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=research_memory_s::KIND_EXIT;m.entry_mode=_research_mode;m.active=false;
++    for (TI i=0;i<16;i++) m.gru[i]=_research_exit.memory[i];
++    for (TI i=0;i<4;i++) {m.previous_action[i]=_research_exit.memory[16+i];m.classic_action[i]=NAN;}
++    m.clipped_total=_research_clipped_total;m.classic_unavailable_total=_research_classic_unavailable_total;
++    _research_memory_pub.publish(m);
++    PX4_INFO("Research exit memory stored");
++}
++#endif
++
+ void Raptor::updateArmingCheckReply()
+ {
+ 	if (flightmode_state == FlightModeState::CONFIGURED) {
+@@ -482,6 +635,19 @@ void Raptor::Run()
+ 	status.timestamp_sample = current_time;
+ 	status.exit_reason = raptor_status_s::EXIT_REASON_NONE;
+ 	status.substep = 0;
++#ifdef __PX4_POSIX
++    struct timespec p11_cycle_begin{};clock_gettime(CLOCK_MONOTONIC,&p11_cycle_begin);
++    const uint64_t p11_cycle_start=static_cast<uint64_t>(p11_cycle_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_cycle_begin.tv_nsec);
++    static const param_t p11_param=param_find("MC_RAPTOR_P11"), p11_rsh=param_find("MC_RAPTOR_RSH");
++    int32_t p11_enable=0,p11_research=0;
++    param_get(p11_param,&p11_enable);param_get(p11_rsh,&p11_research);
++    _p11_enabled=p11_enable && p11_research;
++    if (_p11_enabled) {
++        _p11=research_p11_s{};_p11.timestamp=current_time;_p11.sequence=++_p11_sequence;
++        struct timespec p11_wall{};clock_gettime(CLOCK_MONOTONIC,&p11_wall);
++        _p11.run_wall_ns=static_cast<uint64_t>(p11_wall.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_wall.tv_nsec);
++    }
++#endif
+ 	status.active = false;
+ 	status.control_interval = NAN;
+ 	status.trajectory_setpoint_dt_mean = NAN;
+@@ -518,8 +684,11 @@ void Raptor::Run()
+ 		timestamp_last_vehicle_status_set = true;
+ 	}
+ 
+-	bool next_active = timestamp_last_vehicle_status_set && _vehicle_status.nav_state == ext_component_mode_id;
++	bool next_active = flightmode_state == FlightModeState::CONFIGURED && timestamp_last_vehicle_status_set && _vehicle_status.nav_state == ext_component_mode_id;
+ 
++#ifdef __PX4_POSIX
++    research_exit_lifecycle(next_active);
++#endif
+ 	if (!previous_active && next_active) {
+ 
+ 		// Activate setpoint type
+@@ -530,7 +699,23 @@ void Raptor::Run()
+ 		setpoint_config.should_apply = true;
+ 		_setpoint_config_pub.publish(setpoint_config);
+ 
+-		this->reset();
++#ifdef __PX4_POSIX
++        int32_t preserve=0, enabled=0;
++        param_get(param_find("MC_RAPTOR_RINI"),&preserve);
++        param_get(param_find("MC_RAPTOR_RSH"),&enabled);
++        float memory[32]{};
++        if(preserve==1 && enabled)research_get(memory);
++        const int32_t entry_mode=enabled?preserve:0;
++        float entry_before[32]{};research_get(entry_before);
++        float entry_classic[4]{};
++        const bool entry_classic_valid=handover_research::needs_classic_action(entry_mode) && research_classic_action(entry_classic);
++#endif
++        this->reset();
++#ifdef __PX4_POSIX
++        if(preserve==1 && enabled)research_set(memory,false);
++        PX4_INFO("Research mode-entry memory: %s",preserve==1 && enabled?"preserved; timing rebased":"reset");
++        research_entry(entry_mode,entry_before,entry_classic,entry_classic_valid);
++#endif
+ 		PX4_INFO("Resetting Inference Executor (Recurrent State)");
+ 
+ 	} else {
+@@ -538,9 +723,16 @@ void Raptor::Run()
+ 			PX4_INFO("inactive");
+ 		}
+ 	}
++#ifdef __PX4_POSIX
++    research_teacher_force(next_active);
++#endif
+ 
+ 	bool angular_velocity_update = false;
+ 	status.subscription_update_angular_velocity = _vehicle_angular_velocity_sub.update(&_vehicle_angular_velocity);
++#ifdef __PX4_POSIX
++    // Schedule another work item until the queue is drained, including early returns.
++    if(_vehicle_angular_velocity_sub.updated())ScheduleNow();
++#endif
+ 
+ 	if (status.subscription_update_angular_velocity) {
+ 		timestamp_last_angular_velocity = current_time;
+@@ -569,9 +761,45 @@ void Raptor::Run()
+ 
+ 	status.timestamp_last_vehicle_attitude = timestamp_last_attitude;
+ 
++#ifdef __PX4_POSIX
++    static const param_t p12_on=param_find("MC_RAPTOR_P12"),p12_ph=param_find("MC_RAPTOR_P12PH"),p12_r=param_find("MC_RAPTOR_P12R");
++    int32_t p12_enable=0,p12_phase=0,p12_repair=0;
++    param_get(p12_on,&p12_enable);param_get(p12_ph,&p12_phase);param_get(p12_r,&p12_repair);
++    _p12_enabled=p12_enable && _p11_enabled;
++    _p12_repair=p12_repair!=0;
++    if (!previous_active && next_active) _p12_seen=false;
++    _p12=research_p12_s{};
++    if (_p12_enabled) {
++        _p12.timestamp=current_time;_p12.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        _p12.active=next_active;_p12.requested_phase=p12_phase;_p12.repair_requested=_p12_repair;
++        _p12.lp_updated=status.subscription_update_local_position;_p12.attitude_updated=status.subscription_update_attitude;
++        _p12.last_gru_sample_before=_last_gru_sample;
++        _p12.call_index_before=executor.executor.intermediate_step;
++        _p12.history_count_before=executor.steps_since_original_control_step;
++        for (TI i=0;i<4;i++) _p12.history_before[i]=executor.action_history[0][i];
++        _p12.predicted_commit=!executor.executor.last_control_timestamp_original_set ||
++            (executor.executor.force_sync_native!=0 && executor.executor.intermediate_step%executor.executor.force_sync_native==0);
++        _p12.gate_pending=_trajectory_setpoint_sub.updated();
++        _p12.gate_permit=handover_research::p12_delivery_allowed(p12_phase,next_active,
++            executor.executor.last_control_timestamp_original_set,executor.executor.intermediate_step,executor.executor.force_sync_native);
++        struct timespec p12_begin{};clock_gettime(CLOCK_MONOTONIC,&p12_begin);
++        _p12.read_begin_wall_ns=static_cast<uint64_t>(p12_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12_begin.tv_nsec);
++    }
++#endif
+ 	trajectory_setpoint_s temp_trajectory_setpoint;
+ 	bool use_external_reference = !use_internal_reference;
++#ifdef __PX4_POSIX
++    // P12 native-state delivery gate: do not consume on the other phase.
++    // The uORB latest value remains pending; timestamps and the strict guard are untouched.
++    status.subscription_update_trajectory_setpoint = use_external_reference &&
++        (!_p12_enabled || _p12.gate_permit) && _trajectory_setpoint_sub.update(&temp_trajectory_setpoint);
++    if (_p12_enabled) {
++        struct timespec p12_end{};clock_gettime(CLOCK_MONOTONIC,&p12_end);
++        _p12.read_end_wall_ns=static_cast<uint64_t>(p12_end.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12_end.tv_nsec);
++    }
++#else
+ 	status.subscription_update_trajectory_setpoint = use_external_reference && _trajectory_setpoint_sub.update(&temp_trajectory_setpoint);
++#endif
+ 
+ 	if (status.subscription_update_trajectory_setpoint) {
+ 		if (
+@@ -612,6 +840,22 @@ void Raptor::Run()
+ 		}
+ 	}
+ 
++#ifdef __PX4_POSIX
++    if (_p11_enabled) {
++        _p11.subscription_updated=status.subscription_update_trajectory_setpoint;
++        _p11.external_valid=_p11.subscription_updated && status.timestamp_last_trajectory_setpoint==current_time;
++        _p11.external_timestamp=_p11.subscription_updated?temp_trajectory_setpoint.timestamp:0;
++        _p11.last_valid_read_us=timestamp_last_trajectory_setpoint_set?timestamp_last_trajectory_setpoint:0;
++        _p11.invalid_total=trajectory_setpoint_invalid_count;
++        for (TI i=0;i<3;i++) {
++            _p11.external_position[i]=_p11.external_valid?temp_trajectory_setpoint.position[i]:NAN;
++            _p11.external_velocity[i]=_p11.external_valid?temp_trajectory_setpoint.velocity[i]:NAN;
++        }
++        _p11.external_yaw=_p11.external_valid?temp_trajectory_setpoint.yaw:NAN;
++        struct timespec p11_read{};clock_gettime(CLOCK_MONOTONIC,&p11_read);
++        _p11.read_wall_ns=static_cast<uint64_t>(p11_read.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_read.tv_nsec);
++    }
++#endif
+ 	constexpr bool PUBLISH_NON_COMPLETE_STATUS = true;
+ 
+ 	if (!angular_velocity_update) {
+@@ -779,6 +1023,9 @@ void Raptor::Run()
+ 			_trajectory_setpoint.velocity[1] = 0;
+ 			_trajectory_setpoint.velocity[2] = 0;
+ 			_trajectory_setpoint.yawspeed = 0;
++#ifdef __PX4_POSIX
++			research_target_capture(!previous_active && next_active, next_active);
++#endif
+ 
+ 			if (!previous_trajectory_setpoint_stale) {
+ 				PX4_WARN("trajectory_setpoint turned stale at: %f %f %f, yaw: %f %llu / %llu us", (double)position[0], (double)position[1],
+@@ -807,12 +1054,101 @@ void Raptor::Run()
+ 
+ 
+ 
++#ifdef __PX4_POSIX
++	research_target_step(next_active, status.trajectory_setpoint_stale);
++	research_recovery_transition(next_active, status.trajectory_setpoint_stale, !previous_active && next_active);
++#endif
+ 	rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> observation;
+ 	rl_tools::inference::applications::l2f::Action<EXECUTOR_SPEC> action;
++#ifdef __PX4_POSIX
++    const auto generation=_vehicle_angular_velocity_sub.get_last_generation();
++    if(_sample_generation && generation-_sample_generation>1)_sample_missed+=generation-_sample_generation-1;
++    _sample_generation=generation;
++    const unsigned input_result=_sample_clock.accept(_vehicle_angular_velocity.timestamp_sample);
++    if(input_result) {
++        research_timing_s skipped{};
++        skipped.timestamp=current_time;skipped.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        skipped.schema_version=2;skipped.active=next_active;skipped.mode_id=ext_component_mode_id;
++        skipped.accepted_total=_sample_clock.accepted;skipped.duplicate_total=_sample_clock.duplicate;
++        skipped.regressed_total=_sample_clock.regressed;skipped.source_missed_total=_sample_missed;
++        skipped.source_generation=generation;skipped.input_result=input_result;
++        skipped.native_total=_native_total;skipped.gru_commit_total=_gru_total;skipped.last_gru_sample=_last_gru_sample;
++        skipped.executor_ok=true;skipped.output_finite=true;
++        handover_research::TimingRecord skipped_record(skipped);
++        perf_end(_loop_perf);return;
++    }
++#endif
++#ifdef __PX4_POSIX
++    for (TI i=0;i<16;i++) _research_state._bounds[i]=1.f;
++    for (TI i=16;i<20;i++) _research_state._bounds[i]=1.f;
++    for (TI i=23;i<26;i++) _research_state._bounds[i]=10.f;
++    _research_state.update(next_active,
++        [this](float *v) { research_get(v); },
++        [this](const float *v, bool reset_state) { research_set(v,reset_state); });
++    struct timespec wall_start{}, wall_end{};
++    clock_gettime(CLOCK_MONOTONIC,&wall_start);
++#endif
+ 	observe(observation);
++#ifdef __PX4_POSIX
++    const uint32_t executor_dt_us=executor.executor.last_control_timestamp_set ?
++        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp)/1000 : 0;
++    const uint32_t native_dt_us=executor.executor.last_control_timestamp_original_set ?
++        (_vehicle_angular_velocity.timestamp_sample*1000-executor.executor.last_control_timestamp_original)/1000 : 0;
++    hrt_abstime nanoseconds = _vehicle_angular_velocity.timestamp_sample * 1000;
++#else
+ 	hrt_abstime nanoseconds = current_time * 1000;
++#endif
+ 	auto executor_status = rl_tools::control(device, executor, nanoseconds, policy, observation, action, rng);
++#ifdef __PX4_POSIX
++    clock_gettime(CLOCK_MONOTONIC,&wall_end);
++    research_timing_s timing{};
++    timing.timestamp=current_time;
++    timing.schema_version=2;
++    timing.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    timing.local_position_sample=_vehicle_local_position.timestamp_sample;
++    timing.attitude_sample=_vehicle_attitude.timestamp_sample;
++    timing.control_start_wall_ns=static_cast<uint64_t>(wall_start.tv_sec)*1000000000ULL+wall_start.tv_nsec;
++    timing.control_end_wall_ns=static_cast<uint64_t>(wall_end.tv_sec)*1000000000ULL+wall_end.tv_nsec;
++    timing.accepted_total=_sample_clock.accepted;
++    timing.duplicate_total=_sample_clock.duplicate;
++    timing.regressed_total=_sample_clock.regressed;
++    timing.source_generation=_sample_generation;
++    timing.source_missed_total=_sample_missed;
++    timing.input_dt_us=_sample_clock.dt;
++    timing.executor_dt_us=executor_dt_us;
++    timing.native_dt_us=native_dt_us;
++    timing.executor_called=true;
++    timing.native_step=executor_status.source==decltype(executor_status.source)::CONTROL && executor_status.step_type==decltype(executor_status.step_type)::NATIVE;
++    timing.gru_committed=timing.native_step && !_research_state.engine.holding;
++    if(timing.native_step)++_native_total;
++    if(timing.gru_committed){++_gru_total;_last_gru_sample=timing.timestamp_sample;}
++    timing.native_total=_native_total;timing.gru_commit_total=_gru_total;timing.last_gru_sample=_last_gru_sample;
++    timing.timing_jitter_ok=executor_status.timing_jitter.OK;
++    timing.timing_bias_ok=executor_status.timing_bias.OK;
++    timing.jitter_ratio=executor_status.timing_jitter.MAGNITUDE;
++    timing.bias_ratio=executor_status.timing_bias.MAGNITUDE;
++    timing.timestamp_invalid=executor_status.TIMESTAMP_INVALID;
++    timing.timestamp_order_invalid=executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP;
++    timing.inference_duration_us=(wall_end.tv_sec-wall_start.tv_sec)*1000000+(wall_end.tv_nsec-wall_start.tv_nsec)/1000;
++    timing.active=next_active;
++    timing.executor_ok=executor_status.OK;
++    timing.control_step=executor_status.source==decltype(executor_status.source)::CONTROL;
++    timing.mode_id=ext_component_mode_id;
++    timing.output_finite=true;
++    if(timing.control_step)for(TI i=0;i<4;i++) {timing.action[i]=action.action[i];timing.output_finite &= PX4_ISFINITE(action.action[i]);}
++    handover_research::TimingRecord timing_record(timing);
++    if(_research_state.engine.holding)research_set(_research_state.engine.held,false);
++    if(timing.control_step && (!timing.output_finite || executor_status.TIMESTAMP_INVALID || executor_status.LAST_CONTROL_TIMESTAMP_GREATER_THAN_LAST_OBSERVATION_TIMESTAMP)) {
++        PX4_ERR("Research guard: invalid inference; actuator publication withheld");
++        can_arm=false;updateArmingCheckReply();return;
++    }
++#endif
+ 
++#ifdef __PX4_POSIX
++    // Logged after the timed observe+control span; the GRU is the committed state after this inference.
++    if (executor_status.source==decltype(executor_status.source)::CONTROL)
++        research_log_step(next_active,observation.previous_action,executor_status.step_type==decltype(executor_status.step_type)::NATIVE);
++#endif
+ 	if (!executor_status.OK) {
+ 		if (executor_status.TIMESTAMP_INVALID) {
+ 			PX4_ERR("RLtools executor error: Timestamp invalid");
+@@ -868,7 +1204,13 @@ void Raptor::Run()
+ 	for (TI action_i = 0; action_i < actuator_motors_s::NUM_CONTROLS; action_i++) {
+ 		if (action_i < EXECUTOR_CONFIG::OUTPUT_DIM) {
+ 			T value = action.action[action_i];
+-			this->previous_action[action_i] = value;
++#ifdef __PX4_POSIX
++            if(!_research_state.engine.holding) {
++                this->previous_action[action_i] = value;
++            }
++#else
++            this->previous_action[action_i] = value;
++#endif
+ 			value = (value + 1) / 2;
+ 			constexpr T training_min = 0;
+ 			constexpr T training_max = 1.0;
+@@ -890,10 +1232,49 @@ void Raptor::Run()
+ 	}
+ 
+ 	if (status.active) {
++#ifdef __PX4_POSIX
++        handover_research::ActuatorGate publication_gate(true);
++        if (publication_gate.allowed()) {
++#endif
+ 		_actuator_motors_pub.publish(actuator_motors);
++#ifdef __PX4_POSIX
++        timing.actuator_published=true;
++        timing.actuator_publish_sim_us=hrt_absolute_time();
++        struct timespec publish_wall{};clock_gettime(CLOCK_MONOTONIC,&publish_wall);
++        timing.actuator_publish_wall_ns=static_cast<uint64_t>(publish_wall.tv_sec)*1000000000ULL+publish_wall.tv_nsec;
++#endif
++#ifdef __PX4_POSIX
++    research_actuator_s ownership{};
++    ownership.timestamp=hrt_absolute_time();ownership.actuator_timestamp=actuator_motors.timestamp;ownership.owner=1;
++    for(unsigned i=0;i<4;i++)ownership.control[i]=actuator_motors.control[i];
++    static uORB::Publication<research_actuator_s> ownership_pub{ORB_ID(research_actuator)};
++    ownership_pub.publish(ownership);
++        } // publication_gate.allowed()
++#endif
+ 	}
+ 
+ 	perf_end(_loop_perf);
++#ifdef __PX4_POSIX
++    struct timespec p11_post_begin{};clock_gettime(CLOCK_MONOTONIC,&p11_post_begin);
++    timing.p11_cycle_wall_start_ns=p11_cycle_start;
++    if (_p11_enabled) {
++        _p11.active=next_active;_p11.activation=!previous_active && next_active;
++        _p11.native_step=timing.native_step;_p11.gru_committed=timing.gru_committed;
++        float p11_after[32]{};research_get(p11_after);
++        for (TI i=0;i<16;i++) _p11.gru_after[i]=p11_after[i];
++        for (TI i=0;i<4;i++) {_p11.previous_action_after[i]=previous_action[i];_p11.executor_action[i]=action.action[i];}
++        for (TI i=0;i<22;i++) _p11.policy_input[i]=rlt::get(device,executor.input,0,i);
++        struct timespec p11_pub_begin{},p11_pub_end{};clock_gettime(CLOCK_MONOTONIC,&p11_pub_begin);
++        _p11_pub.publish(_p11);
++        clock_gettime(CLOCK_MONOTONIC,&p11_pub_end);
++        timing.p11_setup_ns=_p11.run_wall_ns-p11_cycle_start;
++        timing.p11_pre_ns=_p11_pre_ns;
++        timing.p11_post_copy_ns=static_cast<uint64_t>(p11_pub_begin.tv_sec-p11_post_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_pub_begin.tv_nsec-p11_post_begin.tv_nsec);
++        timing.p11_publication_ns=static_cast<uint64_t>(p11_pub_end.tv_sec-p11_pub_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_pub_end.tv_nsec-p11_pub_begin.tv_nsec);
++    }
++    struct timespec p11_cycle_end{};clock_gettime(CLOCK_MONOTONIC,&p11_cycle_end);
++    timing.p11_cycle_wall_end_ns=static_cast<uint64_t>(p11_cycle_end.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_cycle_end.tv_nsec);
++#endif
+ 	previous_active = next_active;
+ 
+ 	if (executor_status.source == decltype(executor_status.source)::CONTROL) {
+@@ -907,6 +1288,20 @@ void Raptor::Run()
+ 		}
+ 	}
+ 
++#ifdef __PX4_POSIX
++    if (_p12_enabled) {
++        if (_p11.external_valid && next_active) _p12_seen=true;
++        _p12.external_seen=_p12_seen;
++        _p12.actual_commit=timing.gru_committed;
++        _p12.call_index_after=executor.executor.intermediate_step;
++        _p12.history_count_after=executor.steps_since_original_control_step;
++        for (TI i=0;i<4;i++) _p12.history_after[i]=executor.action_history[0][i];
++        _p12_pub.publish(_p12);
++    }
++    struct timespec p12_cycle_end{};clock_gettime(CLOCK_MONOTONIC,&p12_cycle_end);
++    // P12 full-cycle envelope includes its own publication and parameter reads.
++    timing.p11_cycle_wall_end_ns=static_cast<uint64_t>(p12_cycle_end.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12_cycle_end.tv_nsec);
++#endif
+ 	if (!this->timestamp_last_policy_frequency_check_set
+ 	    || (current_time - timestamp_last_policy_frequency_check) > POLICY_FREQUENCY_CHECK_INTERVAL) {
+ 		if (this->timestamp_last_policy_frequency_check_set) {
+@@ -960,6 +1355,68 @@ void Raptor::Run()
+ 			&& executor_status.step_type == decltype(executor_status.step_type)::NATIVE;
+ }
+ 
++#ifdef __PX4_POSIX
++// P4-01c: called in the cycle in which RAPTOR captured its target (the original capture has just written the current
++// position and yaw with zero velocity). Mode 1 replaces the zero velocity by the current horizontal velocity in the
++// activation cycle only; research_target_step() then evaluates the profile every cycle while RAPTOR holds that target.
++// P5: mode 2 does the same at activation and at every in-flight setpoint-timeout capture while active.
++void Raptor::research_target_capture(bool activation, bool active) {
++    static const param_t rsh=param_find("MC_RAPTOR_RSH"),rtgt=param_find("MC_RAPTOR_RTGT"),rtdec=param_find("MC_RAPTOR_RTDEC");
++    int32_t enabled=0,mode=0;float decel=0.f;param_get(rsh,&enabled);
++    if (!enabled) return;
++    param_get(rtgt,&mode);param_get(rtdec,&decel);
++    // P12_CAPTURE_OVERLAY: no reset, no hidden/history write, no live parameter change.
++    if (_p12_enabled) mode=handover_research::p12_capture_mode(_p12_repair,activation,active,_p12_seen);
++    // P12_CONT_REPAIR_WINDOW: preserve the complete legacy overlay prefix.
++    if (_p12_enabled) {
++        static const param_t window_param=param_find("MC_RAPTOR_P12MS");
++        int32_t not_before_ms=-1;param_get(window_param,&not_before_ms);
++        if (!handover_research::p12_repair_window_open(_vehicle_angular_velocity.timestamp_sample,not_before_ms)) mode=0;
++    }
++    if (_research_target.active) {_research_target.active=false;research_target_publish(research_target_s::KIND_END,research_target_s::END_RECAPTURE);}
++    _research_target_mode=mode;_research_target_decel=decel;_research_target_activation=activation;
++    _research_target_capture_time=hrt_absolute_time();_research_target_capture_sample=_vehicle_angular_velocity.timestamp_sample;
++    _research_target_local_sample=_vehicle_local_position.timestamp_sample;
++    for (TI i=0;i<3;i++) {_research_target_vehicle_position[i]=position[i];_research_target_vehicle_velocity[i]=linear_velocity[i];}
++    _research_target_phase=handover_research::TARGET_PHASE_HOLD;
++    if (handover_research::speed_matched_capture(mode,activation,active)) {
++        float p[3]={_trajectory_setpoint.position[0],_trajectory_setpoint.position[1],_trajectory_setpoint.position[2]},v[3];
++        if (_research_target.start(_research_target_capture_sample,p,linear_velocity,decel)) {
++            _research_target_phase=_research_target.evaluate(_research_target_capture_sample,p,v);
++            for (TI i=0;i<3;i++) {_trajectory_setpoint.position[i]=p[i];_trajectory_setpoint.velocity[i]=v[i];}
++            PX4_INFO("Research takeover target T1: speed %.3f m/s, decel %.2f m/s^2",(double)_research_target.speed0,(double)decel);
++        } else {
++            PX4_ERR("Research takeover target T1 NOT started (decel %.3f)",(double)decel);
++        }
++    }
++    research_target_publish(research_target_s::KIND_CAPTURE,0);
++}
++void Raptor::research_target_step(bool active, bool stale) {
++    if (!_research_target.active) return;
++    if (!active || !stale) {
++        _research_target.active=false;
++        research_target_publish(research_target_s::KIND_END,active?research_target_s::END_EXTERNAL_SETPOINT:research_target_s::END_INACTIVE);
++        return;
++    }
++    float p[3],v[3];_research_target_phase=_research_target.evaluate(_vehicle_angular_velocity.timestamp_sample,p,v);
++    for (TI i=0;i<3;i++) {_trajectory_setpoint.position[i]=p[i];_trajectory_setpoint.velocity[i]=v[i];}
++    research_target_publish(research_target_s::KIND_PROFILE,0);
++}
++void Raptor::research_target_publish(uint8_t kind, uint8_t end_reason) {
++    research_target_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=kind;m.mode=_research_target_mode;m.activation=_research_target_activation;
++    m.phase=kind==research_target_s::KIND_END?0:_research_target_phase;m.end_reason=end_reason;m.decel=_research_target_decel;
++    m.capture_timestamp=_research_target_capture_time;m.capture_sample=_research_target_capture_sample;m.local_position_sample=_research_target_local_sample;
++    for (TI i=0;i<3;i++) {
++        m.vehicle_position[i]=_research_target_vehicle_position[i];m.vehicle_velocity[i]=_research_target_vehicle_velocity[i];
++        m.position[i]=_trajectory_setpoint.position[i];m.velocity[i]=_trajectory_setpoint.velocity[i];
++    }
++    m.yaw=_trajectory_setpoint.yaw;
++    _research_target_pub.publish(m);
++}
++#endif
++
+ int Raptor::task_spawn(int argc, char *argv[])
+ {
+ 	Raptor *instance = new Raptor();
+@@ -983,6 +1440,71 @@ int Raptor::task_spawn(int argc, char *argv[])
+ 	return PX4_ERROR;
+ }
+ 
++#ifdef __PX4_POSIX
++// P7: called every cycle after the takeover-target step. Arms at an in-flight setpoint-timeout capture while active (not
++// at the activation capture), starts the virtual target in the cycle the setpoint is fresh again (MC_RAPTOR_RREC > 0),
++// ends it at a new timeout or when RAPTOR becomes inactive.
++void Raptor::research_recovery_transition(bool active, bool stale, bool activation) {
++    const bool was_stale=_research_recovery_previous_stale;
++    _research_recovery_previous_stale=stale;
++    if (!active) {
++        _research_recovery_armed=false;
++        if (_research_recovery.active) {_research_recovery.active=false;research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_INACTIVE);}
++        return;
++    }
++    if (stale) {
++        if (activation) _research_recovery_armed=false;
++        else if (!was_stale) _research_recovery_armed=true;
++        if (_research_recovery.active) {_research_recovery.active=false;research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_STALE);}
++        return;
++    }
++    if (!was_stale || !_research_recovery_armed) return;
++    _research_recovery_armed=false;
++    static const param_t rsh=param_find("MC_RAPTOR_RSH"),rrec=param_find("MC_RAPTOR_RREC");
++    int32_t enabled=0;float rate=0.f;param_get(rsh,&enabled);param_get(rrec,&rate);
++    if (!enabled || !(rate>0.f)) return;
++    const float p[3]={position[0],position[1],position[2]},v[3]={linear_velocity[0],linear_velocity[1],linear_velocity[2]};
++    if (!_research_recovery.start(_vehicle_angular_velocity.timestamp_sample,p,v,rate)) {PX4_ERR("Research recovery NOT started (rate %.3f)",(double)rate);return;}
++    for (TI i=0;i<3;i++) {_research_recovery_vehicle_position[i]=p[i];_research_recovery_vehicle_velocity[i]=v[i];}
++    _research_recovery_last=handover_research::RecoveryStep{};
++    research_recovery_publish(research_recovery_s::KIND_START,0);
++    PX4_INFO("Research recovery: virtual target, rate %.2f m/s^2",(double)rate);
++}
++// Inside observe(): one step of the virtual target against the external setpoint in force; the network then observes it.
++bool Raptor::research_recovery_apply(float saved[4]) {
++    if (!_research_recovery.active) return false;
++    const float sp_p[2]={_trajectory_setpoint.position[0],_trajectory_setpoint.position[1]};
++    const float sp_v[2]={_trajectory_setpoint.velocity[0],_trajectory_setpoint.velocity[1]};
++    _research_recovery_last=_research_recovery.step(_vehicle_angular_velocity.timestamp_sample,sp_p,sp_v);
++    if (!_research_recovery.active) {research_recovery_publish(research_recovery_s::KIND_END,research_recovery_s::END_CONVERGED);return false;}
++    research_recovery_publish(research_recovery_s::KIND_STEP,0);
++    for (TI i=0;i<2;i++) {
++        saved[i]=sp_p[i];saved[2+i]=sp_v[i];
++        _trajectory_setpoint.position[i]=float(_research_recovery.p[i]);_trajectory_setpoint.velocity[i]=float(_research_recovery.v[i]);
++    }
++    return true;
++}
++void Raptor::research_recovery_restore(const float saved[4]) {
++    for (TI i=0;i<2;i++) {_trajectory_setpoint.position[i]=saved[i];_trajectory_setpoint.velocity[i]=saved[2+i];}
++}
++void Raptor::research_recovery_publish(uint8_t kind, uint8_t end_reason) {
++    research_recovery_s m{};
++    m.timestamp=hrt_absolute_time();m.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++    m.kind=kind;m.end_reason=end_reason;m.rate=float(_research_recovery.rate);m.omega=float(handover_research::RecoveryTarget::OMEGA);
++    const handover_research::RecoveryStep &s=_research_recovery_last;
++    m.dt=float(s.dt);m.limited=s.limited;m.acc[0]=float(s.acc[0]);m.acc[1]=float(s.acc[1]);m.acc_unlimited_norm=float(s.acc_unlimited);
++    m.position_difference=float(s.position_difference);m.velocity_difference=float(s.velocity_difference);m.start_sample=_research_recovery.start_us;
++    const bool step=kind==research_recovery_s::KIND_STEP;
++    for (TI i=0;i<3;i++) {
++        m.setpoint_position[i]=_trajectory_setpoint.position[i];m.setpoint_velocity[i]=_trajectory_setpoint.velocity[i];
++        m.target_position[i]=i<2 && (step || kind==research_recovery_s::KIND_START)?float(_research_recovery.p[i]):_trajectory_setpoint.position[i];
++        m.target_velocity[i]=i<2 && (step || kind==research_recovery_s::KIND_START)?float(_research_recovery.v[i]):_trajectory_setpoint.velocity[i];
++        m.vehicle_position[i]=_research_recovery_vehicle_position[i];m.vehicle_velocity[i]=_research_recovery_vehicle_velocity[i];
++    }
++    _research_recovery_pub.publish(m);
++}
++#endif
++
+ int Raptor::print_status()
+ {
+ 	perf_print_counter(_loop_perf);
+@@ -994,6 +1516,9 @@ int Raptor::print_status()
+ 
+ int Raptor::custom_command(int argc, char *argv[])
+ {
++#ifdef __PX4_POSIX
++    if(argc>=1 && strcmp(argv[0],"state")==0)return handover_research::state_command(argc,argv);
++#endif
+ 	if (argc >= 2 && strcmp(argv[0], "intref") == 0) {
+ 		if (strcmp(argv[1], "lissajous") == 0) {
+ 			// Usage: mc_raptor intref lissajous <A> <B> <C> <fa> <fb> <fc> <duration> <ramp>

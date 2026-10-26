@@ -36,7 +36,8 @@ namespace systems
   class ResearchMulticopterMotorModel
       : public System,
         public ISystemConfigure,
-        public ISystemPreUpdate
+        public ISystemPreUpdate,
+        public ISystemPostUpdate
   {
     /// \brief Constructor
     public: ResearchMulticopterMotorModel();
@@ -54,6 +55,9 @@ namespace systems
     public: void PreUpdate(
                 const gz::sim::UpdateInfo &_info,
                 gz::sim::EntityComponentManager &_ecm) override;
+
+    public: void PostUpdate(const gz::sim::UpdateInfo &,
+                            const gz::sim::EntityComponentManager &) override;
 
     /// \brief Private data pointer
     private: std::unique_ptr<ResearchMulticopterMotorModelPrivate> dataPtr;

@@ -1,0 +1,37 @@
+P13_START 1 development dev01-F2-NORMAL
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p13/campaign.py", line 84, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/car/uav_handover/tools/p13/campaign.py", line 83, in main
+    execute(row,a.stage)
+  File "/home/car/uav_handover/tools/p13/campaign.py", line 67, in execute
+    measured=analyze(target,kind)
+             ^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p13/campaign.py", line 39, in analyze
+    ph=physical(target/'run',a/'physics')
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p13/physics.py", line 55, in analyze
+    write(out/'physics.json',report);np.savez_compressed(out/'body.npz',**{n:b[n] for n in b.dtype.names});return report
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p9_model.py", line 34, in write
+    f.write(json.dumps(obj, indent=2, ensure_ascii=False, allow_nan=False)+'\n')
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/encoder.py", line 202, in encode
+    chunks = list(chunks)
+             ^^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/usr/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/usr/lib/python3.12/json/encoder.py", line 439, in _iterencode
+    o = _default(o)
+        ^^^^^^^^^^^
+  File "/usr/lib/python3.12/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type bool_ is not JSON serializable

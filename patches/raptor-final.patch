@@ -1,5 +1,5 @@
 diff --git a/msg/CMakeLists.txt b/msg/CMakeLists.txt
-index 369ec75..1f4ac6d 100644
+index 369ec75..68c7619 100644
 --- a/msg/CMakeLists.txt
 +++ b/msg/CMakeLists.txt
 @@ -180,6 +180,7 @@ set(msg_files
@@ -27,6 +27,18 @@ index 369ec75..1f4ac6d 100644
  	RtlTimeEstimate.msg
  	SatelliteInfo.msg
  	SensorAccel.msg
+@@ -232,8 +242,11 @@ set(msg_files
+ 	UavcanParameterValue.msg
+ 	UlogStream.msg
+ 	UlogStreamAck.msg
++	ResearchP11.msg
+ 	VehicleAcceleration.msg
++	ResearchP12.msg
+ 	VehicleAirData.msg
++	ResearchP12b.msg
+ 	VehicleConstraints.msg
+ 	VehicleControlMode.msg
+ 	VehicleImu.msg
 diff --git a/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp b/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp
 index 486ddcf..77d6595 100644
 --- a/platforms/posix/src/px4/common/lockstep_scheduler/src/lockstep_scheduler.cpp
@@ -803,7 +815,7 @@ index fb467f7..6a997ce 100644
  	/**
  	 * If set, the tilt setpoint is computed by assuming no vertical acceleration
 diff --git a/src/modules/mc_raptor/mc_raptor.cpp b/src/modules/mc_raptor/mc_raptor.cpp
-index df27d92..e4741fd 100644
+index df27d92..95c481a 100644
 --- a/src/modules/mc_raptor/mc_raptor.cpp
 +++ b/src/modules/mc_raptor/mc_raptor.cpp
 @@ -1,3 +1,7 @@
@@ -913,8 +925,13 @@ index df27d92..e4741fd 100644
  
  ModuleBase::Descriptor Raptor::desc{task_spawn, custom_command, print_usage};
  
-@@ -36,6 +132,12 @@ Raptor::Raptor(): ModuleParams(nullptr), ScheduledWorkItem(MODULE_NAME, px4::wq_
+@@ -34,8 +130,17 @@ Raptor::Raptor(): ModuleParams(nullptr), ScheduledWorkItem(MODULE_NAME, px4::wq_
+ 	internal_reference_activation_position[2] = 0.0f;
+ 	internal_reference_params_changed = false;
  
++#ifdef __PX4_POSIX
++    _p11_pub.advertise();
++#endif
  	_actuator_motors_pub.advertise();
  	_tune_control_pub.advertise();
 +#ifdef __PX4_POSIX
@@ -926,7 +943,17 @@ index df27d92..e4741fd 100644
  }
  void Raptor::reset()
  {
-@@ -343,6 +445,11 @@ void rotate_vector(T R[9], T v[3], T v_rotated[3])
+@@ -147,6 +252,9 @@ bool Raptor::test_policy(FILE *f, TI input_offset, TI output_offset)
+ 
+ bool Raptor::init()
+ {
++#ifdef __PX4_POSIX
++    _p12_pub.advertise();
++#endif
+ 	this->init_time = hrt_absolute_time();
+ 
+ 	if (!_vehicle_angular_velocity_sub.registerCallback()) {
+@@ -343,7 +451,34 @@ void rotate_vector(T R[9], T v[3], T v_rotated[3])
  
  void Raptor::observe(rl_tools::inference::applications::l2f::Observation<EXECUTOR_SPEC> &observation)
  {
@@ -936,9 +963,32 @@ index df27d92..e4741fd 100644
 +	const ResearchRecoveryView research_recovery_view(*this);
 +#endif
  	// converting from FRD to FLU
++#ifdef __PX4_POSIX
++    if (_p11_enabled) {
++        struct timespec p11_pre_begin{};clock_gettime(CLOCK_MONOTONIC,&p11_pre_begin);
++        _p11.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        _p11.local_position_sample=_vehicle_local_position.timestamp_sample;
++        _p11.attitude_sample=_vehicle_attitude.timestamp_sample;
++        _p11.stale=previous_trajectory_setpoint_stale;
++        _p11.recovery_active=_research_recovery.active;
++        _p11.target_yaw=_trajectory_setpoint.yaw;
++        float p11_memory[32]{};research_get(p11_memory);
++        for (TI i=0;i<16;i++) _p11.gru_before[i]=p11_memory[i];
++        for (TI i=0;i<4;i++) {_p11.attitude[i]=_vehicle_attitude.q[i];_p11.previous_action_before[i]=previous_action[i];}
++        for (TI i=0;i<3;i++) {
++            _p11.position[i]=position[i];_p11.velocity[i]=linear_velocity[i];
++            _p11.angular_velocity[i]=_vehicle_angular_velocity.xyz[i];
++            _p11.network_target_position[i]=_trajectory_setpoint.position[i];
++            _p11.network_target_velocity[i]=_trajectory_setpoint.velocity[i];
++        }
++        struct timespec p11_pre_end{};clock_gettime(CLOCK_MONOTONIC,&p11_pre_end);
++        _p11_pre_ns=static_cast<uint64_t>(p11_pre_end.tv_sec-p11_pre_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_pre_end.tv_nsec-p11_pre_begin.tv_nsec);
++    }
++#endif
  	T Rt_inv[9];
  
-@@ -413,6 +520,24 @@ void Raptor::observe(rl_tools::inference::applications::l2f::Observation<EXECUTO
+ 	{
+@@ -413,6 +548,24 @@ void Raptor::observe(rl_tools::inference::applications::l2f::Observation<EXECUTO
  }
  
  
@@ -963,7 +1013,27 @@ index df27d92..e4741fd 100644
  void Raptor::updateArmingCheckReply()
  {
  	if (flightmode_state == FlightModeState::CONFIGURED) {
-@@ -518,8 +643,11 @@ void Raptor::Run()
+@@ -482,6 +635,19 @@ void Raptor::Run()
+ 	status.timestamp_sample = current_time;
+ 	status.exit_reason = raptor_status_s::EXIT_REASON_NONE;
+ 	status.substep = 0;
++#ifdef __PX4_POSIX
++    struct timespec p11_cycle_begin{};clock_gettime(CLOCK_MONOTONIC,&p11_cycle_begin);
++    const uint64_t p11_cycle_start=static_cast<uint64_t>(p11_cycle_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_cycle_begin.tv_nsec);
++    static const param_t p11_param=param_find("MC_RAPTOR_P11"), p11_rsh=param_find("MC_RAPTOR_RSH");
++    int32_t p11_enable=0,p11_research=0;
++    param_get(p11_param,&p11_enable);param_get(p11_rsh,&p11_research);
++    _p11_enabled=p11_enable && p11_research;
++    if (_p11_enabled) {
++        _p11=research_p11_s{};_p11.timestamp=current_time;_p11.sequence=++_p11_sequence;
++        struct timespec p11_wall{};clock_gettime(CLOCK_MONOTONIC,&p11_wall);
++        _p11.run_wall_ns=static_cast<uint64_t>(p11_wall.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_wall.tv_nsec);
++    }
++#endif
+ 	status.active = false;
+ 	status.control_interval = NAN;
+ 	status.trajectory_setpoint_dt_mean = NAN;
+@@ -518,8 +684,11 @@ void Raptor::Run()
  		timestamp_last_vehicle_status_set = true;
  	}
  
@@ -976,7 +1046,7 @@ index df27d92..e4741fd 100644
  	if (!previous_active && next_active) {
  
  		// Activate setpoint type
-@@ -530,7 +658,23 @@ void Raptor::Run()
+@@ -530,7 +699,23 @@ void Raptor::Run()
  		setpoint_config.should_apply = true;
  		_setpoint_config_pub.publish(setpoint_config);
  
@@ -1001,7 +1071,7 @@ index df27d92..e4741fd 100644
  		PX4_INFO("Resetting Inference Executor (Recurrent State)");
  
  	} else {
-@@ -538,9 +682,16 @@ void Raptor::Run()
+@@ -538,9 +723,16 @@ void Raptor::Run()
  			PX4_INFO("inactive");
  		}
  	}
@@ -1018,7 +1088,116 @@ index df27d92..e4741fd 100644
  
  	if (status.subscription_update_angular_velocity) {
  		timestamp_last_angular_velocity = current_time;
-@@ -779,6 +930,9 @@ void Raptor::Run()
+@@ -569,9 +761,70 @@ void Raptor::Run()
+ 
+ 	status.timestamp_last_vehicle_attitude = timestamp_last_attitude;
+ 
++#ifdef __PX4_POSIX
++    static const param_t p12_on=param_find("MC_RAPTOR_P12"),p12_ph=param_find("MC_RAPTOR_P12PH"),p12_r=param_find("MC_RAPTOR_P12R");
++    int32_t p12_enable=0,p12_phase=0,p12_repair=0;
++    param_get(p12_on,&p12_enable);param_get(p12_ph,&p12_phase);param_get(p12_r,&p12_repair);
++    _p12_enabled=p12_enable && _p11_enabled;
++    _p12_repair=p12_repair!=0;
++    if (!previous_active && next_active) _p12_seen=false;
++    _p12=research_p12_s{};
++    if (_p12_enabled) {
++        _p12.timestamp=current_time;_p12.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        _p12.active=next_active;_p12.requested_phase=p12_phase;_p12.repair_requested=_p12_repair;
++        _p12.lp_updated=status.subscription_update_local_position;_p12.attitude_updated=status.subscription_update_attitude;
++        _p12.last_gru_sample_before=_last_gru_sample;
++        _p12.call_index_before=executor.executor.intermediate_step;
++        _p12.history_count_before=executor.steps_since_original_control_step;
++        for (TI i=0;i<4;i++) _p12.history_before[i]=executor.action_history[0][i];
++        _p12.predicted_commit=!executor.executor.last_control_timestamp_original_set ||
++            (executor.executor.force_sync_native!=0 && executor.executor.intermediate_step%executor.executor.force_sync_native==0);
++        _p12.gate_pending=_trajectory_setpoint_sub.updated();
++        _p12.gate_permit=handover_research::p12_delivery_allowed(p12_phase,next_active,
++            executor.executor.last_control_timestamp_original_set,executor.executor.intermediate_step,executor.executor.force_sync_native);
++        struct timespec p12_begin{};clock_gettime(CLOCK_MONOTONIC,&p12_begin);
++        _p12.read_begin_wall_ns=static_cast<uint64_t>(p12_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12_begin.tv_nsec);
++    }
++#endif
+ 	trajectory_setpoint_s temp_trajectory_setpoint;
++#ifdef __PX4_POSIX
++    static const param_t p12b_param=param_find("MC_RAPTOR_P12B");
++    int32_t p12b_on=0;param_get(p12b_param,&p12b_on);
++    _p12b_enabled=p12b_on && _p12_enabled;
++    _p12b=research_p12b_s{};
++    if (_p12b_enabled) {
++        _p12b.timestamp=current_time;_p12b.timestamp_sample=_vehicle_angular_velocity.timestamp_sample;
++        _p12b.active=next_active;_p12b.activation=!previous_active && next_active;
++        _p12b.timing_initialized_pre=executor.executor.last_control_timestamp_original_set;
++        _p12b.force_sync_initialized_pre=executor.executor.force_sync_native_initialized;
++        _p12b.call_index_pre=executor.executor.intermediate_step;
++        _p12b.force_sync_pre=executor.executor.force_sync_native;
++        _p12b.control_time_pre=executor.executor.last_control_timestamp;
++        _p12b.original_control_time_pre=executor.executor.last_control_timestamp_original;
++        _p12b.last_valid_read_pre=timestamp_last_trajectory_setpoint_set?timestamp_last_trajectory_setpoint:0;
++        _p12b.requested_phase=p12_phase;_p12b.gate_pending=_p12.gate_pending;
++        _p12b.gate_applicable=next_active && p12_phase!=0 &&
++            executor.executor.last_control_timestamp_original_set && executor.executor.force_sync_native!=0;
++        _p12b.gate_permit=_p12.gate_permit;_p12b.external_seen_pre=_p12_seen;
++        int32_t p12b_ms=-1;param_get(param_find("MC_RAPTOR_P12MS"),&p12b_ms);
++        _p12b.repair_not_before_ms=p12b_ms;
++        struct timespec p12b_wall{};clock_gettime(CLOCK_MONOTONIC,&p12b_wall);
++        _p12b.pre_read_wall_ns=static_cast<uint64_t>(p12b_wall.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12b_wall.tv_nsec);
++    }
++#endif
+ 	bool use_external_reference = !use_internal_reference;
++#ifdef __PX4_POSIX
++    // P12 native-state delivery gate: do not consume on the other phase.
++    // The uORB latest value remains pending; timestamps and the strict guard are untouched.
++    status.subscription_update_trajectory_setpoint = use_external_reference &&
++        (!_p12_enabled || _p12.gate_permit) && _trajectory_setpoint_sub.update(&temp_trajectory_setpoint);
++    if (_p12_enabled) {
++        struct timespec p12_end{};clock_gettime(CLOCK_MONOTONIC,&p12_end);
++        _p12.read_end_wall_ns=static_cast<uint64_t>(p12_end.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12_end.tv_nsec);
++    }
++#else
+ 	status.subscription_update_trajectory_setpoint = use_external_reference && _trajectory_setpoint_sub.update(&temp_trajectory_setpoint);
++#endif
+ 
+ 	if (status.subscription_update_trajectory_setpoint) {
+ 		if (
+@@ -612,7 +865,37 @@ void Raptor::Run()
+ 		}
+ 	}
+ 
++#ifdef __PX4_POSIX
++    if (_p11_enabled) {
++        _p11.subscription_updated=status.subscription_update_trajectory_setpoint;
++        _p11.external_valid=_p11.subscription_updated && status.timestamp_last_trajectory_setpoint==current_time;
++        _p11.external_timestamp=_p11.subscription_updated?temp_trajectory_setpoint.timestamp:0;
++        _p11.last_valid_read_us=timestamp_last_trajectory_setpoint_set?timestamp_last_trajectory_setpoint:0;
++        _p11.invalid_total=trajectory_setpoint_invalid_count;
++        for (TI i=0;i<3;i++) {
++            _p11.external_position[i]=_p11.external_valid?temp_trajectory_setpoint.position[i]:NAN;
++            _p11.external_velocity[i]=_p11.external_valid?temp_trajectory_setpoint.velocity[i]:NAN;
++        }
++        _p11.external_yaw=_p11.external_valid?temp_trajectory_setpoint.yaw:NAN;
++        struct timespec p11_read{};clock_gettime(CLOCK_MONOTONIC,&p11_read);
++        _p11.read_wall_ns=static_cast<uint64_t>(p11_read.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_read.tv_nsec);
++    }
++#endif
+ 	constexpr bool PUBLISH_NON_COMPLETE_STATUS = true;
++#ifdef __PX4_POSIX
++    if (_p12b_enabled) {
++        _p12b.read_updated=status.subscription_update_trajectory_setpoint;
++        _p12b.read_valid=_p12b.read_updated &&
++            PX4_ISFINITE(temp_trajectory_setpoint.position[0]) && PX4_ISFINITE(temp_trajectory_setpoint.position[1]) &&
++            PX4_ISFINITE(temp_trajectory_setpoint.position[2]) && PX4_ISFINITE(temp_trajectory_setpoint.velocity[0]) &&
++            PX4_ISFINITE(temp_trajectory_setpoint.velocity[1]) && PX4_ISFINITE(temp_trajectory_setpoint.velocity[2]) &&
++            PX4_ISFINITE(temp_trajectory_setpoint.yaw) && PX4_ISFINITE(temp_trajectory_setpoint.yawspeed);
++        _p12b.last_valid_read_post=timestamp_last_trajectory_setpoint_set?timestamp_last_trajectory_setpoint:0;
++        _p12b.external_timestamp=_p11.external_timestamp;
++        _p12b.invalid_total=trajectory_setpoint_invalid_count;
++        handover_research::p12b_trace(_p12b);
++    }
++#endif
+ 
+ 	if (!angular_velocity_update) {
+ 		status.exit_reason = raptor_status_s::EXIT_REASON_NO_ANGULAR_VELOCITY_UPDATE;
+@@ -779,6 +1062,9 @@ void Raptor::Run()
  			_trajectory_setpoint.velocity[1] = 0;
  			_trajectory_setpoint.velocity[2] = 0;
  			_trajectory_setpoint.yawspeed = 0;
@@ -1028,7 +1207,7 @@ index df27d92..e4741fd 100644
  
  			if (!previous_trajectory_setpoint_stale) {
  				PX4_WARN("trajectory_setpoint turned stale at: %f %f %f, yaw: %f %llu / %llu us", (double)position[0], (double)position[1],
-@@ -807,12 +961,101 @@ void Raptor::Run()
+@@ -807,12 +1093,101 @@ void Raptor::Run()
  
  
  
@@ -1130,7 +1309,7 @@ index df27d92..e4741fd 100644
  	if (!executor_status.OK) {
  		if (executor_status.TIMESTAMP_INVALID) {
  			PX4_ERR("RLtools executor error: Timestamp invalid");
-@@ -868,7 +1111,13 @@ void Raptor::Run()
+@@ -868,7 +1243,13 @@ void Raptor::Run()
  	for (TI action_i = 0; action_i < actuator_motors_s::NUM_CONTROLS; action_i++) {
  		if (action_i < EXECUTOR_CONFIG::OUTPUT_DIM) {
  			T value = action.action[action_i];
@@ -1145,7 +1324,7 @@ index df27d92..e4741fd 100644
  			value = (value + 1) / 2;
  			constexpr T training_min = 0;
  			constexpr T training_max = 1.0;
-@@ -890,7 +1139,25 @@ void Raptor::Run()
+@@ -890,10 +1271,49 @@ void Raptor::Run()
  	}
  
  	if (status.active) {
@@ -1171,7 +1350,52 @@ index df27d92..e4741fd 100644
  	}
  
  	perf_end(_loop_perf);
-@@ -960,6 +1227,60 @@ void Raptor::Run()
++#ifdef __PX4_POSIX
++    struct timespec p11_post_begin{};clock_gettime(CLOCK_MONOTONIC,&p11_post_begin);
++    timing.p11_cycle_wall_start_ns=p11_cycle_start;
++    if (_p11_enabled) {
++        _p11.active=next_active;_p11.activation=!previous_active && next_active;
++        _p11.native_step=timing.native_step;_p11.gru_committed=timing.gru_committed;
++        float p11_after[32]{};research_get(p11_after);
++        for (TI i=0;i<16;i++) _p11.gru_after[i]=p11_after[i];
++        for (TI i=0;i<4;i++) {_p11.previous_action_after[i]=previous_action[i];_p11.executor_action[i]=action.action[i];}
++        for (TI i=0;i<22;i++) _p11.policy_input[i]=rlt::get(device,executor.input,0,i);
++        struct timespec p11_pub_begin{},p11_pub_end{};clock_gettime(CLOCK_MONOTONIC,&p11_pub_begin);
++        _p11_pub.publish(_p11);
++        clock_gettime(CLOCK_MONOTONIC,&p11_pub_end);
++        timing.p11_setup_ns=_p11.run_wall_ns-p11_cycle_start;
++        timing.p11_pre_ns=_p11_pre_ns;
++        timing.p11_post_copy_ns=static_cast<uint64_t>(p11_pub_begin.tv_sec-p11_post_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_pub_begin.tv_nsec-p11_post_begin.tv_nsec);
++        timing.p11_publication_ns=static_cast<uint64_t>(p11_pub_end.tv_sec-p11_pub_begin.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_pub_end.tv_nsec-p11_pub_begin.tv_nsec);
++    }
++    struct timespec p11_cycle_end{};clock_gettime(CLOCK_MONOTONIC,&p11_cycle_end);
++    timing.p11_cycle_wall_end_ns=static_cast<uint64_t>(p11_cycle_end.tv_sec)*1000000000ULL+static_cast<uint64_t>(p11_cycle_end.tv_nsec);
++#endif
+ 	previous_active = next_active;
+ 
+ 	if (executor_status.source == decltype(executor_status.source)::CONTROL) {
+@@ -907,6 +1327,20 @@ void Raptor::Run()
+ 		}
+ 	}
+ 
++#ifdef __PX4_POSIX
++    if (_p12_enabled) {
++        if (_p11.external_valid && next_active) _p12_seen=true;
++        _p12.external_seen=_p12_seen;
++        _p12.actual_commit=timing.gru_committed;
++        _p12.call_index_after=executor.executor.intermediate_step;
++        _p12.history_count_after=executor.steps_since_original_control_step;
++        for (TI i=0;i<4;i++) _p12.history_after[i]=executor.action_history[0][i];
++        _p12_pub.publish(_p12);
++    }
++    struct timespec p12_cycle_end{};clock_gettime(CLOCK_MONOTONIC,&p12_cycle_end);
++    // P12 full-cycle envelope includes its own publication and parameter reads.
++    timing.p11_cycle_wall_end_ns=static_cast<uint64_t>(p12_cycle_end.tv_sec)*1000000000ULL+static_cast<uint64_t>(p12_cycle_end.tv_nsec);
++#endif
+ 	if (!this->timestamp_last_policy_frequency_check_set
+ 	    || (current_time - timestamp_last_policy_frequency_check) > POLICY_FREQUENCY_CHECK_INTERVAL) {
+ 		if (this->timestamp_last_policy_frequency_check_set) {
+@@ -960,6 +1394,68 @@ void Raptor::Run()
  			&& executor_status.step_type == decltype(executor_status.step_type)::NATIVE;
  }
  
@@ -1185,6 +1409,14 @@ index df27d92..e4741fd 100644
 +    int32_t enabled=0,mode=0;float decel=0.f;param_get(rsh,&enabled);
 +    if (!enabled) return;
 +    param_get(rtgt,&mode);param_get(rtdec,&decel);
++    // P12_CAPTURE_OVERLAY: no reset, no hidden/history write, no live parameter change.
++    if (_p12_enabled) mode=handover_research::p12_capture_mode(_p12_repair,activation,active,_p12_seen);
++    // P12_CONT_REPAIR_WINDOW: preserve the complete legacy overlay prefix.
++    if (_p12_enabled) {
++        static const param_t window_param=param_find("MC_RAPTOR_P12MS");
++        int32_t not_before_ms=-1;param_get(window_param,&not_before_ms);
++        if (!handover_research::p12_repair_window_open(_vehicle_angular_velocity.timestamp_sample,not_before_ms)) mode=0;
++    }
 +    if (_research_target.active) {_research_target.active=false;research_target_publish(research_target_s::KIND_END,research_target_s::END_RECAPTURE);}
 +    _research_target_mode=mode;_research_target_decel=decel;_research_target_activation=activation;
 +    _research_target_capture_time=hrt_absolute_time();_research_target_capture_sample=_vehicle_angular_velocity.timestamp_sample;
@@ -1232,7 +1464,7 @@ index df27d92..e4741fd 100644
  int Raptor::task_spawn(int argc, char *argv[])
  {
  	Raptor *instance = new Raptor();
-@@ -983,6 +1304,71 @@ int Raptor::task_spawn(int argc, char *argv[])
+@@ -983,6 +1479,71 @@ int Raptor::task_spawn(int argc, char *argv[])
  	return PX4_ERROR;
  }
  
@@ -1304,7 +1536,7 @@ index df27d92..e4741fd 100644
  int Raptor::print_status()
  {
  	perf_print_counter(_loop_perf);
-@@ -994,6 +1380,9 @@ int Raptor::print_status()
+@@ -994,6 +1555,9 @@ int Raptor::print_status()
  
  int Raptor::custom_command(int argc, char *argv[])
  {
@@ -1315,7 +1547,7 @@ index df27d92..e4741fd 100644
  		if (strcmp(argv[1], "lissajous") == 0) {
  			// Usage: mc_raptor intref lissajous <A> <B> <C> <fa> <fb> <fc> <duration> <ramp>
 diff --git a/src/modules/mc_raptor/mc_raptor.hpp b/src/modules/mc_raptor/mc_raptor.hpp
-index fcd3203..cc1882c 100644
+index fcd3203..5581fea 100644
 --- a/src/modules/mc_raptor/mc_raptor.hpp
 +++ b/src/modules/mc_raptor/mc_raptor.hpp
 @@ -1,4 +1,7 @@
@@ -1326,7 +1558,7 @@ index fcd3203..cc1882c 100644
  
  #include "trajectories/lissajous.hpp"
  
-@@ -18,8 +21,25 @@
+@@ -18,15 +21,43 @@
  #include <uORB/topics/vehicle_odometry.h>
  #include <uORB/topics/vehicle_attitude.h>
  #include <uORB/topics/vehicle_angular_velocity.h>
@@ -1352,7 +1584,25 @@ index fcd3203..cc1882c 100644
  #include <uORB/topics/register_ext_component_request.h>
  #include <uORB/topics/register_ext_component_reply.h>
  #include <uORB/topics/unregister_ext_component.h>
-@@ -91,6 +111,14 @@ public:
+ #include <uORB/topics/vehicle_status.h>
+ #include <uORB/topics/raptor_status.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_p12.h>
++#include <lib/handover_research/P12Controls.hpp>
++#endif
+ #include <uORB/topics/raptor_input.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_p11.h>
++#endif
+ #include <uORB/topics/tune_control.h>
++#ifdef __PX4_POSIX
++#include <uORB/topics/research_p12b.h>
++#include <lib/handover_research/P12bTrace.hpp>
++#endif
+ #include <uORB/topics/setpoint_config.h>
+ #include <uORB/topics/arming_check_request.h>
+ #include <uORB/topics/arming_check_reply.h>
+@@ -91,6 +122,14 @@ public:
  	int print_status() override;
  
  private:
@@ -1367,16 +1617,27 @@ index fcd3203..cc1882c 100644
  #ifdef __PX4_POSIX
  	using DEVICE = rlt::devices::DefaultCPU;
  #else
-@@ -117,7 +145,7 @@ private:
+@@ -115,9 +154,18 @@ private:
+ 	T max_position_error = 0.5;
+ 	T max_velocity_error = 1.0;
  
++#ifdef __PX4_POSIX
++    bool _p12_enabled{false}, _p12_seen{false}, _p12_repair{false};
++    research_p12_s _p12{};
++    uORB::Publication<research_p12_s> _p12_pub{ORB_ID(research_p12)};
++#endif
  	void Run() override;
++#ifdef __PX4_POSIX
++    bool _p12b_enabled{false};
++    research_p12b_s _p12b{};
++#endif
  
 -	decltype(register_ext_component_reply_s::mode_id) ext_component_mode_id;
 +	decltype(register_ext_component_reply_s::mode_id) ext_component_mode_id = 255;
  	decltype(register_ext_component_reply_s::arming_check_id) ext_component_arming_check_id;
  
  	enum class FlightModeState : TI {
-@@ -130,7 +158,11 @@ private:
+@@ -130,7 +178,11 @@ private:
  
  	// node state
  	vehicle_local_position_s _vehicle_local_position{};
@@ -1388,7 +1649,21 @@ index fcd3203..cc1882c 100644
  	vehicle_attitude_s _vehicle_attitude{};
  	vehicle_status_s _vehicle_status{};
  	trajectory_setpoint_s _trajectory_setpoint{};
-@@ -151,7 +183,11 @@ private:
+@@ -140,6 +192,13 @@ private:
+ 	     timestamp_last_trajectory_setpoint_set = false, timestamp_last_manual_control_input_set = false, timestamp_last_vehicle_status_set = false;
+ 	bool timeout_message_sent = false;
+ 	bool previous_trajectory_setpoint_stale = false;
++#ifdef __PX4_POSIX
++    bool _p11_enabled{false};
++    uint64_t _p11_sequence{0};
++    uint64_t _p11_pre_ns{0};
++    research_p11_s _p11{};
++    uORB::Publication<research_p11_s> _p11_pub{ORB_ID(research_p11)};
++#endif
+ 	bool previous_active = false;
+ 
+ 	T position[3];
+@@ -151,7 +210,11 @@ private:
  	uORB::Subscription _trajectory_setpoint_sub{ORB_ID(trajectory_setpoint)};
  	uORB::Subscription _arming_check_request_sub{ORB_ID(arming_check_request)};
  	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
@@ -1400,7 +1675,7 @@ index fcd3203..cc1882c 100644
  	uORB::Publication<actuator_motors_s> _actuator_motors_pub{ORB_ID(actuator_motors)};
  	uORB::Publication<raptor_status_s> _raptor_status_pub{ORB_ID(raptor_status)};
  	uORB::Publication<raptor_input_s> _raptor_input_pub{ORB_ID(raptor_input)};
-@@ -231,7 +267,31 @@ private:
+@@ -231,7 +294,31 @@ private:
  #endif
  
  	void reset();
@@ -1432,7 +1707,7 @@ index fcd3203..cc1882c 100644
  
  	static constexpr bool REMAP_FROM_CRAZYFLIE =
  		true; // Policy (Crazyflie assignment) => Quadrotor (PX4 Quadrotor X assignment) PX4 SIH assumes the Quadrotor X configuration, which assumes different rotor positions than the crazyflie mapping (from crazyflie outputs to PX4): 1=>1, 2=>4, 3=>2, 4=>3
-@@ -263,6 +323,34 @@ private:
+@@ -263,6 +350,34 @@ private:
  	TI trajectory_setpoint_invalid_count = 0;
  
  	float previous_action[EXECUTOR_SPEC::OUTPUT_DIM];
@@ -1468,12 +1743,19 @@ index fcd3203..cc1882c 100644
  	bool internal_reference_params_changed = false;
  	T internal_reference_activation_position[3];
 diff --git a/src/modules/mc_raptor/module.yaml b/src/modules/mc_raptor/module.yaml
-index 2b61df8..6a383bf 100644
+index 2b61df8..b5246b3 100644
 --- a/src/modules/mc_raptor/module.yaml
 +++ b/src/modules/mc_raptor/module.yaml
-@@ -1,5 +1,63 @@
+@@ -1,5 +1,70 @@
  module_name: mc_raptor
  parameters:
++    - group: Handover Research Observation
++      definitions:
++        MC_RAPTOR_P11:
++            description:
++                short: SITL read-only P11 full inference observation
++            type: boolean
++            default: false
 +    - group: Handover Research
 +      definitions:
 +        MC_RAPTOR_RINI:
@@ -1535,6 +1817,48 @@ index 2b61df8..6a383bf 100644
      - group: Multicopter Raptor
        definitions:
          MC_RAPTOR_ENABLE:
+@@ -41,3 +106,41 @@ parameters:
+                 1: Lissajous
+             default: 0
+             category: System
++
++    - group: Handover P12 Experiment
++      definitions:
++        MC_RAPTOR_P12:
++            description:
++                short: SITL P12 observation and experiment enable
++            type: boolean
++            default: false
++        MC_RAPTOR_P12PH:
++            description:
++                short: P12 delivery gate 0 original 1 native 2 intermediate
++            type: int32
++            default: 0
++            min: 0
++            max: 2
++        MC_RAPTOR_P12R:
++            description:
++                short: P12 repair only after activation and external read
++            type: boolean
++            default: false
++
++    - group: Handover P12 Continuation
++      definitions:
++        MC_RAPTOR_P12MS:
++            description:
++                short: Repair sample ms gate -1 legacy 0 inhibited positive threshold
++            type: int32
++            default: -1
++            min: -1
++            max: 2000000000
++
++    - group: Handover P12b Observation
++      definitions:
++        MC_RAPTOR_P12B:
++            description:
++                short: P12b passive pre-read contract observation
++            type: boolean
++            default: false
 diff --git a/src/modules/mc_rate_control/MulticopterRateControl.cpp b/src/modules/mc_rate_control/MulticopterRateControl.cpp
 index 7bfb830..7329852 100644
 --- a/src/modules/mc_rate_control/MulticopterRateControl.cpp

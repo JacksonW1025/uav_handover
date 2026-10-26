@@ -1,0 +1,74 @@
+--- baseline/research/gz/ResearchMulticopterMotorModel.cc
++++ p13/research/gz/ResearchMulticopterMotorModel.cc
+@@ -23,6 +23,7 @@
+  */
+ 
+ #include "ResearchMulticopterMotorModel.hh"
++#include "P13PhysicsTrace.hh"
+ 
+ #include <chrono>
+ #include <cstdio>
+@@ -257,6 +258,8 @@
+   static_assert(sizeof(ExecutionRow) == 152, "P12 execution trace layout");
+   public: FILE *researchExecution{nullptr};
+   public: uint64_t researchConsumeNs{0};
++  public: std::unique_ptr<p13::Trace> p13Trace;
++  public: uint64_t p13Step{0},p13SimNs{0},p13DtNs{0};
+   public: ~ResearchMulticopterMotorModelPrivate()
+   {
+     if (this->researchTrace) fclose(this->researchTrace);
+@@ -469,6 +472,19 @@
+ void ResearchMulticopterMotorModel::PreUpdate(const UpdateInfo &_info,
+     EntityComponentManager &_ecm)
+ {
++  // P13 read-only requests and bounded memory recording, never a control input.
++  if (!this->dataPtr->p13Trace) {
++    if (const char *dir=std::getenv("HANDOVER_P13_PHYSICS_TRACE")) {
++      this->dataPtr->p13Trace.reset(new p13::Trace(this->dataPtr->model,this->dataPtr->actuatorNumber,dir));
++      this->dataPtr->p13Trace->Enable(_ecm);
++    }
++  }
++  if(this->dataPtr->p13Trace) {
++    this->dataPtr->p13Step=_info.iterations;
++    this->dataPtr->p13SimNs=std::chrono::duration_cast<std::chrono::nanoseconds>(_info.simTime).count();
++    this->dataPtr->p13DtNs=std::chrono::duration_cast<std::chrono::nanoseconds>(_info.dt).count();
++    this->dataPtr->p13Trace->Sample(_info,_ecm,0,ResearchMonotonicNs());
++  }
+   GZ_PROFILE("ResearchMulticopterMotorModel::PreUpdate");
+ 
+   // \TODO(anyone) Support rewind
+@@ -798,6 +814,16 @@
+       *jointVelCmd = components::JointVelocityCmd(
+           {this->turningDirection * refMotorRotVel
+                               / this->rotorVelocitySlowdownSim});
++      if (this->p13Trace) {
++        p13::Rotor r{};r.step=this->p13Step;r.sim_ns=this->p13SimNs;r.dt_ns=this->p13DtNs;
++        r.wall_ns=ResearchMonotonicNs();r.sample_us=this->researchAppliedUs;
++        r.command=this->refMotorInput;r.filter_before=p12FilterBefore;r.filter_after=refMotorRotVel;
++        r.joint=motorRotVel;r.thrust=thrust;p13::Vec(r.p,worldPose->Pos());p13::Quat(r.q,worldPose->Rot());
++        p13::Vec(r.v,*worldLinearVel);auto w=link.WorldAngularVelocity(_ecm);
++        if(w){p13::Vec(r.omega,*w);r.valid|=2;}
++        p13::Vec(r.axis,jointAxis);p13::Vec(r.wind,windSpeedWorld);p13::Vec(r.drag,airDrag);
++        p13::Vec(r.parent_torque,parentWorldTorque);r.valid|=1;this->p13Trace->Motor(r);
++      }
+       if (this->researchExecution)
+       {
+         ExecutionRow row{};
+@@ -818,10 +844,16 @@
+   }
+ }
+ 
++void ResearchMulticopterMotorModel::PostUpdate(const UpdateInfo &info, const EntityComponentManager &ecm)
++{
++  if(this->dataPtr->p13Trace)this->dataPtr->p13Trace->Sample(info,ecm,1,ResearchMonotonicNs());
++}
++
+ GZ_ADD_PLUGIN(ResearchMulticopterMotorModel,
+                     System,
+                     ResearchMulticopterMotorModel::ISystemConfigure,
+-                    ResearchMulticopterMotorModel::ISystemPreUpdate)
++                    ResearchMulticopterMotorModel::ISystemPreUpdate,
++                    ResearchMulticopterMotorModel::ISystemPostUpdate)
+ 
+ GZ_ADD_PLUGIN_ALIAS(ResearchMulticopterMotorModel,
+                           "gz::sim::systems::ResearchMulticopterMotorModel")

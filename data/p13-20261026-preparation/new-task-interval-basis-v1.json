@@ -1,0 +1,77 @@
+{
+  "schema": "p13-new-task-before-dev5-1",
+  "starts_before": 4,
+  "candidate_intervals_s": [
+    0.55,
+    1.2,
+    2.0
+  ],
+  "source": "historical F4 B before W~.94 at .55; stable F2 at ~1.88, new direct singleA decline .98m/s; conditional recovery1m/s2 illustrative stop~.98s (not actual guarantee)",
+  "reason": "cover unrecovered, transition, more recovered possibilities; no monotonic assumption",
+  "fixed_trajectory": "cruise6s independent B schedule by post_gap compensation; byte-identical sampled profile verified across all3",
+  "new_task": "path12.51m vs historical11.79m, reposition8.255 vs7.895s, all arms common coordinate and same terminal; not exact historical reproduction",
+  "planned_path_check": "original8m path gate retained; start extent6.255m+1m allowance+0.1hover=7.355m<8m",
+  "repair": "same RTDEC2 speedmatched capture after sample experiment gate only",
+  "four_new_development_rows": [
+    {
+      "id": "dev05-F2-AB-new-gap0.55",
+      "family": "F2",
+      "phase": 1,
+      "branch": "AB",
+      "gap_s": 0.55,
+      "sim_seed": 1335130005,
+      "kind": "p5_gap",
+      "condition": "p11-case",
+      "treatment": "P11-Z",
+      "config": "config/p13-cases/dev05-F2-AB-new-gap0.55.json",
+      "config_sha256": "a4dd3bccb14ea069a6f3d9b400d85302f041d584a828b966283245773075cd5c",
+      "source_id": "b1-ph1-AB",
+      "question": "new fixed-cruise task, stable direction with short recovery; reach B"
+    },
+    {
+      "id": "dev06-F4-A-new-gap0.55",
+      "family": "F4",
+      "phase": 1,
+      "branch": "A",
+      "gap_s": 0.55,
+      "sim_seed": 1335130006,
+      "kind": "p5_gap",
+      "condition": "p11-case",
+      "treatment": "P11-Z",
+      "config": "config/p13-cases/dev06-F4-A-new-gap0.55.json",
+      "config_sha256": "0f2f2c565566a02b6296bcd56b45718b4eff0af679f58fbb42bba0438f826c4a",
+      "source_id": "b2-ph1-A",
+      "question": "new boundary condition single A full recovery and margins"
+    },
+    {
+      "id": "dev07-F4-AB-new-gap2.0",
+      "family": "F4",
+      "phase": 1,
+      "branch": "AB",
+      "gap_s": 2.0,
+      "sim_seed": 1335130007,
+      "kind": "p5_gap",
+      "condition": "p11-case",
+      "treatment": "P11-Z",
+      "config": "config/p13-cases/dev07-F4-AB-new-gap2.0.json",
+      "config_sha256": "0f937ca65e75d99deff1f0fac4fbe27116306bbd88c97d94712c04523c610cfc",
+      "source_id": "b2-ph1-AB",
+      "question": "new fixed-cruise task long recovery; B absolute time preserved"
+    },
+    {
+      "id": "dev08-F4-REPAIR-new-gap0.55",
+      "family": "F4",
+      "phase": 1,
+      "branch": "REPAIR",
+      "gap_s": 0.55,
+      "sim_seed": 1335130008,
+      "kind": "p5_gap",
+      "condition": "p11-case",
+      "treatment": "P11-Z",
+      "config": "config/p13-cases/dev08-F4-REPAIR-new-gap0.55.json",
+      "config_sha256": "83e3d7c9ba817b5f11c441a821e09990f1bb47aacd4811fa51ff3892386184db",
+      "source_id": "b2-ph1-REPAIR",
+      "question": "same new short boundary task capture-only repair full hold/resume/tail"
+    }
+  ]
+}

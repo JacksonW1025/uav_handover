@@ -115,7 +115,7 @@ def output_chain(root):
             trace.skipped_publication_total=skipped;''')
     plugins=root/'src/modules/simulation/gz_plugins'
     (plugins/'research_motor_model').mkdir(exist_ok=True)
-    for name in ['ResearchMulticopterMotorModel.cc','ResearchMulticopterMotorModel.hh','CMakeLists.txt']:
+    for name in ['ResearchMulticopterMotorModel.cc','ResearchMulticopterMotorModel.hh','P13PhysicsTrace.hh','CMakeLists.txt']:
         target=plugins/'research_motor_model'/name;source=ROOT/'research/gz'/name
         if not target.exists() or target.read_bytes()!=source.read_bytes():shutil.copy2(source,target)
     cmake=plugins/'CMakeLists.txt'

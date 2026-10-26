@@ -189,6 +189,7 @@ class Experiment:
             self.env['PX4_GZ_MODELS']=str(research_models)
             self.env['HANDOVER_GZ_MOTOR_TRACE']=str(self.out/'gz-motor');(self.out/'gz-motor').mkdir()
             if self.cfg.get('p12',{}).get('observe'):self.env['HANDOVER_P12_TRACE']='1'
+            if self.cfg.get('p13',{}).get('physics_observe'):self.env['HANDOVER_P13_PHYSICS_TRACE']=str(self.out/'gz-motor')
         plugins=self.runtime/'src/modules/simulation/gz_plugins' if (self.runtime/'src').exists() else self.runtime/'plugins'
         plugin_paths=str(plugins)+(':'+str(plugins/'optical_flow') if (plugins/'optical_flow').is_dir() else '')
         self.env['GZ_SIM_SYSTEM_PLUGIN_PATH']=plugin_paths
@@ -212,7 +213,7 @@ class Experiment:
                        'source_diff_sha256':hashlib.sha256(subprocess.check_output(['git','-C',str(self.source),'diff','--binary'])).hexdigest(),
                        'binary':str(self.binary),'binary_sha256':digest(self.binary),
                        'gz_research_plugin_sha256':digest(plugins/'libResearchMulticopterMotorModel.so') if 'HANDOVER_GZ_MOTOR_TRACE' in self.env else None,
-                       'environment':{k:v for k,v in self.env.items() if k.startswith(('PX4_','GZ_','ROS_DOMAIN','HANDOVER_GZ','HANDOVER_CPU'))},'processes':[]}
+                       'environment':{k:v for k,v in self.env.items() if k.startswith(('PX4_','GZ_','ROS_DOMAIN','HANDOVER_GZ','HANDOVER_CPU','HANDOVER_P13'))},'processes':[]}
         self.affinity=cpu_affinity()
         if self.affinity:
             # The runner (and listener/CLI children it starts) runs on its own cores; spawned processes via taskset.

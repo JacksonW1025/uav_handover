@@ -582,6 +582,19 @@ class Experiment:
             p12_epoch=anchor['run_wall_ns']/1e9
             self.event('p12_confirmed_native_stream_anchor',**anchor,
                        scope='past actual commit row; async query age retained; no exact snapshot claim')
+        if self.cfg.get('p12',{}).get('repair_sample_window'):
+            if anchor is None:raise RuntimeError('sample repair window requires confirmed native epoch')
+            # Same operation in every arm; future threshold from actual past sample
+            # plus the fixed ORIGINAL first-event time, even if A is absent.
+            first_event=self.p5_gap_windows()[0][0]
+            gate_ms=int(math.ceil(anchor['timestamp_sample']/1000.+first_event*1000.))
+            self.command('param','set','MC_RAPTOR_P12MS',str(gate_ms))
+            shown=self.command('param','show','MC_RAPTOR_P12MS')
+            if not re.search(r'MC_RAPTOR_P12MS\s*\[[^\]]*\]\s*:\s*'+str(gate_ms)+r'(?:\s|$)',shown):
+                raise RuntimeError('P12 planned repair window readback failed')
+            self.event('p12_planned_repair_window',not_before_sample_ms=gate_ms,
+                       common_first_event_profile_s=first_event,anchor_sample_us=anchor['timestamp_sample'],
+                       parameter_write_scope='identical all-arm protocol; no hidden/history/reset or target write')
         self.start_stream(origin,yaw,False,gaps=windows)
         self.stream_t0=p12_epoch if p12_epoch is not None else time.monotonic()
         self.event('p1_profile_started',px4_bound_us=self.native_bound_streaming(),duration_s=total)
@@ -683,6 +696,11 @@ class Experiment:
                 match_p12=re.search(param+r'\s*\[[^\]]*\]\s*:\s*(-?\d+)',shown_p12)
                 if not match_p12 or int(match_p12.group(1))!=value:
                     raise RuntimeError('P12 parameter readback failed: '+param)
+            if self.cfg['p12'].get('repair_sample_window'):
+                self.command('param','set','MC_RAPTOR_P12MS','0')
+                shown=self.command('param','show','MC_RAPTOR_P12MS')
+                if not re.search(r'MC_RAPTOR_P12MS\s*\[[^\]]*\]\s*:\s*0(?:\s|$)',shown):
+                    raise RuntimeError('P12 repair window initial inhibit readback failed')
             self.event('p12_parameters_before_arming',parameters=self.cfg['p12'])
         shown={}
         for name_ in ['MC_RAPTOR_RINI','MC_RAPTOR_NCO','MC_RAPTOR_RSH']+(['MC_RAPTOR_RTGT','MC_RAPTOR_RTDEC'] if target else [])+(['MC_RAPTOR_RREC'] if recovery else []):

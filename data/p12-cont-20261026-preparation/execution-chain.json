@@ -1,0 +1,41 @@
+{
+  "schema": "p12-cont-execution-edges-1",
+  "edges": [
+    {
+      "edge": "latest bridge -> consumed command",
+      "status": "SOURCE_VERIFIED_AND_TRACE_CHECKED",
+      "limits": "coalescing and overwritten outputs allowed"
+    },
+    {
+      "edge": "consumed -> filter",
+      "status": "ANALYTIC_GLOBAL_INCREMENTAL_RELATION_AND_CONTINUOUS_REPLAY",
+      "relation": "E_next<=max(rho_up E+(1-rho_up)U,rho_down E+(1-rho_down)U)"
+    },
+    {
+      "edge": "filter -> joint command",
+      "status": "SOURCE_ASSIGNMENT",
+      "relation": "qdot_cmd=d*f_after/slowdown"
+    },
+    {
+      "edge": "joint command -> solved JointVelocity",
+      "status": "CONDITIONAL_SOLVER_RELATION; FUTURE_DOMAIN_MISSING",
+      "relation": "e_j(next)=slowdown*(eta-c D lambda); requires active unsaturated servo equality, residual/impulse domain and binary-source equivalence",
+      "observed_residual": "empirical only, never future hard bound"
+    },
+    {
+      "edge": "JointVelocity -> forces/explicit torque",
+      "status": "SOURCE_ALGEBRA_AND_TRACE_CHECKED",
+      "relation": "T=d sign(w) k w^2; drag/rolling depend on wind, orientation; explicit parent torque excludes total wrench"
+    },
+    {
+      "edge": "wrench -> body -> estimator/cache",
+      "status": "SOURCE_ORDER_TRACED; FULL_INCREMENTAL_DOMAIN_MISSING",
+      "limits": "multi-body solver constraints, sensor/EKF/cache evolution unclosed"
+    }
+  ],
+  "first_unclosed": "allowed future solver impulse/residual domain, then body/EKF/cache feedback",
+  "subsystem_theory": "PROVED_CONDITIONALLY_AS_SPECIFIED",
+  "full_feedback": "NOT_PROVEN",
+  "experiment_stop_due_to_theory": false,
+  "source_document": "docs/THOR_P12_CONT_EXECUTION.md"
+}

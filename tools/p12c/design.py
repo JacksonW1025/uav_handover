@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+"""Instantiate fixed F4 blocked random design before all formal starts."""
+import json,random,hashlib,shutil,sys
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools'))
+from p9_model import sha,write
+PREP=ROOT/'data/p12-cont-20261026-preparation';CFG=ROOT/'config/p12-cont-cases'
+def main():
+ if (ROOT/'config/p12-cont.json').exists():raise FileExistsError('never overwrite formal design')
+ CFG.mkdir(exist_ok=False);rows=[];rng=random.Random(20261026012)
+ for block in range(1,5):
+  temp=[];seed=1334270311+block*1009;family='F4' if block==2 else 'F2';ab_mask=[0,1] if family=='F4' else [0,2]
+  for phase in [1,2]:
+   for branch in ['NORMAL0','NORMAL1','A','B','AB','REPAIR']:
+    name=f'b{block}-ph{phase}-{branch}';c=json.loads((ROOT/f'config/p11-cases/{family}-r1-AB.json').read_text());window=json.loads((PREP/'window-12-AB-native.json').read_text());c['p12']=window['p12'];c['p11']['budget']=window['p11']['budget']
+    c['p11']['schema']='p12-cont-formal-1';c['p11']['model_split']='heldout'
+    c['p11']['event_mask']={'NORMAL0':[],'NORMAL1':[],'A':[0],'B':[ab_mask[1]],'AB':ab_mask,'REPAIR':ab_mask}[branch]
+    c['p12'].update(schema='p12-cont-frozen-1',phase=phase,repair=branch=='REPAIR')
+    path=CFG/(name+'.json');write(path,c)
+    temp.append({'id':name,'block':block,'phase':phase,'branch':branch,'family':family,'split':'heldout','kind':'p5_gap','condition':'p11-case','treatment':'P11-Z','config':str(path.relative_to(ROOT)),'config_sha256':sha(path),'sim_seed':seed,'initial_yaw_deg':0.})
+  rng.shuffle(temp);rows.extend(temp)
+ plan={'schema':'p12-cont-frozen-design-1','old_starts':9,'caps':{'preparation':12,'formal':48,'new_total':60,'cumulative':69},'design':'4 chronological randomized blocks x 2 assigned gates x (NORMAL twice,A,B,AB,AB+REPAIR) =48','condition':'primary F2 h15 g.7 events0/2 in blocks1,3,4; boundary F4 h45 g.55 events0/1 block2; original sources preserved','condition_choice':'F4 singleA preparation can fail beforeB (window09), so one boundary block retained descriptively; F2 primary three randomized blocks favor eventB reachability and repeatability. Fixed before formal, no outcome replacement.','randomization':{'seed':20261026012,'algorithm':'Python random.Random shuffle twelve labels independently per block; seed fixed before design generation; no results-based allocation','block_variable':'chronological block with fixed simulator seed; phase randomized within block','assignment':'all branches retained by assignment; no achieved-phase/survival filtering'},'rows':rows,'comparison_protocol_sha256':sha(PREP/'frozen-experimental-protocol.json'),'minimum_meaningful_effect':{'tilt_deg':5,'height_loss_m':.2,'tracking_m':.2},'primary_analysis':{'unit':'independent SITL start; block contrast uses two NORMAL mean as reference','contrasts':['A-N','B-N','AB-N','AB-A-B+N','REPAIR-AB','assigned gate2-gate1'],'outcomes':['strict45deg tilt /1m height task failure separately','full observed tilt/height/tracking/recovery','common-prefix integral and ordered SO3 nonadditivity'],'incomplete':'NOT_REACHED and censoring outcomes retained; no success from incomplete prefix, no full-peak estimate on truncation; common absolute window costs only','uncertainty':'F2 three block contrasts with raw range and t2 95% interval when complete; F4 one block descriptive only; no pooled family inference or deterministic claim','covariates':'fixed .5s window before common first event: p/v/SO3/omega/worldheight/h/previous/mean/filter/joint/consumed command, LP/att age, native offset/count/commit/execution age; raw block estimates primary, initial imbalance sensitivity descriptive only','no_selection':'no filtering by achieved phase, B reached, predicted closeness, or treatment outcome; diagnostic tolerances never change inclusion'},'models':{'M2':'P11 frozen coefficients and original semantics baseline','M3':'P12 unchanged baseline','M4':'same sealed numeric plant plus explicit continuation sample-window logic; no new fit','ablations':['single_clock','no_history','no_filter','uncorrelated_capture'],'parameters':'all coefficients sealed before first formal; no fitting on formal holdout; historical P11/P12 and new preparation declared seen'},'catchup':{'starts':0,'reason':'controlled scheduler apparatus unvalidated; canceled, all48 assigned to randomized core; natural platforms retained, Q3 controlled causal strength unanswered'},'stops':'new critical observation/protocol/identity/protection error stops affected frozen batch; safety outcome does not stop; no replacement or new-version bypass','strict_pairs':'no exact snapshot or strict same-initial-state causal claim','theory_gate':'separate full feedback NOT_PROVEN, not experimental stop'}
+ write(ROOT/'config/p12-cont.json',plan);print('frozen design candidates',len(rows))
+if __name__=='__main__':main()

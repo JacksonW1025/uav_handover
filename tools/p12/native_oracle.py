@@ -19,6 +19,11 @@ class Oracle(old.Oracle):
             ' bool _p12_enabled='+('true' if enabled else 'false')+',_p12_seen=false,_p12_repair='+('true' if repair else 'false')+';\n int capture=0,rec_start=0;')
         code=code.replace('  previous_active=next_active;',
             '  if(status.subscription_update_trajectory_setpoint && timestamp_last_trajectory_setpoint_set && timestamp_last_trajectory_setpoint==current_time) _p12_seen=true;\n  previous_active=next_active;')
+        # Add the continuation parameter's legacy default to the dependency
+        # stub; actual source window/guard method bytes are still extracted.
+        code=code.replace('return std::string(s)=="MC_RAPTOR_RSH"?1:',
+                          'return std::string(s)=="MC_RAPTOR_P12MS"?5:std::string(s)=="MC_RAPTOR_RSH"?1:')
+        code=code.replace('*v=p==1?1:rtgt;','*v=p==5?-1:p==1?1:rtgt;')
         self.source=code;p=Path(self.temp.name);(p/'oracle.cpp').write_text(code)
         subprocess.run(['g++','-std=c++17','-O2','-Wall','-Wextra','-I',str(old.ROOT),str(p/'oracle.cpp'),'-o',str(p/'oracle')],check=True,capture_output=True,text=True)
         self.process=subprocess.Popen([str(p/'oracle')],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)

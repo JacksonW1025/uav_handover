@@ -15,3 +15,13 @@ inline int32_t p12_capture_mode(bool repair, bool activation, bool active, bool 
     return repair && !activation && active && external_seen ? 2 : 0;
 }
 }
+
+namespace handover_research {
+// Continuation protocol: -1 explicitly retains legacy P12 semantics; 0 is
+// inhibited; positive value is an actual sample-clock millisecond threshold.
+// This selects the repair only; it never changes target timeout/capture timing.
+inline bool p12_repair_window_open(uint64_t sample_us, int32_t not_before_ms) {
+    return not_before_ms < 0 || (not_before_ms > 0 &&
+        sample_us >= static_cast<uint64_t>(not_before_ms) * 1000ULL);
+}
+}

@@ -1,0 +1,67 @@
+{
+  "schema": "p12-cont-engineering-experiment-protocol-1",
+  "fixed_before_F4_validation": true,
+  "common_startup": {
+    "reference_ned_m": [
+      0,
+      0,
+      -3
+    ],
+    "yaw_rad": 1.6755160819145563,
+    "native_ack_required": true,
+    "max_wait_s": 2,
+    "max_ack_age_ms": 30,
+    "retry": false,
+    "activation_T0": true,
+    "no_history_reset": true,
+    "note": "one bounded query wait, then actual epoch; no covariance-based rejection picking"
+  },
+  "observation": {
+    "source_replay_tolerances": "unchanged P12 1e-5 single,1e-4 continuous/input",
+    "LP_att_age_max_us": 20000,
+    "finite_required": true,
+    "actual_phase": "assigned gate1/2; actual capture relation is outcome, all assigned runs retained"
+  },
+  "comparability": {
+    "design": "randomized blocked; no exact same-state claim",
+    "mandatory_discrete": [
+      "same task reference/epoch rule",
+      "RINI4 RTGT0 RTDEC2 RREC0",
+      "no capture-only repair effect before first experimental capture",
+      "same assigned gate within contrast"
+    ],
+    "allowed_discrete_uncertainty": [
+      "LP/att cache 0/4/8/12/16/20ms age classes recorded",
+      "absolute simulator clock and call index",
+      "latest pending motor identity/age recorded"
+    ],
+    "continuous_diagnostic_limits": {
+      "position_l2_m": 0.1,
+      "velocity_l2_m_s": 0.15,
+      "SO3_deg": 2.5,
+      "hidden_l2": 0.5,
+      "previous_component": 0.1,
+      "history_component": 0.1,
+      "filter_component_rad_s": 30
+    },
+    "limit_basis": "P11 experimental p/v/SO3/hidden/action limits retained; history same action scale; filter30rad/s=3% configured1000rad/s max, diagnostic only. Neither these limits nor natural variance prove a deterministic set. No limits enlarged after observations.",
+    "over_limit": "retain in intention-to-treat blocked analysis, report initial imbalance, invalidate strict pair claim; do not remove or rerun",
+    "minimum_meaningful_effect": {
+      "tilt_deg": 5,
+      "altitude_loss_m": 0.2,
+      "tracking_m": 0.2
+    },
+    "analysis": "block contrasts all assigned branches; randomized gate effect by assignment, actual phase/NOT_REACHED outcomes; no post-treatment filtering; predeclared initial covariates for sensitivity only",
+    "theory_applicability": "separate UNKNOWN full feedback set; absolute network bound2 never experimental stop"
+  },
+  "F4_validation_ids": [
+    "f4-repeat-03",
+    "f4-repeat-04",
+    "f4-phase-05",
+    "f4-repair-06",
+    "f4-single-repair-07",
+    "f4-single-08"
+  ],
+  "stop": "new critical observation, identity, protection, or protocol error stops affected revision; flight safety failures remain scientific outcomes; no retry of started ID",
+  "catchup": "cancel controlled catchup: apparatus not validated; no additional timing disturbance flights; Q3 natural/legal recorded clock words only"
+}

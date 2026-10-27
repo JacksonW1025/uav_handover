@@ -1,0 +1,28 @@
+{
+  "event": "N_TO_C",
+  "quality": "TOP_FOR_ACTIVE_CLASSIC_FLOW",
+  "missing": [
+    "classic_attitude_reference",
+    "classic_rate_integral",
+    "classic_allocator_state",
+    "classic_cached_gyro_derivative"
+  ],
+  "velocity_integral_zero_basis": "NCO0 disabled-position Run repeatedly executes resetIntegral, observed position flag inactive andLPcallbacks during N; not assumed cold start at handover",
+  "rate_integral_basis": "rate_ctrl_status logged, each active update publishes; boundary/last callback and control flags must be reconstructed before asserting exact held initial value",
+  "extra_ref_state": [
+    "q_ref",
+    "omega_correction",
+    "omega_command",
+    "ref_initialized",
+    "last consumed setpoint timestamp"
+  ],
+  "extra_rate_state": [
+    "output_lpf_yaw filter state",
+    "saturation feedback fromallocator"
+  ],
+  "active_source_kernels": "classic-kernel-v3/result.json",
+  "input_observability": "classic-availability-v1/result.json",
+  "point_mixed_word_CtoN_stop": "handover-v1 + compose-v2 implemented",
+  "NtoC_full_physical_word": "not asserted, stops at missing reference/allocator source inputs without inventing states",
+  "new_SITL": 0
+}

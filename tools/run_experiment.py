@@ -194,6 +194,9 @@ class Experiment:
         plugin_paths=str(plugins)+(':'+str(plugins/'optical_flow') if (plugins/'optical_flow').is_dir() else '')
         self.env['GZ_SIM_SYSTEM_PLUGIN_PATH']=plugin_paths
         if self.cfg.get('p12b',{}).get('read_trace_schema')=='direct-v2':self.env['HANDOVER_P12B_READ_TRACE']=str(self.out/'gz-motor/read-p12b.bin')
+        if self.cfg.get('p14r',{}).get('observer_trace'):
+            # P14R_PASSIVE_TRACE_ENV: passive record only; controller never reads it.
+            self.env['HANDOVER_P14R_TRACE_DIR']=str(self.out/'gz-motor')
         self.env['LD_LIBRARY_PATH']=plugin_paths+':'+self.env.get('LD_LIBRARY_PATH','')
         if self.variant=='classic':
             self.env.pop('PX4_PARAM_MC_RAPTOR_ENABLE',None)
@@ -213,7 +216,7 @@ class Experiment:
                        'source_diff_sha256':hashlib.sha256(subprocess.check_output(['git','-C',str(self.source),'diff','--binary'])).hexdigest(),
                        'binary':str(self.binary),'binary_sha256':digest(self.binary),
                        'gz_research_plugin_sha256':digest(plugins/'libResearchMulticopterMotorModel.so') if 'HANDOVER_GZ_MOTOR_TRACE' in self.env else None,
-                       'environment':{k:v for k,v in self.env.items() if k.startswith(('PX4_','GZ_','ROS_DOMAIN','HANDOVER_GZ','HANDOVER_CPU','HANDOVER_P13'))},'processes':[]}
+                       'environment':{k:v for k,v in self.env.items() if k.startswith(('PX4_','GZ_','ROS_DOMAIN','HANDOVER_GZ','HANDOVER_CPU','HANDOVER_P13','HANDOVER_P14R'))},'processes':[]}
         self.affinity=cpu_affinity()
         if self.affinity:
             # The runner (and listener/CLI children it starts) runs on its own cores; spawned processes via taskset.

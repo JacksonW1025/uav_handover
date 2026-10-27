@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p14r/run_tubes.py", line 35, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/car/uav_handover/tools/p14r/run_tubes.py", line 19, in main
+    if sys.argv[1]=='child':child(json.load(open(sys.argv[2])),Path(sys.argv[3]));return
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14r/run_tubes.py", line 15, in child
+    result,s=run(doc,P,job['scale'],variant=job.get('variant','joint'),end=end,compress_rank=-64,group=True,region_output=out/'regions',observer_library=lib,joint_doc=other)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14r/tube.py", line 117, in run
+    prior=contributions(s,['p','v','q','w','h','previous']);s,co=compress(s,initial_n,compress_rank,variant=='box_each_call' or resumed and variant=='rebox_at_resume' or joinbox);C=s['p'].ctx
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14r/affine.py", line 62, in contributions
+    x=state[key];g=x.pad();out[key]={tag:float(max(np.sum(abs(g[:,np.array(tags)==tag]),axis=1))) for tag in sorted(set(tags))}
+                                                              ~^^^^^^^^^^^^^^^^^^^^^^^
+IndexError: boolean index did not match indexed array along dimension 1; dimension is 2719 but corresponding boolean dimension is 609

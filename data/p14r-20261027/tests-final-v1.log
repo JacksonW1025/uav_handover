@@ -1,0 +1,16 @@
+.....................................................................F.. [ 87%]
+..........                                                               [100%]
+=================================== FAILURES ===================================
+______________ test_source_pre_read_snapshot_precedes_consumption ______________
+
+    def test_source_pre_read_snapshot_precedes_consumption():
+     s=(R/'uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/mc_raptor.cpp').read_text()
+     assert s.count('_p12b.timing_initialized_pre=')==1
+     assert s.index('_p12b.timing_initialized_pre=')<s.index('status.subscription_update_trajectory_setpoint = use_external_reference')
+>    assert s.index('_p12b_pub.publish(_p12b)')<s.index('const unsigned input_result=_sample_clock.accept')
+E    ValueError: substring not found
+
+tests/test_p12b.py:70: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_p12b.py::test_source_pre_read_snapshot_precedes_consumption
+1 failed, 81 passed in 3.66s

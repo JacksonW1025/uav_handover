@@ -1,0 +1,106 @@
+............F........................................................... [ 84%]
+.............                                                            [100%]
+=================================== FAILURES ===================================
+___________________ test_target_slot_survives_forbidden_read ___________________
+
+    def test_target_slot_survives_forbidden_read():
+     from p14r.affine import install
+     # Isolate the global algebra overrides from other regression tests.
+     import subprocess
+     code="""import sys,json,numpy as np
+     sys.path.insert(0,'tools')
+     from p14r.affine import install
+     install(False)
+     from p14r.tube import run
+     from p14r.delivery import Delivery,Word
+     from p11.models import reference
+     doc=json.load(open('data/p14r-20261027/source-inputs-v3/d02/input.json'));i=doc['initial'];i['call_index']=1;P=dict(np.load('data/p13-20261026-freeze/models/policy.npz'));end=i['profile_s']+.008;r,s=run(doc,P,0,end=end,compress_rank=None,group=True);m=reference(i['profile_s']+.004,doc['plan']['profile'],np.array(doc['plan']['profile']['table']));assert max(abs(s['r'].c-np.array(m[0],np.float32)))<1e-10
+     """
+>    subprocess.run([str(R/'uav_lab/.local/venv/bin/python'),'-c','\n'.join(x[1:] if x.startswith(' ') else x for x in code.splitlines())],cwd=R,check=True)
+
+tests/test_p14r.py:84: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = False, timeout = None, check = True
+popenargs = (['/home/car/uav_handover/uav_lab/.local/venv/bin/python', '-c', "import sys,json,numpy as np\nsys.path.insert(0,'tool...]['profile'],np.array(doc['plan']['profile']['table']));assert max(abs(s['r'].c-np.array(m[0],np.float32)))<1e-10\n"],)
+kwargs = {'cwd': PosixPath('/home/car/uav_handover')}
+process = <Popen: returncode: 1 args: ['/home/car/uav_handover/uav_lab/.local/venv/bin...>
+stdout = None, stderr = None, retcode = 1
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout is given, and the process takes too long, a TimeoutExpired
+        exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['/home/car/uav_handover/uav_lab/.local/venv/bin/python', '-c', "import sys,json,numpy as np\nsys.path.insert(0,'tools')\nfrom p14r.affine import install\ninstall(False)\nfrom p14r.tube import run\nfrom p14r.delivery import Delivery,Word\nfrom p11.models import reference\ndoc=json.load(open('data/p14r-20261027/source-inputs-v3/d02/input.json'));i=doc['initial'];i['call_index']=1;P=dict(np.load('data/p13-20261026-freeze/models/policy.npz'));end=i['profile_s']+.008;r,s=run(doc,P,0,end=end,compress_rank=None,group=True);m=reference(i['profile_s']+.004,doc['plan']['profile'],np.array(doc['plan']['profile']['table']));assert max(abs(s['r'].c-np.array(m[0],np.float32)))<1e-10\n"]' returned non-zero exit status 1.
+
+/usr/lib/python3.12/subprocess.py:571: CalledProcessError
+----------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "<string>", line 8, in <module>
+AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_p14r.py::test_target_slot_survives_forbidden_read - subproc...
+1 failed, 84 passed in 4.27s

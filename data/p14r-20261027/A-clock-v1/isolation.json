@@ -1,0 +1,31 @@
+{
+  "command": [
+    "bwrap",
+    "--ro-bind",
+    "/",
+    "/",
+    "--tmpfs",
+    "/home/car/uav_handover/data",
+    "--tmpfs",
+    "/home/car/uav_handover/export",
+    "--unshare-net",
+    "--unshare-pid",
+    "--proc",
+    "/proc",
+    "--bind",
+    "/tmp/p14r-clock-_tudcxt2/child",
+    "/tmp/p14r-clock-_tudcxt2/child",
+    "--chdir",
+    "/home/car/uav_handover",
+    "taskset",
+    "-c",
+    "0-3",
+    "/home/car/uav_handover/uav_lab/.local/venv/bin/python",
+    "/tmp/p14r-clock-_tudcxt2/child.py",
+    "/tmp/p14r-clock-_tudcxt2/input",
+    "/tmp/p14r-clock-_tudcxt2/child/predictions"
+  ],
+  "rc": 0,
+  "tmp": "/tmp/p14r-clock-_tudcxt2",
+  "future_actual_copied": false
+}

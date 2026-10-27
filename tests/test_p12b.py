@@ -67,7 +67,9 @@ def test_source_pre_read_snapshot_precedes_consumption():
  s=(R/'uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/mc_raptor.cpp').read_text()
  assert s.count('_p12b.timing_initialized_pre=')==1
  assert s.index('_p12b.timing_initialized_pre=')<s.index('status.subscription_update_trajectory_setpoint = use_external_reference')
- assert s.index('_p12b_pub.publish(_p12b)')<s.index('const unsigned input_result=_sample_clock.accept')
+ assert s.count('handover_research::p12b_trace(_p12b)')==1
+ assert '_p12b_pub.publish(_p12b)' not in s  # P12c canonical direct trace, redundant ULog removed.
+ assert s.index('handover_research::p12b_trace(_p12b)')<s.index('const unsigned input_result=_sample_clock.accept')
  assert 'last_gru' not in s[s.index('static const param_t p12b_param'):s.index('bool use_external_reference')]
 
 def test_design_preserves_pending_order_and_new_seeds():

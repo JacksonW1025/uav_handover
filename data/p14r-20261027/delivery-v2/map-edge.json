@@ -1,0 +1,45 @@
+{
+  "schema": "moving-correlated-event-map-4",
+  "input": {
+    "mode": "N_ACTIVE after real C->N RINI4",
+    "joint_region": "C-joint-v6 two publisher-clock fibers x4quarters; staged observed endpoint histories, not simultaneous whole simulator snapshots",
+    "event": "stop -> strict timeout capture -> full hold -> latest valid resume -> recovery -> next event",
+    "source": "source-inputs-v3/d02,d03 (full OP packets and all history/execution/queue state)",
+    "state": [
+      "COMp/v/q/omega/rotorphase",
+      "physical vs estimatedq/LPframe/bias",
+      "OP ring+indices+corrections",
+      "gyroDFII",
+      "h/previous/mean/count",
+      "filter/pending/consumed",
+      "reference/capture",
+      "publisher/transport/readslot",
+      "native/sample/commit",
+      "COM and LP H0/L/D/W/failure latch"
+    ],
+    "conditions": "declared source physical and local observer model; future fusion/EKF/SERVO/source float/geodesy budgets unclosed; persistent nominal words not all legal switching"
+  },
+  "output": {
+    "nominal": "compose-v2 full array and4serialized successors",
+    "full_joint_tube": "C-joint-v6; TOP at each named domain loss",
+    "longer_single_quarter": "C-no-compression-full-v1 resume checkpoint -> C-continue-v1 rows93..197; no safe successor at197",
+    "conditional_height": "height-constraint-v1/result.json; all-prefix sufficient reserve, not LP/tilt guarantee",
+    "partial_prefix_margins": "local saved prefixes only; original killed prefix has incomplete tilt-row archive",
+    "storage": "storage-v2 factor, nonlinear remainder and numerical certification remain conditional",
+    "cost": "delivery-v2/cost.json"
+  },
+  "composition": {
+    "nominal_depth": 4,
+    "split_max_difference": 3.552713678800501e-15,
+    "full_joint_interval_depth": 0,
+    "D_and_history_not_reset": true,
+    "loss": "retain valid prefix and TOP, nominal diagnosis may continue separately"
+  },
+  "evidence_categories": [
+    "source/math conditional",
+    "empirical diagnostic",
+    "actual-record support"
+  ],
+  "new_flights": 6,
+  "unused_starts": 2
+}

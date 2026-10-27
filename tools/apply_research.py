@@ -924,3 +924,5 @@ from apply_p12c import apply as apply_p12c
 apply_p12c()
 from apply_p12b import apply as apply_p12b
 apply_p12b()
+from apply_p14r import apply as apply_p14r
+apply_p14r()

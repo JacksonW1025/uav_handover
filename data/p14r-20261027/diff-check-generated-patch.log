@@ -1,0 +1,138 @@
+patches/raptor-final.patch:190: space before tab in indent.
++ 	LowPassFilter2p() = default;
+patches/raptor-final.patch:191: trailing whitespace.
++ 
+patches/raptor-final.patch:192: space before tab in indent.
++ 	LowPassFilter2p(float sample_freq, float cutoff_freq)
+patches/raptor-final.patch:550: trailing whitespace.
++ 
+patches/raptor-final.patch:586: space before tab in indent.
++ 	printf("[output predictor] IMU dt: %.6f, EKF dt: %.6f\n",
+patches/raptor-final.patch:588: trailing whitespace.
++ 
+patches/raptor-final.patch:596: space before tab in indent.
++ 	const outputSample &output_delayed = _output_buffer.get_oldest();
+patches/raptor-final.patch:597: trailing whitespace.
++ 
+patches/raptor-final.patch:598: space before tab in indent.
++ 	// calculate the quaternion rotation delta from the EKF to output observer states at the EKF fusion time horizon
+patches/raptor-final.patch:600: space before tab in indent.
++ 	const Vector3f pos_delta = -output_delayed.pos;
+patches/raptor-final.patch:601: space before tab in indent.
++ 	_global_ref = gpos_state;
+patches/raptor-final.patch:602: trailing whitespace.
++ 
+patches/raptor-final.patch:604: space before tab in indent.
++ 	// loop through the output filter state history and add the deltas
+patches/raptor-final.patch:605: space before tab in indent.
++ 	for (uint8_t i = 0; i < _output_buffer.get_length(); i++) {
+patches/raptor-final.patch:606: space before tab in indent.
++ 		_output_buffer[i].quat_nominal = q_delta * _output_buffer[i].quat_nominal;
+patches/raptor-final.patch:608: trailing whitespace.
++ 
+patches/raptor-final.patch:616: space before tab in indent.
++ 	// TODO: who resets the output buffer content?
+patches/raptor-final.patch:617: space before tab in indent.
++ 	_output_new = {};
+patches/raptor-final.patch:618: space before tab in indent.
++ 	_output_vert_new = {};
+patches/raptor-final.patch:620: trailing whitespace.
++ 
+patches/raptor-final.patch:628: space before tab in indent.
++ 	// add the reset amount to the output observer buffered data
+patches/raptor-final.patch:629: space before tab in indent.
++ 	for (uint8_t i = 0; i < _output_buffer.get_length(); i++) {
+patches/raptor-final.patch:630: space before tab in indent.
++ 		_output_buffer[i].quat_nominal = quat_change * _output_buffer[i].quat_nominal;
+patches/raptor-final.patch:632: trailing whitespace.
++ 
+patches/raptor-final.patch:640: space before tab in indent.
++ 	for (uint8_t index = 0; index < _output_buffer.get_length(); index++) {
+patches/raptor-final.patch:641: space before tab in indent.
++ 		_output_buffer[index].vel.xy() += delta_horz_vel;
+patches/raptor-final.patch:642: space before tab in indent.
++ 	}
+patches/raptor-final.patch:644: trailing whitespace.
++ 
+patches/raptor-final.patch:652: space before tab in indent.
++ 	for (uint8_t index = 0; index < _output_buffer.get_length(); index++) {
+patches/raptor-final.patch:653: space before tab in indent.
++ 		_output_buffer[index].vel(2) += delta_vert_vel;
+patches/raptor-final.patch:654: space before tab in indent.
++ 		_output_vert_buffer[index].vert_vel += delta_vert_vel;
+patches/raptor-final.patch:656: trailing whitespace.
++ 
+patches/raptor-final.patch:664: space before tab in indent.
++ 	_global_ref.setLatitudeDeg(new_latitude);
+patches/raptor-final.patch:665: space before tab in indent.
++ 	_global_ref.setLongitudeDeg(new_longitude);
+patches/raptor-final.patch:667: trailing whitespace.
++ 
+patches/raptor-final.patch:675: space before tab in indent.
++ 	_global_ref.setAltitude(new_altitude);
+patches/raptor-final.patch:677: trailing whitespace.
++ 
+patches/raptor-final.patch:679: space before tab in indent.
++ 		const float delta_angle_dt, const Vector3f &delta_velocity, const float delta_velocity_dt)
+patches/raptor-final.patch:685: space before tab in indent.
++ 	// Use full rate IMU data at the current time horizon
+patches/raptor-final.patch:686: space before tab in indent.
++ 	if (_time_last_update_states_us != 0) {
+patches/raptor-final.patch:687: space before tab in indent.
++ 		const float dt = math::constrain((time_us - _time_last_update_states_us) * 1e-6f, 0.0001f, 0.03f);
+patches/raptor-final.patch:689: space before tab in indent.
++ 	_delta_angle_sum *= delta_quat_unaided;
+patches/raptor-final.patch:690: space before tab in indent.
++ 	_delta_angle_sum.normalize();
+patches/raptor-final.patch:691: space before tab in indent.
++ 	_delta_angle_sum_dt += delta_angle_dt;
+patches/raptor-final.patch:698: trailing whitespace.
++ 
+patches/raptor-final.patch:700: space before tab in indent.
++ 		const Quatf &quat_state, const Vector3f &vel_state, const LatLonAlt &gpos_state, const matrix::Vector3f &gyro_bias,
+patches/raptor-final.patch:701: space before tab in indent.
++ 		const matrix::Vector3f &accel_bias)
+patches/raptor-final.patch:707: space before tab in indent.
++ 	// calculate an average filter update time
+patches/raptor-final.patch:708: space before tab in indent.
++ 	if (_time_last_correct_states_us != 0) {
+patches/raptor-final.patch:709: space before tab in indent.
++ 		const float dt = math::constrain((time_delayed_us - _time_last_correct_states_us) * 1e-6f, 0.0001f, 0.03f);
+patches/raptor-final.patch:711: space before tab in indent.
++ 	applyCorrectionToOutputBuffer(vel_correction, pos_correction_with_ref_change);
+patches/raptor-final.patch:712: trailing whitespace.
++ 
+patches/raptor-final.patch:713: space before tab in indent.
++ 	_global_ref = gpos_state;
+patches/raptor-final.patch:719: trailing whitespace.
++ 
+patches/raptor-final.patch:727: trailing whitespace.
++ 
+patches/raptor-final.patch:733: trailing whitespace.
++ 
+patches/raptor-final.patch:735: trailing whitespace.
++ 
+patches/raptor-final.patch:737: space before tab in indent.
++ 	void set_vel_correction_tc(const float tau) { _vel_tau = tau; }
+patches/raptor-final.patch:738: space before tab in indent.
++ 	void set_gravity(const float gravity) { _gravity = gravity; }
+patches/raptor-final.patch:739: trailing whitespace.
++ 
+patches/raptor-final.patch:751: trailing whitespace.
++ 
+patches/raptor-final.patch:752: space before tab in indent.
++ 	/*
+patches/raptor-final.patch:2380: trailing whitespace.
++ 
+patches/raptor-final.patch:2403: trailing whitespace.
++ 
+patches/raptor-final.patch:2404: space before tab in indent.
++ 		// Angular velocity: rotate sensor frame to board, scale raw data to SI, apply calibration, and remove in-run estimated bias
+patches/raptor-final.patch:2405: space before tab in indent.
++ 		_angular_velocity = _calibration.Correct(angular_velocity_uncalibrated) - _bias;
+patches/raptor-final.patch:2416: space before tab in indent.
++ 		_angular_velocity.copyTo(angular_velocity.xyz);
+patches/raptor-final.patch:2417: trailing whitespace.
++ 
+patches/raptor-final.patch:2418: space before tab in indent.
++ 		// Angular acceleration: rotate sensor frame to board, scale raw data to SI, apply any additional configured rotation

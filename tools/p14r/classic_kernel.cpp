@@ -1,0 +1,17 @@
+// Offline actual PX4 kernels. No SITL, uORB, scheduling or actuator publication.
+#include <iostream>
+#include <cmath>
+#include <matrix/math.hpp>
+#define private public
+#include "PositionControl.hpp"
+#include "AttitudeControl.hpp"
+#include <rate_control/rate_control.hpp>
+#undef private
+using matrix::Vector3f;using matrix::Quatf;
+void setup(PositionControl &p){p.setPositionGains(Vector3f(1,1,1));p.setVelocityGains(Vector3f(2,2,2),Vector3f(.1f,.1f,.2f),Vector3f(.1f,.1f,.1f));p.setVelocityLimits(5,3,3);p.setThrustLimits(.1f,1);p.setHorizontalThrustMargin(.3f);p.setTiltLimit(.7f);p.setHoverThrust(.66f);PositionControlStates x{};x.position=Vector3f(-3,-1,-3.2f);x.velocity=Vector3f(-1,-.2f,.3f);x.acceleration=Vector3f(0,0,0);x.yaw=.3f;p.setState(x);auto sp=PositionControl::empty_trajectory_setpoint;sp.position[0]=-3.1f;sp.position[1]=-1.1f;sp.position[2]=-3.2f;sp.velocity[0]=-1;sp.velocity[1]=-.2f;sp.velocity[2]=0;sp.yaw=.3f;sp.yawspeed=0;p.setInputSetpoint(sp);}
+int main(){PositionControl pos;setup(pos);pos.resetIntegral();bool ok=pos.update(.008f);vehicle_attitude_setpoint_s asp{};pos.getAttitudeSetpoint(asp);AttitudeControl cold,warm;for(auto *a:{&cold,&warm}){a->setProportionalGain(Vector3f(6.5f,6.5f,2.8f),.4f);a->setRateLimit(Vector3f(3,3,2));a->setRefModelFrequency(50);}
+ const Quatf q0(matrix::Eulerf(.02f,-.03f,.3f));cold.setAttitudeSetpoint(Quatf(asp.q_d),0,-1);warm.setAttitudeSetpoint(q0,0,-1);warm.setAttitudeSetpoint(Quatf(asp.q_d),0,.008f);auto r0=cold.update(q0),r1=warm.update(q0);
+ RateControl ra,rb;for(auto *r:{&ra,&rb}){r->setPidGains(Vector3f(.1f,.1f,.1f),Vector3f(.1f,.1f,.1f),Vector3f(.01f,.01f,.01f));r->setIntegratorLimit(Vector3f(.3f,.3f,.3f));r->setFeedForwardGain(Vector3f(0,0,0));}
+ ra._rate_int=Vector3f(.02f,-.03f,.01f);rb._rate_int=Vector3f(-.02f,.03f,-.01f);auto t0=ra.update(Vector3f(.1f,-.2f,0),r1,Vector3f(0,0,0),.004f,false);auto t1=rb.update(Vector3f(.1f,-.2f,0),r1,Vector3f(0,0,0),.004f,false);double expected_error=0;Vector3f expected(.04f,-.06f,.02f);for(unsigned j=0;j<3;j++)expected_error=fmax(expected_error,fabs(static_cast<double>(t0(j)-t1(j)-expected(j))));
+ RateControl repair;repair.setPidGains(Vector3f(.1f,.1f,.1f),Vector3f(.1f,.1f,.1f),Vector3f(.01f,.01f,.01f));repair.setIntegratorLimit(Vector3f(.3f,.3f,.3f));repair.setFeedForwardGain(Vector3f(0,0,0));Vector3f target(.01f,-.015f,.005f),omega(.1f,-.2f,0),required=target-Vector3f(.1f,.1f,.1f).emult(r1-omega);repair._rate_int=required;auto repaired=repair.update(omega,r1,Vector3f(0,0,0),.004f,false);double repair_error=0;for(unsigned k=0;k<3;k++)repair_error=fmax(repair_error,fabs(static_cast<double>(repaired(k)-target(k))));bool feasible=fabs(required(0))<=.3f && fabs(required(1))<=.3f && fabs(required(2))<=.3f;
+ std::cout<<"{\"position_update_ok\":"<<(ok?"true":"false")<<",\"reference_state_changes_first_rate_norm\":"<<(r0-r1).norm()<<",\"held_rate_integral_changes_first_torque_norm\":"<<(t0-t1).norm()<<",\"integral_difference_identity_error\":"<<expected_error<<",\"external_raw_torque_target_repair_error\":"<<repair_error<<",\"required_integral_max_abs\":"<<fmax(fabs(required(0)),fmax(fabs(required(1)),fabs(required(2))))<<",\"integral_condition_feasible\":"<<(feasible?"true":"false")<<",\"position_integral_after_norm\":"<<pos._vel_int.norm()<<",\"scope\":\"actual source pure position/attitude/rate active kernels at stated input fixture; not actual full flight or allocation/physics forecast\"}\n";return ok && expected_error<1e-7 && feasible && repair_error<1e-7?0:1;}

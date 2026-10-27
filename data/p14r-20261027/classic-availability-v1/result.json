@@ -1,0 +1,153 @@
+{
+  "source_hashes": {
+    "uav_lab/.local/checkouts/px4-raptor/src/modules/mc_att_control/AttitudeControl/AttitudeControl.cpp": "d6d3d4a1e37e463c665d7450f1b997d51ee34e838fb3d6bcdae3957b91235af2",
+    "uav_lab/.local/checkouts/px4-raptor/src/modules/mc_att_control/mc_att_control_main.cpp": "cffcfac6c76c1b960edc3a37b3d5c9ca08111a123ad339317cb69665874f9a20",
+    "uav_lab/.local/checkouts/px4-raptor/src/modules/mc_rate_control/MulticopterRateControl.cpp": "2caa6baada0166c2d8d1cd12fc64c36bd1bd1d93f2534e91a351b1896667a9cb"
+  },
+  "topics": {
+    "vehicle_attitude_setpoint": {
+      "rows": 7228,
+      "fields": [
+        "timestamp",
+        "yaw_sp_move_rate",
+        "q_d[0]",
+        "q_d[1]",
+        "q_d[2]",
+        "q_d[3]",
+        "thrust_body[0]",
+        "thrust_body[1]",
+        "thrust_body[2]"
+      ]
+    },
+    "vehicle_rates_setpoint": {
+      "rows": 10797,
+      "fields": [
+        "timestamp",
+        "roll",
+        "pitch",
+        "yaw",
+        "thrust_body[0]",
+        "thrust_body[1]",
+        "thrust_body[2]",
+        "reset_integral"
+      ]
+    },
+    "rate_ctrl_status": {
+      "rows": 13719,
+      "fields": [
+        "timestamp",
+        "rollspeed_integ",
+        "pitchspeed_integ",
+        "yawspeed_integ"
+      ]
+    },
+    "hover_thrust_estimate": {
+      "rows": 244,
+      "fields": [
+        "timestamp",
+        "timestamp_sample",
+        "hover_thrust",
+        "hover_thrust_var",
+        "accel_innov",
+        "accel_innov_var",
+        "accel_innov_test_ratio",
+        "accel_noise_var",
+        "valid"
+      ]
+    },
+    "vehicle_angular_velocity": {
+      "rows": 23185,
+      "fields": [
+        "timestamp",
+        "timestamp_sample",
+        "xyz[0]",
+        "xyz[1]",
+        "xyz[2]",
+        "xyz_derivative[0]",
+        "xyz_derivative[1]",
+        "xyz_derivative[2]"
+      ]
+    },
+    "vehicle_control_mode": {
+      "rows": 208,
+      "fields": [
+        "timestamp",
+        "flag_armed",
+        "flag_multicopter_position_control_enabled",
+        "flag_control_manual_enabled",
+        "flag_control_auto_enabled",
+        "flag_control_offboard_enabled",
+        "flag_control_position_enabled",
+        "flag_control_velocity_enabled",
+        "flag_control_altitude_enabled",
+        "flag_control_climb_rate_enabled",
+        "flag_control_attitude_enabled",
+        "flag_control_rates_enabled",
+        "flag_control_allocation_enabled"
+      ]
+    },
+    "vehicle_local_position_setpoint": {
+      "rows": 582,
+      "fields": [
+        "timestamp",
+        "x",
+        "y",
+        "z",
+        "vx",
+        "vy",
+        "vz",
+        "acceleration[0]",
+        "acceleration[1]",
+        "acceleration[2]",
+        "thrust[0]",
+        "thrust[1]",
+        "thrust[2]",
+        "yaw",
+        "yawspeed"
+      ]
+    },
+    "route_observability": {
+      "rows": 9,
+      "fields": [
+        "timestamp",
+        "subject_timestamp",
+        "route_epoch_id",
+        "failed_check_mask",
+        "sequence",
+        "expected_period_us",
+        "component_hash",
+        "event_type",
+        "source_id",
+        "topic_id",
+        "writer_id",
+        "profile",
+        "instance",
+        "previous_nav_state",
+        "new_nav_state",
+        "change_source",
+        "registration_mode_id",
+        "executor_in_charge",
+        "arming_check_id",
+        "result",
+        "reason_code",
+        "armed",
+        "active_at_event",
+        "fallback_nav_state"
+      ]
+    }
+  },
+  "additional_latents_required": [
+    "AttitudeControl::_q_ref",
+    "_omega_correction",
+    "_omega_command",
+    "_ref_initialized",
+    "last consumed attitude setpoint timestamp/actual callback ordering",
+    "allocation saturation/motor mapping state at first C actuator command"
+  ],
+  "direct_internal_state_logged": false,
+  "reconstructability": "publication and output logs do not uniquely specify source setpoint-consumption word and pre-log reference-model initial state. Exact trajectory reconstruction not asserted; source-kernel conditional computation independently executed. Rate integrals have logged output; position integral resets under observed NCO0 inactive-position branch.",
+  "trace_location": "inside enabled attitude Run before/after setAttitudeSetpoint/adapt and update; allocator actual selected command/generation coupled to physical step; no need full solver matrices",
+  "new_flight_used_for_this": 0,
+  "why_no_extra_flight_now": "does not resolve current stop/resume tube order-reduction/innovation contract; one dedicated new platform/format validation plus paired NtoC study should be separately planned rather than use leftover to claim full closure",
+  "next_minimum": "one finite NtoC motion condition with original protection,2newseeds, passive reference/allocator state and first C output; no treatment fit or safety guarantee from2samples"
+}

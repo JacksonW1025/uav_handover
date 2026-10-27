@@ -1,0 +1,21 @@
+{
+  "schema": "p14-offline-protocol-1",
+  "baseline": "4e18dbcce39edd23c07347526ab0de4818fccb24",
+  "new_flights": 0,
+  "launcher_allowed": false,
+  "population": "all 12 P13 development and all 66 formal identities; canonical pointer for formal53",
+  "interpretation": "all new scores retrospective; old forward scores immutable; 6 formal blocks, 3 per condition",
+  "main_candidate": "M14: corrected M5 COM-to-body feedback plus causal vertical complementary observer, tau_pos=tau_vel=.25 from recorded source parameters; no fitted coefficients",
+  "mechanism_control": "G: body-point correction throughout feedback, otherwise frozen M5 constant-offset observer",
+  "preserved_baselines": ["M3", "M4", "M5"],
+  "diagnostic_representatives": ["dev01-F2-NORMAL", "dev02-F2-A", "dev03-F4-AB", "dev04-F4-REPAIR"],
+  "thresholds": {"tilt_deg":45,"LP_altitude_loss_m":1,"operator":">","first_obvious":{"position_m":0.1,"velocity_m_s":0.15,"SO3_deg":2.5,"tilt_deg":5,"omega_rad_s":0.1,"hidden_l2":0.5,"action_l2":0.1}},
+  "windows_s": [0.5,2],
+  "stages": "task0-to-A; hold; resume-to-B; B-before; B-hold; B-after; final-stop/tail. Actual events define diagnostic windows only, never candidate input.",
+  "timing": "nominal sample/native+4ms, LP8ms and actual initial index; no inferred future clock trace; real platform words separately audited",
+  "stopping": "unchanged frozen forecast envelope >45deg or omega>8 or horizontal norm>10 or H>8; valid failure prefix may classify, safe incomplete UNKNOWN",
+  "theory_attempt": {"method":"correlation-preserving affine zonotope through actual-weight GRU/history, source switched filter and conditional vertical feedback","start":"speed-matched horizontal capture; equal initial position and target generator; fixed attitude/yaw/omega and mode word","steps":[1,2,4,8,16],"dt_s":0.004,"initial_radius":0.000001,"extension_radius":0.001,"uncertainties":"joint shared capture position/velocity, h, previous, filter; separate conditional acceleration/mode/FP obligations","no_sampled_Jacobian_proof":true,"no_result_dependent_refinement":true},
+  "metrics": ["component confusion+UNKNOWN+coverage and actual failure denominators", "first crossing brackets", "all-prefix error", "stage and 0.5/2s errors", "B-before L/D/W/history", "full vs censored", "compute time and domain exit"],
+  "no_outcome_filter_or_time_shift": true,
+  "no_parameter_search": true
+}

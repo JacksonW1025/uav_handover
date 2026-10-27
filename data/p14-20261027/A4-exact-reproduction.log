@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p10a4/contract_counterexample.py", line 49, in <module>
+    p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False);r=calculate();write(a.output/'counterexample.json',r);print(r['q_forward_lower_display'])
+                                                                                                                                                  ^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p10a4/contract_counterexample.py", line 24, in calculate
+    b=load();raw=json.loads((ROOT/'data/p10-20261024-a2/construction-reviewed/certificate.json').read_text())['P_integer']
+      ^^^^^^
+  File "/home/car/uav_handover/tools/p10a4/bench.py", line 13, in load
+    for path,digest in source_manifest['source_sha256'].items():assert sha(ROOT/path)==digest,'A3_SOURCE_DEPENDENCY_CHANGED'
+                                                                       ^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: A3_SOURCE_DEPENDENCY_CHANGED

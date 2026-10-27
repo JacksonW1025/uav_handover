@@ -1,0 +1,71 @@
+{
+  "schema": "p14-conditional-height-exact-1",
+  "conditions": {
+    "filter_all_rotors_all_steps_min": 871,
+    "commands_min": 871,
+    "actual_scaled_joint_minus_filter_abs_max_assumed": 1,
+    "filter_initial_min": 871,
+    "wind": 0,
+    "no_external_up_or_down_contact": true,
+    "cos_theta_min": ".93",
+    "Vrel_max_m_s": 2,
+    "joint_max_rad_s": 1001,
+    "LP_body_COM_error_assumed_m": ".02",
+    "initial_L": ".3",
+    "initial_D": ".4",
+    "initial_W": ".8",
+    "position_defect_per_step_assumed_m": ".000003"
+  },
+  "force_derived_up_acceleration_lower_exact": "519018536469/335450000000",
+  "conservative_ar": 1,
+  "nonempty_algebraic_filter_command_range": [
+    871,
+    1000
+  ],
+  "prefix_maps": [
+    {
+      "T_requested_s": "11/20",
+      "physical_full_steps": 137,
+      "covered_T_s": "137/250",
+      "L_upper": "587563/1000000",
+      "D_upper": "587563/1000000",
+      "W_upper": "63/250",
+      "max_at_step": "137",
+      "LP_margin_if_E_LP_02": "392437/1000000",
+      "uncovered_partial_s": "1/500"
+    },
+    {
+      "T_requested_s": "6/5",
+      "physical_full_steps": 300,
+      "covered_T_s": "6/5",
+      "L_upper": "1077/2000",
+      "D_upper": "619/1000",
+      "W_upper": "-2/5",
+      "max_at_step": "200",
+      "LP_margin_if_E_LP_02": "361/1000",
+      "uncovered_partial_s": "0"
+    },
+    {
+      "T_requested_s": "2",
+      "physical_full_steps": 500,
+      "covered_T_s": "2",
+      "L_upper": "-41/400",
+      "D_upper": "619/1000",
+      "W_upper": "-6/5",
+      "max_at_step": "200",
+      "LP_margin_if_E_LP_02": "361/1000",
+      "uncovered_partial_s": "0"
+    }
+  ],
+  "stop_time_bound_s": ".8",
+  "no_reset_L_D_W": true,
+  "direction": "sufficient safety at all covered physical samples under the entire stated domain; not necessary loss, not actual reachability or full B event certificate",
+  "continuous_between_samples": "not certified without extra intersample geometry/integration budget; .55s has .002s uncovered partial interval",
+  "remaining": [
+    "prove actual controller maintains filter>=871 and theta cone for whole segment",
+    "solver/geometry/FP and LP error bounds not yet certified",
+    "B and final tail require their own conditioned maps; do not reset D"
+  ],
+  "rational_cos_bound": "theta<=pi/9: cos>=1-(22/63)^2/2 >.93, exact Taylor inequality",
+  "future_hard_actual_certificate": false
+}

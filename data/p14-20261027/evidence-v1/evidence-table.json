@@ -1,0 +1,278 @@
+[
+  {
+    "id": "P11-M2",
+    "claim": "M2原留出整程分类31/31一致",
+    "category": "empirical_prediction",
+    "version": "P11 frozenM2",
+    "independent_unit": "31 heldout flights, grouped by4 families; not31 unseen conditions",
+    "prospective": true,
+    "conditions": "original task, PH0 and initial LP/filter steady approximation",
+    "evidence": {
+      "data/p14-20261027/audit-v1/p11-score-chain.json": "10c7a5243c1ad7aa648c3066f4ceda620be559584e6c385bda3be9784e059993",
+      "docs/THOR_P11_REPORT.md": "78aa165ef24ee8079317ce1f01c454e7e92e7f47cdbf5aa245edbae8d03ffdcf"
+    },
+    "counterevidence_or_gap": "two local first-witness tilt misses and long open replay drift; no hard guarantee",
+    "status": "SUPPORTED_ONLY_ORIGINAL_SCOPE"
+  },
+  {
+    "id": "MODEL-COEFFICIENTS",
+    "claim": "P13 M3/M4使用同一P11M2经验系数",
+    "category": "model_structure",
+    "version": "P11M2 vsP13frozenM2",
+    "independent_unit": "parameter file equality",
+    "prospective": false,
+    "conditions": "controller interface changed; task longer and B timing varied",
+    "evidence": {
+      "data/p11-20261025-formal/models/models.json": "03fb69bbedb5c1896c00b1ab2507718b2ded10547ba3334103c415f6828a262b",
+      "data/p13-20261026-freeze/models/models.json": "7bc476f4e84589a7a659bf8611aec4c0f77c6e9632ca6086ee9d95383dffe71b"
+    },
+    "counterevidence_or_gap": "equal coefficients do not establish equivalent distributions/semantics; zero source NN regression in known-input replay",
+    "status": "EQUAL_VALUES_DIFFERENT_TASK_INTERFACE"
+  },
+  {
+    "id": "P11-70",
+    "claim": "合法native跳进/平台导致旧JSON诊断失败",
+    "category": "implementation_error",
+    "version": "P11 frozen observe",
+    "independent_unit": "one stopped formal identity",
+    "prospective": false,
+    "conditions": "sample/native/host kept distinct",
+    "evidence": {
+      "data/p14-20261027/legacy-v1/P11-run70.json": "a576a225fe9fb305fc69428110eef31ee8cad43d8b7d5c18fc484a6a50d3f731"
+    },
+    "counterevidence_or_gap": "old formal invalidity and pending2 remain; cannot infer universal guard differences",
+    "status": "RAW_RECHECKED"
+  },
+  {
+    "id": "P12-PAIR",
+    "claim": "原严格配对失败混合真实缓存差与保守动作界",
+    "category": "design_and_theory",
+    "version": "P12 pair-v3",
+    "independent_unit": "3 development pairs",
+    "prospective": false,
+    "conditions": "complete snapshot unavailable",
+    "evidence": {
+      "data/p12-20261026-analysis/pair-feasibility-3.json": "cc7ae62262bbee9dc7144d4a574aa68b41a0efaaa80217568475bcaeb166e417",
+      "docs/THOR_P12_REPORT.md": "a545ff8559cc13c97f86ecfd9fb3f795d08b351381135bb81c6c8396227c15b6"
+    },
+    "counterevidence_or_gap": "cannot infer paired counterfactual; bound2 alone was not valid reason to deny later randomized mechanism work",
+    "status": "LIMITED_NOT_IMPOSSIBILITY"
+  },
+  {
+    "id": "P12-SCORE",
+    "claim": "截断任务AGREEMENT缺陷已独立修订",
+    "category": "implementation_error",
+    "version": "scorev2",
+    "independent_unit": "7 development flights×6 dependent models",
+    "prospective": false,
+    "conditions": "valid prefix witnesses distinguish failure from UNKNOWN",
+    "evidence": {
+      "docs/THOR_P12_SCORE_CORRECTION.md": "c333a0cd8e64a26cc1912775ff080bebdcd23a164d397a69ed6d7b86e094cd70"
+    },
+    "counterevidence_or_gap": "7 uncorrelated-capture forecasts were actual false alarms, not safe incomplete predictions",
+    "status": "FIXED_OLD_OUTPUT_RETAINED"
+  },
+  {
+    "id": "P12-REPAIR-START",
+    "claim": "首次activation/任务前修复使旧比较混杂",
+    "category": "design_and_implementation",
+    "version": "P11 RTGT2, P12contMS",
+    "independent_unit": "old pre-event protocols",
+    "prospective": false,
+    "conditions": "capture-only sample gate required",
+    "evidence": {
+      "docs/THOR_P12_CONT_PREPARATION.md": "7d8550310379ed307450dddc4e138c076d24886bb7da00c8d97135d36a31c7eb"
+    },
+    "counterevidence_or_gap": "old branch effects cannot isolate interruption-only repair; no data relabel",
+    "status": "KNOWN_CONFOUND_REPAIRED_IN_NEW_PROTOCOL"
+  },
+  {
+    "id": "P12-27",
+    "claim": "初始化审计把后状态当读取前条件",
+    "category": "implementation_contract",
+    "version": "68dfb73b",
+    "independent_unit": "one rejected formal, remaining21",
+    "prospective": false,
+    "conditions": "same-call pre-read was not logged",
+    "evidence": {
+      "data/p14-20261027/legacy-v1/P12-formal27.json": "a76916ec21363048cdec543d8cab0c202377056c8446e6f210825484ec55eed7"
+    },
+    "counterevidence_or_gap": "which initialization bypass occurred cannot be uniquely reconstructed; no retroactive validity",
+    "status": "RAW_RECHECKED_UNRESOLVED_OLD_PREREAD"
+  },
+  {
+    "id": "P12BC-STOP",
+    "claim": "源码/时延小不替代完整非干扰验收",
+    "category": "experimental_design",
+    "version": "P12b/P12c",
+    "independent_unit": "8 and10 preparatory starts; no formal",
+    "prospective": false,
+    "conditions": "old frozen off/on scales applied only to that question",
+    "evidence": {
+      "docs/THOR_P12B_REPORT.md": "b8f6dfae677debea293074e3d4c7fd1a362f72c991d137c98ca027604d659c9d",
+      "docs/THOR_P12C_REPORT.md": "60944b5121b07b9b94577b8f9b89ae234b2ecc997a7386ef972fcaed93b06f99"
+    },
+    "counterevidence_or_gap": "off/on state/cache confounding; dynamic disagreement is not proven observation causality; P13 fixed-platform scope distinct",
+    "status": "OLD_NOT_PASSED_UNCHANGED"
+  },
+  {
+    "id": "P13-STATE",
+    "claim": "直接物理COM与Pre/Post时间起点可取得",
+    "category": "interface",
+    "version": "P13buffer-v1",
+    "independent_unit": "78 flights, not per-step independent repeats",
+    "prospective": false,
+    "conditions": "present file complete read/hash, Post-to-nextPre; finalclose detection limit",
+    "evidence": {
+      "data/p14-20261027/audit-v1/summary.json": "c9bf56c5e341353e4092973a27208d00ae8d0c24f943dfccfcaecd8d6a612fe0"
+    },
+    "counterevidence_or_gap": "continuous invariance and future IO/solver not proved; data current readability verified",
+    "status": "RAW_ALL78_RECHECKED"
+  },
+  {
+    "id": "P13-GEOMETRY",
+    "claim": "LP是body参考点，M5用了named-model杆臂",
+    "category": "implementation_model_error",
+    "version": "frozenM5; G; M14",
+    "independent_unit": "all78 affected forecasts",
+    "prospective": false,
+    "conditions": "correct small lever plus joint/EKF/cache errors kept separate",
+    "evidence": {
+      "docs/THOR_P13_REPORT.md": "28c7b3f127771d27d08bb534002a59e5b514327d85f5a38bb7b3a78631560d52",
+      "data/p14-20261027/audit-v1/summary.json": "c9bf56c5e341353e4092973a27208d00ae8d0c24f943dfccfcaecd8d6a612fe0",
+      "data/p14-20261027/evaluation-v1/summary.json": "16c79f27fce8a73dc03ac1f001c81c347ace8da02f5aceb36926fabc306b8738"
+    },
+    "counterevidence_or_gap": "corrected 3 of11 formal tilt misses, 8 remain; cannot assign additive causal percentages",
+    "status": "CONFIRMED_FIXED_RETROSPECTIVELY"
+  },
+  {
+    "id": "SOURCE-KERNEL",
+    "claim": "实测状态/命令给定时源单步核吻合",
+    "category": "source_and_numerical",
+    "version": "FreeJoint discrete kernel",
+    "independent_unit": "4 representative development flights",
+    "prospective": false,
+    "conditions": "future state at each one-step input; no autonomous claim",
+    "evidence": {
+      "data/p14-20261027/layers-v1/summary.json": "70cfc36ea1077bf06c3399fccc43779c61bcd64f5c1b420e3798fb71637f59f1"
+    },
+    "counterevidence_or_gap": "known-command open error .1m/.15m_s appears17-19s, eventual domain exit; local agreement not global precision",
+    "status": "CONDITIONAL_NUMERICAL_SUPPORT"
+  },
+  {
+    "id": "CACHE",
+    "claim": "动态估计/cache误差不能用单常量偏差替代",
+    "category": "model_structure",
+    "version": "M14 approximate observer",
+    "independent_unit": "78 full recorded cache/physical pairs",
+    "prospective": false,
+    "conditions": "different sample/physical times retained",
+    "evidence": {
+      "data/p14-20261027/audit-v1/summary.json": "c9bf56c5e341353e4092973a27208d00ae8d0c24f943dfccfcaecd8d6a612fe0",
+      "data/p14-20261027/layers-v1/summary.json": "70cfc36ea1077bf06c3399fccc43779c61bcd64f5c1b420e3798fb71637f59f1"
+    },
+    "counterevidence_or_gap": "full covariance/buffers/fusion state missing; future actual physical injection only diagnosis",
+    "status": "STRONG_STRUCTURE_LIMIT_NOT_UNIQUE_CAUSE"
+  },
+  {
+    "id": "C-D-REPLAY",
+    "claim": "已知消息/cache/时钟时target与NN/history可重放",
+    "category": "implementation_validation",
+    "version": "P14 source recheck",
+    "independent_unit": "78 flights",
+    "prospective": false,
+    "conditions": "future exogenous inputs known, memory propagated once",
+    "evidence": {
+      "data/p14-20261027/layers-v1/summary.json": "70cfc36ea1077bf06c3399fccc43779c61bcd64f5c1b420e3798fb71637f59f1"
+    },
+    "counterevidence_or_gap": "not autonomous risk prediction; does not certify future schedule words",
+    "status": "ALL78_SUPPORT"
+  },
+  {
+    "id": "P14-MODEL",
+    "claim": "唯一修正版仍非可靠倾角风险准入",
+    "category": "retrospective_prediction",
+    "version": "G control and soleM14",
+    "independent_unit": "66 formal flights in6 dependent blocks;12 dev separate",
+    "prospective": false,
+    "conditions": "no fit; old forward results preserved; prospective claim forbidden",
+    "evidence": {
+      "data/p14-20261027/evaluation-v1/summary.json": "16c79f27fce8a73dc03ac1f001c81c347ace8da02f5aceb36926fabc306b8738"
+    },
+    "counterevidence_or_gap": "8/14 tilt misses,1/4height miss; no dangerous UNKNOWN substitution; large process error remains",
+    "status": "NOT_SAFETY_ADMISSION"
+  },
+  {
+    "id": "COMBO",
+    "claim": "F2短组合失败与F4非单调成立于已分块实验",
+    "category": "randomized_total_effect",
+    "version": "P13 fixed PH1",
+    "independent_unit": "3 blocks/condition",
+    "prospective": true,
+    "conditions": "initial/cache differences retained; sharedNORMAL/A not independent",
+    "evidence": {
+      "docs/THOR_P13_REPORT.md": "28c7b3f127771d27d08bb534002a59e5b514327d85f5a38bb7b3a78631560d52"
+    },
+    "counterevidence_or_gap": "not strict same-initial counterfactual; F4 A itself3 failures; need interpretation by condition",
+    "status": "SUPPORTED_SMALL_SAMPLE_FIXED_PLATFORM"
+  },
+  {
+    "id": "SERVO",
+    "claim": "独立eta连接与有限逆可复核",
+    "category": "source_and_condition",
+    "version": "P12b audit and P14 budget",
+    "independent_unit": "one95304-row numerical recheck, not95304flights",
+    "prospective": false,
+    "conditions": "four-servo pure domain; full old trace includesotherconstraints",
+    "evidence": {
+      "data/p14-20261027/legacy-solver-recheck/solver-audit.json": "307d5b4209a1546445871acad0a915124a5da4ec821ef6ca7bb590cfc2171b37",
+      "data/p14-20261027/theory-v2/servo-budget.json": "f700008f703739f238f1b19ec9e04a99757b98b461e39b0764ac9411182a6065"
+    },
+    "counterevidence_or_gap": "future deltaA/eta/FP/modes not certified; infiniteforce limit not finite impulse bound",
+    "status": "CONDITIONAL_IMPLICATION"
+  },
+  {
+    "id": "HEIGHT",
+    "claim": "恢复充分与必要储备方向不同",
+    "category": "theory",
+    "version": "P13 maps and P14 exact rational",
+    "independent_unit": "all-prefix mathematical sequence",
+    "prospective": false,
+    "conditions": "net upward acceleration/geometry/cache/execution domain overwholeinterval",
+    "evidence": {
+      "data/p14-20261027/theory-v2/conditional-height.json": "6aeec93474e67031e67c91c34927fde0cd3674d557068af1de735de112a2934f"
+    },
+    "counterevidence_or_gap": "filter>=871 andtheta cone are not proven reachable under neural feedback; no actual complete certificate",
+    "status": "NONEMPTY_ALGEBRAIC_CONDITIONS_ONLY"
+  },
+  {
+    "id": "JOINT-SET",
+    "claim": "共享生成元可避免该独立外盒退化",
+    "category": "finite_joint_theory_attempt",
+    "version": "P14 affine64ms",
+    "independent_unit": "one fixed reduced mode/state family,2 predeclared radii",
+    "prospective": false,
+    "conditions": "conditioned level/gyro; analytic nonlinear remainder not sampledJacobian",
+    "evidence": {
+      "data/p14-20261027/theory-v2/joint-attempt.json": "d531d15ee266cdd1adaddb574321e7d0e0feb3f434c8faa92a9838b956d5acbb",
+      "data/p14-20261027/theory-v2/full-source-extension.json": "06311b7b661d784af31b1e5647440afe3778bd49033245f474204b1c9145dee3"
+    },
+    "counterevidence_or_gap": "source extension violates fixed angular assumption at first step; libm/FP enlargement remains assumed",
+    "status": "SUBSYSTEM_USEFUL_FULL_EXTENSION_FAILED"
+  },
+  {
+    "id": "A4",
+    "claim": "误差球反例仍未被真实可实现性关系排除",
+    "category": "exact_counterexample",
+    "version": "P10A4 archived mathematics",
+    "independent_unit": "22-step proxy counterexample",
+    "prospective": false,
+    "conditions": "old vector exactP support; no real-flight claim",
+    "evidence": {
+      "data/p14-20261027/legacy-v1/A4-exact-archived.json": "930eb86420130605c33309e599b6194a4fe2923f4bf523db3427472d513a52e7",
+      "data/p14-20261027/theory-v2/A4-compatibility.json": "a275d4b5e73ff6417d8ab5f53c495400b95b88ec6b37d59bdb750e3d681ed275"
+    },
+    "counterevidence_or_gap": "hypothetical trapezoid defect relation rejects it, but LP/cache residual need not obey that relation; admissible budget unknown",
+    "status": "NOT_PROVEN_EXCLUDED"
+  }
+]

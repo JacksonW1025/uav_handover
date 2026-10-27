@@ -1,0 +1,33 @@
+{
+  "command": [
+    "bwrap",
+    "--ro-bind",
+    "/",
+    "/",
+    "--tmpfs",
+    "/home/car/uav_handover/data",
+    "--tmpfs",
+    "/home/car/uav_handover/export",
+    "--unshare-net",
+    "--unshare-pid",
+    "--proc",
+    "/proc",
+    "--bind",
+    "/tmp/p14-offline-only-h8purc9t/outputs",
+    "/tmp/p14-offline-only-h8purc9t/outputs",
+    "--chdir",
+    "/home/car/uav_handover",
+    "taskset",
+    "-c",
+    "0-3",
+    "/home/car/uav_handover/uav_lab/.local/venv/bin/python",
+    "/home/car/uav_handover/tools/p14/predict.py",
+    "/tmp/p14-offline-only-h8purc9t/inputs",
+    "/tmp/p14-offline-only-h8purc9t/outputs/predictions"
+  ],
+  "returncode": 0,
+  "seconds": 254.84722697502002,
+  "temporary_evidence": "/tmp/p14-offline-only-h8purc9t",
+  "future_measurements_copied": false,
+  "new_SITL": 0
+}

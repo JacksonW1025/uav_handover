@@ -1,0 +1,23 @@
+# P14证据表
+
+|主张|类别/版本|独立单位/前瞻性|当前状态|反证或义务|
+|---|---|---|---|---|
+|P11-M2 M2原留出整程分类31/31一致|empirical_prediction P11 frozenM2|31 heldout flights, grouped by4 families; not31 unseen conditions / True|SUPPORTED_ONLY_ORIGINAL_SCOPE|two local first-witness tilt misses and long open replay drift; no hard guarantee|
+|MODEL-COEFFICIENTS P13 M3/M4使用同一P11M2经验系数|model_structure P11M2 vsP13frozenM2|parameter file equality / False|EQUAL_VALUES_DIFFERENT_TASK_INTERFACE|equal coefficients do not establish equivalent distributions/semantics; zero source NN regression in known-input replay|
+|P11-70 合法native跳进/平台导致旧JSON诊断失败|implementation_error P11 frozen observe|one stopped formal identity / False|RAW_RECHECKED|old formal invalidity and pending2 remain; cannot infer universal guard differences|
+|P12-PAIR 原严格配对失败混合真实缓存差与保守动作界|design_and_theory P12 pair-v3|3 development pairs / False|LIMITED_NOT_IMPOSSIBILITY|cannot infer paired counterfactual; bound2 alone was not valid reason to deny later randomized mechanism work|
+|P12-SCORE 截断任务AGREEMENT缺陷已独立修订|implementation_error scorev2|7 development flights×6 dependent models / False|FIXED_OLD_OUTPUT_RETAINED|7 uncorrelated-capture forecasts were actual false alarms, not safe incomplete predictions|
+|P12-REPAIR-START 首次activation/任务前修复使旧比较混杂|design_and_implementation P11 RTGT2, P12contMS|old pre-event protocols / False|KNOWN_CONFOUND_REPAIRED_IN_NEW_PROTOCOL|old branch effects cannot isolate interruption-only repair; no data relabel|
+|P12-27 初始化审计把后状态当读取前条件|implementation_contract 68dfb73b|one rejected formal, remaining21 / False|RAW_RECHECKED_UNRESOLVED_OLD_PREREAD|which initialization bypass occurred cannot be uniquely reconstructed; no retroactive validity|
+|P12BC-STOP 源码/时延小不替代完整非干扰验收|experimental_design P12b/P12c|8 and10 preparatory starts; no formal / False|OLD_NOT_PASSED_UNCHANGED|off/on state/cache confounding; dynamic disagreement is not proven observation causality; P13 fixed-platform scope distinct|
+|P13-STATE 直接物理COM与Pre/Post时间起点可取得|interface P13buffer-v1|78 flights, not per-step independent repeats / False|RAW_ALL78_RECHECKED|continuous invariance and future IO/solver not proved; data current readability verified|
+|P13-GEOMETRY LP是body参考点，M5用了named-model杆臂|implementation_model_error frozenM5; G; M14|all78 affected forecasts / False|CONFIRMED_FIXED_RETROSPECTIVELY|corrected 3 of11 formal tilt misses, 8 remain; cannot assign additive causal percentages|
+|SOURCE-KERNEL 实测状态/命令给定时源单步核吻合|source_and_numerical FreeJoint discrete kernel|4 representative development flights / False|CONDITIONAL_NUMERICAL_SUPPORT|known-command open error .1m/.15m_s appears17-19s, eventual domain exit; local agreement not global precision|
+|CACHE 动态估计/cache误差不能用单常量偏差替代|model_structure M14 approximate observer|78 full recorded cache/physical pairs / False|STRONG_STRUCTURE_LIMIT_NOT_UNIQUE_CAUSE|full covariance/buffers/fusion state missing; future actual physical injection only diagnosis|
+|C-D-REPLAY 已知消息/cache/时钟时target与NN/history可重放|implementation_validation P14 source recheck|78 flights / False|ALL78_SUPPORT|not autonomous risk prediction; does not certify future schedule words|
+|P14-MODEL 唯一修正版仍非可靠倾角风险准入|retrospective_prediction G control and soleM14|66 formal flights in6 dependent blocks;12 dev separate / False|NOT_SAFETY_ADMISSION|8/14 tilt misses,1/4height miss; no dangerous UNKNOWN substitution; large process error remains|
+|COMBO F2短组合失败与F4非单调成立于已分块实验|randomized_total_effect P13 fixed PH1|3 blocks/condition / True|SUPPORTED_SMALL_SAMPLE_FIXED_PLATFORM|not strict same-initial counterfactual; F4 A itself3 failures; need interpretation by condition|
+|SERVO 独立eta连接与有限逆可复核|source_and_condition P12b audit and P14 budget|one95304-row numerical recheck, not95304flights / False|CONDITIONAL_IMPLICATION|future deltaA/eta/FP/modes not certified; infiniteforce limit not finite impulse bound|
+|HEIGHT 恢复充分与必要储备方向不同|theory P13 maps and P14 exact rational|all-prefix mathematical sequence / False|NONEMPTY_ALGEBRAIC_CONDITIONS_ONLY|filter>=871 andtheta cone are not proven reachable under neural feedback; no actual complete certificate|
+|JOINT-SET 共享生成元可避免该独立外盒退化|finite_joint_theory_attempt P14 affine64ms|one fixed reduced mode/state family,2 predeclared radii / False|SUBSYSTEM_USEFUL_FULL_EXTENSION_FAILED|source extension violates fixed angular assumption at first step; libm/FP enlargement remains assumed|
+|A4 误差球反例仍未被真实可实现性关系排除|exact_counterexample P10A4 archived mathematics|22-step proxy counterexample / False|NOT_PROVEN_EXCLUDED|hypothetical trapezoid defect relation rejects it, but LP/cache residual need not obey that relation; admissible budget unknown|

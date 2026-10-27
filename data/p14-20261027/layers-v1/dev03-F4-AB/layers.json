@@ -1,0 +1,72 @@
+{
+  "id": "dev03-F4-AB",
+  "group": "development",
+  "D_known18_and_commit_only": {
+    "rows": 8742,
+    "h_L2_max": 1.4440711695986907e-06,
+    "action_L2_max": 1.3967999269794147e-06,
+    "first_h_over_p5": null,
+    "first_action_over_p1": null,
+    "continuous": true,
+    "future_h_resets": false
+  },
+  "C_known_read_message_cache_clock": {
+    "rows": 8742,
+    "target_component_max": 0.0,
+    "stale_mismatch_n": 0,
+    "first_target_error_over_p1": null
+  },
+  "future_inputs": "D: actual18D cache observations+commit word, h/previous/mean carried once; C: actual native/sample, valid messages and cache p/v/q; no causal attribution percentages",
+  "A": {
+    "schema": "p13-source-discrete-relation-audit-1",
+    "case": "dev03-F4-AB",
+    "raw_body_sha256": "a37f1e72da94cec5f7ca94d7e3ed7a036ed3ad7539ffba9b94466ccc46267a4b",
+    "one_step": {
+      "rows": 7348,
+      "COM_position_max_m": 3.107548952596829e-13,
+      "COM_velocity_max_m_s": 2.138842968589572e-13,
+      "body_omega_max_rad_s": 2.2566529808004665e-12,
+      "body_SO3_max_deg": 9.535654017918425e-09,
+      "scope": "each actual PRE physical state and selected command supplied; no autonomous claim"
+    },
+    "known_command_open": {
+      "rows": 5500,
+      "total_recorded_rows": 7348,
+      "full": false,
+      "stop": {
+        "profile_s": 21.999750242,
+        "row": 5499,
+        "reason": "frozen finite working-domain exit; no long-tail mechanism inference"
+      },
+      "COM_position_max_m": 4.831692965609394,
+      "COM_velocity_max_m_s": 7.292474373970023,
+      "tilt_error_max_deg": 79.61510090995071,
+      "scope": "initial physical state once, future actually selected commands ONLY; own carried filter/rotorphase/body dynamics. No future pose/omega/filter resets. Diagnostic, not blind flight forecast."
+    },
+    "not_new_main_candidate": true,
+    "frozen_M3_M4_M5_unchanged": true,
+    "formal_prediction_scores_unchanged": true,
+    "source_provenance": {
+      "upstream_version": "DART6.13.2 FreeJoint::integrateVelocities and integratePositions",
+      "url": "https://raw.githubusercontent.com/dartsim/dart/v6.13.2/dart/dynamics/FreeJoint.cpp",
+      "source_relationship": "linear classical-acceleration update, translated pose, rotation of stored velocities; COM rBC geometry retained",
+      "installed_binary": "Ubuntu6.13.2+ds actual snapshot, source reading is not a rebuilt binary certificate"
+    },
+    "future_certificate": false,
+    "remaining": "future SERVO/FP/joint geometry domain and EKF/cache feedback; observed residuals not hard future bounds",
+    "frozen_first_obvious": {
+      "position10cm": 17.891737312,
+      "velocity15cm_s": 17.867751051,
+      "tilt5deg": 19.203741554
+    }
+  },
+  "B_future_physical_body_observer": {
+    "rows": 7380,
+    "z_max_m": 0.10155093785329505,
+    "v_max_m_s": 0.1024560259278231,
+    "first_z10cm": 15.868003775,
+    "first_v15cm_s": null,
+    "input": "future directly observed base p/v; LP only at initial state, no LP future corrections",
+    "not_autonomous": true
+  }
+}

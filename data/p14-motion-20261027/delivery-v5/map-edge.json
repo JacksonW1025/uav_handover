@@ -1,0 +1,485 @@
+{
+  "schema": "conditional-moving-event-map-edge-1",
+  "id": "N-stop-capture-hold-resume-recover-F2-example",
+  "scientific_role": "analysis-condition result, not actual closed-loop certificate",
+  "input": {
+    "control_owner": "neural",
+    "case": "p13-F2-b1-AB-short",
+    "initial": "data/p14-motion-20261027/inputs-v3/p13-F2-b1-AB-short/edge-input.json",
+    "initial_sha256": "2e4649b17daa827ce090d25d22a725cbc42267ba9f550d368f4232d2c095ac36",
+    "radius_scale": 0.001,
+    "initial_set": "local3D physical/observer angle; joint generators; radii from precompute protocol",
+    "event_A": [
+      13.254999999999999,
+      13.614999999999998
+    ],
+    "event_B": [
+      14.165,
+      14.524999999999999
+    ],
+    "repair": false,
+    "clock": "one declared 4ms sample/native, 8msLP PH1 word; initial latest pending target slot empty",
+    "unknown_future_timing": "not covered; alternate point scenarios only",
+    "model_error": "zero extra plant/estimator-model defect conditional model; actual SERVO/EKF coverage NOT ASSERTED",
+    "global_H0_NED_z": -3.2017038874823296,
+    "historical_D0_m": 0.04389689876721281
+  },
+  "output": {
+    "nominal": "data/p14-motion-20261027/delivery-v5/p13-F2-b1-AB-short-edge-nominal.npz",
+    "stages": {
+      "64ms": {
+        "t": 13.311968657,
+        "metrics": {
+          "p_radius_m": 1.887098224226682e-05,
+          "v_radius_m_s": 3.6574562889791885e-05,
+          "SO3_error_upper_deg": 0.0006883557721060885,
+          "omega_radius_rad_s": 0.00014442877336011265,
+          "tilt_upper_deg": 4.400212564601056,
+          "L_interval_m": [
+            0.03633762414972104,
+            0.03636012921481484
+          ],
+          "generators": 1277,
+          "action_width_max": 8.182950999916946e-05,
+          "h_radius_max": 6.212976627270149e-05,
+          "t": 13.311968657,
+          "call": 16,
+          "D_upper_m": 0.043906898767212814,
+          "phase": "FRESH",
+          "compression": {
+            "before": 3387,
+            "after": 1219,
+            "discarded_row_radius_max": 1.580465088390936e-06,
+            "rank": 512,
+            "initial_columns": 609,
+            "scope": "linear projection plus rowL1 outer enclosure, not exact set equality; FP/SVD budgeting conditional"
+          },
+          "before_compression": {
+            "p_radius_m": 1.887098206910929e-05,
+            "v_radius_m_s": 3.657456273359819e-05,
+            "SO3_error_upper_deg": 0.0006883557525868952,
+            "omega_radius_rad_s": 0.00014442877326011265,
+            "tilt_upper_deg": 4.400212563824435,
+            "L_interval_m": [
+              0.03633762414842951,
+              0.03636012921610637
+            ],
+            "generators": 3387,
+            "action_width_max": 8.182950979916944e-05,
+            "h_radius_max": 6.21297661727015e-05,
+            "t": 13.311968657,
+            "call": 16,
+            "D_upper_m": 0.043906898767212814,
+            "phase": "FRESH",
+            "compression": {
+              "before": 3387,
+              "after": 1219,
+              "discarded_row_radius_max": 1.580465088390936e-06,
+              "rank": 512,
+              "initial_columns": 609,
+              "scope": "linear projection plus rowL1 outer enclosure, not exact set equality; FP/SVD budgeting conditional"
+            }
+          }
+        },
+        "prefix_margin": {
+          "tilt_margin_deg": 40.524917674575704,
+          "physical_tilt_margin_deg": 40.524917674575704,
+          "cached_attitude_tilt_margin_deg_conservative": 39.76442421136826,
+          "attitude_alignment_angle_bound_deg": 0.7416328154559273,
+          "known_nonunit_attitude_norm_budget_deg": 0.01886064775151987,
+          "height_margin_m": 0.9560931012327872,
+          "height_point": "true COM, not LP task-height estimate",
+          "all_discrete_prefixes": 16,
+          "between_samples": "requires acceleration/angular-rate enclosure, not certified here"
+        },
+        "within_model_domain": true,
+        "local_chart": {
+          "chart": "right local log about moving nominal",
+          "vector_radius": 4.736300313888911e-06,
+          "nonlinear_component_remainder_rad": 1.0000354161415906e-12,
+          "positive_quaternion_chart": true,
+          "unit_group_condition": true
+        },
+        "storage_projection": {
+          "state_projection": [
+            "p",
+            "v",
+            "w",
+            "h",
+            "previous",
+            "mean",
+            "f",
+            "d1",
+            "d2",
+            "op",
+            "ov",
+            "lp",
+            "lv"
+          ],
+          "dimension": 55,
+          "generators": 1277,
+          "rank_numerical": 55,
+          "lambda_max": 3.332946954248888e-05,
+          "trace": 9.82712491115233e-05,
+          "ellipsoid_support_to_zonotope_max_ratio": 9.324621168996071,
+          "formula": "weights_j=||scaled g_j||/sum||scaled g||, Q=sum g_j g_j^T / weights_j; joint zonotope subset ellipsoid e^T Q^dagger e<=1 by weighted Cauchy",
+          "contraction_or_complete_storage_certificate": false
+        },
+        "data_path": "data/p14-motion-20261027/tubes-final-v2/03-p13-F2-b1-AB-short-r0.001-joint-group1-obs0-joinbox0/regions/64ms.npz",
+        "sha256": "96b0d1d0ddab631f8ebd25f2347aa1cca0ee3b90350d2621e0ac580c3cfffbfb"
+      },
+      "resume": {
+        "t": 13.615968657,
+        "metrics": {
+          "p_radius_m": 3.369448785364008e-05,
+          "v_radius_m_s": 6.634602028494364e-05,
+          "SO3_error_upper_deg": 0.0018191251290417619,
+          "omega_radius_rad_s": 0.00017112995107590272,
+          "tilt_upper_deg": 30.01081754825775,
+          "L_interval_m": [
+            0.054554072318438035,
+            0.05459390273251938
+          ],
+          "generators": 1277,
+          "action_width_max": 0.00010025504367847235,
+          "h_radius_max": 3.8346142347241337e-05,
+          "t": 13.615968657,
+          "call": 92,
+          "D_upper_m": 0.05459390273380946,
+          "phase": "FRESH",
+          "compression": {
+            "before": 3391,
+            "after": 1219,
+            "discarded_row_radius_max": 0.0002618354895257005,
+            "rank": 512,
+            "initial_columns": 609,
+            "scope": "linear projection plus rowL1 outer enclosure, not exact set equality; FP/SVD budgeting conditional"
+          },
+          "before_compression": {
+            "p_radius_m": 3.3694487680466126e-05,
+            "v_radius_m_s": 6.634602012142481e-05,
+            "SO3_error_upper_deg": 0.0018191251077456154,
+            "omega_radius_rad_s": 0.00017112995097589794,
+            "tilt_upper_deg": 30.01081684977154,
+            "L_interval_m": [
+              0.054554072317147956,
+              0.05459390273380946
+            ],
+            "generators": 3391,
+            "action_width_max": 0.00010025504347846712,
+            "h_radius_max": 3.8346142247239895e-05,
+            "t": 13.615968657,
+            "call": 92,
+            "D_upper_m": 0.05459390273380946,
+            "phase": "FRESH",
+            "compression": {
+              "before": 3391,
+              "after": 1219,
+              "discarded_row_radius_max": 0.0002618354895257005,
+              "rank": 512,
+              "initial_columns": 609,
+              "scope": "linear projection plus rowL1 outer enclosure, not exact set equality; FP/SVD budgeting conditional"
+            }
+          }
+        },
+        "prefix_margin": {
+          "tilt_margin_deg": 14.989182451742249,
+          "physical_tilt_margin_deg": 14.989182451742249,
+          "cached_attitude_tilt_margin_deg_conservative": 14.2286889885348,
+          "attitude_alignment_angle_bound_deg": 0.7416328154559273,
+          "known_nonunit_attitude_norm_budget_deg": 0.01886064775151987,
+          "height_margin_m": 0.9454060972661905,
+          "height_point": "true COM, not LP task-height estimate",
+          "all_discrete_prefixes": 92,
+          "between_samples": "requires acceleration/angular-rate enclosure, not certified here"
+        },
+        "within_model_domain": true,
+        "local_chart": {
+          "chart": "right local log about moving nominal",
+          "vector_radius": 1.434609384591281e-05,
+          "nonlinear_component_remainder_rad": 1.0009841912983373e-12,
+          "positive_quaternion_chart": true,
+          "unit_group_condition": true
+        },
+        "storage_projection": {
+          "state_projection": [
+            "p",
+            "v",
+            "w",
+            "h",
+            "previous",
+            "mean",
+            "f",
+            "d1",
+            "d2",
+            "op",
+            "ov",
+            "lp",
+            "lv"
+          ],
+          "dimension": 55,
+          "generators": 1277,
+          "rank_numerical": 55,
+          "lambda_max": 4.5613263598284326e-05,
+          "trace": 8.891006950295003e-05,
+          "ellipsoid_support_to_zonotope_max_ratio": 44881.87525771174,
+          "formula": "weights_j=||scaled g_j||/sum||scaled g||, Q=sum g_j g_j^T / weights_j; joint zonotope subset ellipsoid e^T Q^dagger e<=1 by weighted Cauchy",
+          "contraction_or_complete_storage_certificate": false
+        },
+        "data_path": "data/p14-motion-20261027/tubes-final-v2/03-p13-F2-b1-AB-short-r0.001-joint-group1-obs0-joinbox0/regions/resume.npz",
+        "sha256": "e06d2e7547d78ee537dbe0c4c826bae0a7105ff75629c86523644cfa02275750"
+      },
+      "resume_plus_p5": {
+        "t": 14.115968657,
+        "metrics": {
+          "p_radius_m": 0.0004947212301604823,
+          "v_radius_m_s": 0.007803509774694089,
+          "SO3_error_upper_deg": 0.21252095351664343,
+          "omega_radius_rad_s": 0.051187981098434525,
+          "tilt_upper_deg": 34.15815084462261,
+          "L_interval_m": [
+            0.3815963793248278,
+            0.3823087525974864
+          ],
+          "generators": 1277,
+          "action_width_max": 0.08804706102984429,
+          "h_radius_max": 0.03235388414368401,
+          "t": 14.115968657,
+          "call": 217,
+          "D_upper_m": 0.38230875259869707,
+          "phase": "FRESH",
+          "compression": {
+            "before": 3387,
+            "after": 1219,
+            "discarded_row_radius_max": 0.8677671616804001,
+            "rank": 512,
+            "initial_columns": 609,
+            "scope": "linear projection plus rowL1 outer enclosure, not exact set equality; FP/SVD budgeting conditional"
+          },
+          "before_compression": {
+            "p_radius_m": 0.0004947212299918541,
+            "v_radius_m_s": 0.007803509774526474,
+            "SO3_error_upper_deg": 0.2125209534959783,
+            "omega_radius_rad_s": 0.05118798109832945,
+            "tilt_upper_deg": 34.155299875629645,
+            "L_interval_m": [
+              0.3815963793236172,
+              0.38230875259869707
+            ],
+            "generators": 3387,
+            "action_width_max": 0.08804706102963548,
+            "h_radius_max": 0.03235388414358078,
+            "t": 14.115968657,
+            "call": 217,
+            "D_upper_m": 0.38230875259869707,
+            "phase": "FRESH",
+            "compression": {
+              "before": 3387,
+              "after": 1219,
+              "discarded_row_radius_max": 0.8677671616804001,
+              "rank": 512,
+              "initial_columns": 609,
+              "scope": "linear projection plus rowL1 outer enclosure, not exact set equality; FP/SVD budgeting conditional"
+            }
+          }
+        },
+        "prefix_margin": {
+          "tilt_margin_deg": 10.425805925421841,
+          "physical_tilt_margin_deg": 10.425805925421841,
+          "cached_attitude_tilt_margin_deg_conservative": 9.665312462214393,
+          "attitude_alignment_angle_bound_deg": 0.7416328154559273,
+          "known_nonunit_attitude_norm_budget_deg": 0.01886064775151987,
+          "height_margin_m": 0.617691247401303,
+          "height_point": "true COM, not LP task-height estimate",
+          "all_discrete_prefixes": 217,
+          "between_samples": "requires acceleration/angular-rate enclosure, not certified here"
+        },
+        "within_model_domain": true,
+        "local_chart": {
+          "chart": "right local log about moving nominal",
+          "vector_radius": 0.0021433339558570644,
+          "nonlinear_component_remainder_rad": 3.283080101620066e-09,
+          "positive_quaternion_chart": true,
+          "unit_group_condition": true
+        },
+        "storage_projection": {
+          "state_projection": [
+            "p",
+            "v",
+            "w",
+            "h",
+            "previous",
+            "mean",
+            "f",
+            "d1",
+            "d2",
+            "op",
+            "ov",
+            "lp",
+            "lv"
+          ],
+          "dimension": 55,
+          "generators": 1277,
+          "rank_numerical": 55,
+          "lambda_max": 3.9636540886446423,
+          "trace": 18.83068934373134,
+          "ellipsoid_support_to_zonotope_max_ratio": 35.39981309311936,
+          "formula": "weights_j=||scaled g_j||/sum||scaled g||, Q=sum g_j g_j^T / weights_j; joint zonotope subset ellipsoid e^T Q^dagger e<=1 by weighted Cauchy",
+          "contraction_or_complete_storage_certificate": false
+        },
+        "data_path": "data/p14-motion-20261027/tubes-final-v2/03-p13-F2-b1-AB-short-r0.001-joint-group1-obs0-joinbox0/regions/resume_plus_p5.npz",
+        "sha256": "0ad2cd9309b1a1c37edd5420c30519d13325af5bcc11046a45a53adae81c2ab6"
+      },
+      "B_pre": {
+        "t": 14.163968657,
+        "metrics": {
+          "p_radius_m": 0.0012894249930311646,
+          "v_radius_m_s": 0.03158651329719464,
+          "SO3_error_upper_deg": 0.6927992690852289,
+          "omega_radius_rad_s": 0.2682365039059911,
+          "tilt_upper_deg": 30.98840570518655,
+          "L_interval_m": [
+            0.40093702655025737,
+            0.40281573857149283
+          ],
+          "generators": 1277,
+          "action_width_max": 1.6299818042707452,
+          "h_radius_max": 0.23746688095554416,
+          "t": 14.163968657,
+          "call": 229,
+          "D_upper_m": 0.4028157385727122,
+          "phase": "FRESH",
+          "compression": {
+            "before": 3407,
+            "after": 1219,
+            "discarded_row_radius_max": 2.2470267640812476,
+            "rank": 512,
+            "initial_columns": 609,
+            "scope": "linear projection plus rowL1 outer enclosure, not exact set equality; FP/SVD budgeting conditional"
+          },
+          "before_compression": {
+            "p_radius_m": 0.0012894249928649094,
+            "v_radius_m_s": 0.03158651329702951,
+            "SO3_error_upper_deg": 0.6927992690645399,
+            "omega_radius_rad_s": 0.2682365039058645,
+            "tilt_upper_deg": 30.984401239613906,
+            "L_interval_m": [
+              0.400937026549038,
+              0.4028157385727122
+            ],
+            "generators": 3407,
+            "action_width_max": 1.6299818042703822,
+            "h_radius_max": 0.23746688095542043,
+            "t": 14.163968657,
+            "call": 229,
+            "D_upper_m": 0.4028157385727122,
+            "phase": "FRESH",
+            "compression": {
+              "before": 3407,
+              "after": 1219,
+              "discarded_row_radius_max": 2.2470267640812476,
+              "rank": 512,
+              "initial_columns": 609,
+              "scope": "linear projection plus rowL1 outer enclosure, not exact set equality; FP/SVD budgeting conditional"
+            }
+          }
+        },
+        "prefix_margin": {
+          "tilt_margin_deg": 10.425805925421841,
+          "physical_tilt_margin_deg": 10.425805925421841,
+          "cached_attitude_tilt_margin_deg_conservative": 9.665312462214393,
+          "attitude_alignment_angle_bound_deg": 0.7416328154559273,
+          "known_nonunit_attitude_norm_budget_deg": 0.01886064775151987,
+          "height_margin_m": 0.5971842614272878,
+          "height_point": "true COM, not LP task-height estimate",
+          "all_discrete_prefixes": 229,
+          "between_samples": "requires acceleration/angular-rate enclosure, not certified here"
+        },
+        "within_model_domain": true,
+        "local_chart": {
+          "chart": "right local log about moving nominal",
+          "vector_radius": 0.007206646796559025,
+          "nonlinear_component_remainder_rad": 1.2476480401547915e-07,
+          "positive_quaternion_chart": true,
+          "unit_group_condition": true
+        },
+        "storage_projection": {
+          "state_projection": [
+            "p",
+            "v",
+            "w",
+            "h",
+            "previous",
+            "mean",
+            "f",
+            "d1",
+            "d2",
+            "op",
+            "ov",
+            "lp",
+            "lv"
+          ],
+          "dimension": 55,
+          "generators": 1277,
+          "rank_numerical": 55,
+          "lambda_max": 504.387421382453,
+          "trace": 3830.2134192410053,
+          "ellipsoid_support_to_zonotope_max_ratio": 98.76734474107037,
+          "formula": "weights_j=||scaled g_j||/sum||scaled g||, Q=sum g_j g_j^T / weights_j; joint zonotope subset ellipsoid e^T Q^dagger e<=1 by weighted Cauchy",
+          "contraction_or_complete_storage_certificate": false
+        },
+        "data_path": "data/p14-motion-20261027/tubes-final-v2/03-p13-F2-b1-AB-short-r0.001-joint-group1-obs0-joinbox0/regions/B_pre.npz",
+        "sha256": "dadfbb0a739ab4a77920cbf10efc729c43d57ce7a599336db866f4703af4bbe7"
+      }
+    },
+    "last_domain_time": {
+      "t": 14.211968657,
+      "call": 241,
+      "reason": "outer tube no longer certified in predeclared finite source domain",
+      "not_actual_exit_proof": true
+    },
+    "first_precision_loss": {
+      "call": 224,
+      "t": 14.143968657,
+      "metrics": {
+        "p_radius_m": 0.0008189293531998948,
+        "v_radius_m_s": 0.015514420959755946,
+        "SO3_error_upper_deg": 0.3893989082942805,
+        "omega_radius_rad_s": 0.11253992042647092,
+        "tilt_upper_deg": 32.61380247328188,
+        "L_interval_m": [
+          0.3933882464626524,
+          0.39457574105205356
+        ],
+        "generators": 3387,
+        "action_width_max": 0.22468630329303024,
+        "h_radius_max": 0.08573285474133044,
+        "t": 14.143968657,
+        "call": 224,
+        "D_upper_m": 0.39457574105205356,
+        "phase": "FRESH",
+        "compression": null
+      }
+    },
+    "full_requested_2s_recovery": "NOT_ENCLOSED",
+    "cost": {
+      "seconds": 21.775141309015453,
+      "peak_rss_kib": 109964,
+      "generator_columns": 1277
+    }
+  },
+  "edge_composition": {
+    "operator": "carry SAME center/generator identities, observer/history/mean/count/queue/clock/H0/D into B stop; no reset or independent refactor",
+    "B_stop_reached": true,
+    "B_capture_enclosed": false,
+    "reason": "outer tube leaves declared domain before B timeout capture",
+    "three_or_four_events": "iterate the same typed input/output; TOP propagates; refinement/certified model domains required, no uniform length claim",
+    "rebox_control": "data/p14-motion-20261027/tubes-final-v2/07-p13-F2-b1-AB-short-r0.001-joint-group1-obs0-joinbox1"
+  },
+  "evidence_classes": {
+    "source_real_math": "analytic nonlinear remainders + shared-copy/linear operators",
+    "finite_numeric": "11 corrected finite tube runs and 4 fixed retrospective point cases",
+    "actual_records": "physical/cache/gyro/clip support, not initial-set membership",
+    "unverified": "DART future defect, EKF corrections, timing branches, libm/gamma budgets and continuous intersample coverage"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "command": [
+    "bwrap",
+    "--ro-bind",
+    "/",
+    "/",
+    "--tmpfs",
+    "/home/car/uav_handover/data",
+    "--tmpfs",
+    "/home/car/uav_handover/export",
+    "--unshare-net",
+    "--unshare-pid",
+    "--proc",
+    "/proc",
+    "--bind",
+    "/tmp/p14-motion-repro-s8xibmem/child",
+    "/tmp/p14-motion-repro-s8xibmem/child",
+    "--chdir",
+    "/home/car/uav_handover",
+    "taskset",
+    "-c",
+    "0-3",
+    "/home/car/uav_handover/uav_lab/.local/venv/bin/python",
+    "/home/car/uav_handover/tools/p14_motion/predict.py",
+    "/tmp/p14-motion-repro-s8xibmem/input",
+    "/tmp/p14-motion-repro-s8xibmem/child/predictions"
+  ],
+  "rc": 1,
+  "temporary_evidence": "/tmp/p14-motion-repro-s8xibmem",
+  "new_SITL": 0
+}

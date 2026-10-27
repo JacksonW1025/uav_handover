@@ -1,0 +1,16 @@
+{
+  "shift": [
+    0.01,
+    -0.01,
+    0.01
+  ],
+  "numeric_check": {
+    "physical_p_shift_error_m": 7.2328483115974285e-09,
+    "action_max_error": 5.29449093872314e-08,
+    "SO3_quaternion_component_error": 4.27152427318056e-09
+  },
+  "real_math": "p,LP,target,H0 and entire planned positions co-translate; p-r and L=pz-H0 invariant, forces independent of absolute p",
+  "float32_target_cast": "not exactly translation equivariant in actual numeric source; displayed residual remains and needs a cast budget",
+  "use": "quotient common frame translation in map; attach shared origin generator to output",
+  "not_allowed": "do not identify independent EKF local-origin/attitude-yaw errors with this common translation; remaining micro-radii still tiny"
+}

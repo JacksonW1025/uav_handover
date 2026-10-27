@@ -1,0 +1,32 @@
+"""All-count P15 synthesis. No invented labels for unexecuted candidates."""
+import sys,json,collections,numpy as np
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from p15.common import *
+
+def main():
+ out=register(sys.argv[1],'all-starts all-methods counts, full cost curves, prefix/knownfailure denominators; unexecuted candidates unlabeled');ledger=[json.loads(l) for l in (B/'attempts.jsonl').read_text().splitlines()];starts=[x for x in ledger if x['event']=='START_INTENT'];rows=[]
+ for item in starts:
+  t=B/'runs'/item['id'];plan=json.load(open(t/'plan.json'));ps=[p for p in [t/'analysis-v2',t/'analysis-v1'] if (p/'result.json').exists()];analysis=ps[0] if ps else None;result=json.load(open(analysis/'result.json')) if analysis else None;ex=json.load(open(t/'execution-result.json')) if (t/'execution-result.json').exists() else None;selection=json.load(open(t/'run/p15-selection.json')) if (t/'run/p15-selection.json').exists() else None;ev=B/'evaluation'/item['id']/'summary.json';ev=json.load(open(ev)) if ev.exists() else None
+  rows.append(dict(id=item['id'],budget_class=item['budget_class'],method=plan.get('method'),block=plan.get('block'),family=plan['family'],information=plan['decision_phase'],prefix=plan['prefix'],seed=plan['seed'],result=result,execution=ex,selection_summary=None if selection is None else dict(selected=selection['executed_candidate'],ranked=[dict(id=r['candidate']['id'],score=r['score'],predicted_stop=(r['prediction'] or {}).get('stop')) for r in selection['rows']],worker_wall_s=selection['worker_wall_s'],CPU_s=selection['CPU_s'],update_changed_choice=selection.get('update_changed_choice')),evaluation=ev))
+ methods={};curves={};classification={}
+ for method in ['M0','M1','M2','M3']:
+  rr=[r for r in rows if r['budget_class']=='search' and r['method']==method];cumfail=0;wall=0;cpu=0;cc=[]
+  for k,r in enumerate(rr):
+   result=r['result'];fail=bool(result and result['risks']['task']=='FAIL');cumfail+=fail;wall+=(r['execution'] or {}).get('wall_s',0);cpu+=(r['execution'] or {}).get('CPU_s',0);cc.append(dict(start=k+1,failures=cumfail,physical_wall_s=wall,physical_CPU_s=cpu,id=r['id']))
+  methods[method]=dict(starts=len(rr),qualified=sum(bool(r['result'] and r['result']['status']=='PASS') for r in rr),task_failures=cumfail,successes=sum(bool(r['result'] and r['result']['risks']['task']=='SUCCESS') for r in rr),UNKNOWN=sum(bool(r['result'] and r['result']['risks']['task']=='UNKNOWN') for r in rr),prefix_counts=dict(collections.Counter(r['prefix'] for r in rr)),B_plan_reached=sum(bool(r['result'] and r['result']['B_plan_reached']) for r in rr),prefix_failed_before_B=sum(bool(r['result'] and r['result']['prefix_failed_before_B']) for r in rr),physical_wall_s=wall,physical_CPU_s=cpu,online_score_CPU_s=sum((r['selection_summary'] or {}).get('CPU_s',0) for r in rr),first_failure_cost=next((x for x in cc if x['failures']),None),denominator_note='2 sharedseedblocks; each method8 starts across2 families and2 information classes, no population inference')
+  curves[method]=cc
+ for component in ['tilt','height','task']:
+  good=[r for r in rows if r['budget_class']=='search' and r['evaluation']];d=dict(N=len(good),actual_FAIL=0,actual_SUCCESS=0,actual_UNKNOWN=0,miss=0,false_alarm=0,pred_UNKNOWN=0)
+  for r in good:
+   a=r['evaluation']['actual'][component];p=r['evaluation']['predicted'][component];d['actual_'+a]+=1;d['miss']+=a=='FAIL' and p=='SUCCESS';d['false_alarm']+=a=='SUCCESS' and p=='FAIL';d['pred_UNKNOWN']+=p=='UNKNOWN'
+  d.update(miss_denominator=d['actual_FAIL'],false_alarm_denominator=d['actual_SUCCESS'],role='same frozen L15 selected-case forecast across methods; fullhorizon computed postflight from immutable duringdecision input; not independenttask0 forecasting');classification[component]=d
+ costs=[json.loads(l) for l in (B/'costs.jsonl').read_text().splitlines()];charged=sum(x.get('CPU_s',0) for x in costs if x['event']=='END');physical=sum((r['execution'] or {}).get('wall_s',0) for r in rows);physicalcpu=sum((r['execution'] or {}).get('CPU_s',0) for r in rows);manager=sum(json.load(open(B/'runs'/r['id']/'manager-cost.json'))['CPU_s'] for r in rows if (B/'runs'/r['id']/'manager-cost.json').exists());write(out/'methods.json',methods);write(out/'curves.json',curves);write(out/'classification.json',classification);write(out/'all-starts.json',rows)
+ summary=dict(schema='P15-final-machine-v1',baseline='82ac9fa476a73a61b5dd31619921ec5e6de68856',counts=dict(total=len(starts),by_stage=dict(collections.Counter(x['budget_class'] for x in starts)),caps=dict(development=8,search=32,map=8,total=48),replacements=0),methods=methods,classification=classification,cost=dict(offline_measured_CPU_s=charged,physical_wall_s=physical,physical_CPU_s_including_online=physicalcpu,campaign_manager_CPU_s=manager,online_not_double_counted=True,offline_cost_includes_reviews_and_failed_revisions=True,historical_model_training_CPU='UNKNOWN, not free; retainedM2/P14Hsource costs separately cited',manual_modeling='elapsed engineeringwall from baseline timestamp to finalreceipt; not CPU, no invented human-hour attribution',subtree_hardcap='not certified, perprocess guards and actual reservations/measurements separated'),claims=dict(empirical_search='finite2block comparison only; see actual methods and costs before deciding gain',safety='NO_UNCONDITIONAL_SAFE_SKIP',scope='fixed existing passive platform, onlineLP/att/gyro/history and agedexecutions; physicalCOMpostflight only',old_results_unchanged=True),future_data='actual future raw only scoring/diagnostics, not duringdecisionranking; past mapupdate provenance explicit');write(out/'machine.json',summary)
+ import matplotlib;matplotlib.use('Agg');import matplotlib.pyplot as plt
+ fig,ax=plt.subplots(1,2,figsize=(10,4))
+ for method,cc in curves.items():
+  if not cc:continue
+  ax[0].step([0]+[x['start'] for x in cc],[0]+[x['failures'] for x in cc],where='post',label=method);ax[1].step([0]+[x['physical_wall_s'] for x in cc],[0]+[x['failures'] for x in cc],where='post',label=method)
+ ax[0].set(xlabel='Counted search starts',ylabel='Witnessed task failures');ax[1].set(xlabel='Physical wall seconds (warmup included)',ylabel='Witnessed task failures');ax[0].legend();fig.tight_layout();fig.savefig(out/'cost-curves.png',dpi=150);plt.close(fig);print('P15_SYNTHESIZED',len(starts),methods)
+if __name__=='__main__':main()

@@ -1,0 +1,20 @@
+{"status": "PASS", "rows": 8928, "single": {"rows": 8928, "native": 4464, "h_max": 4.905054122872343e-07, "action_max": 6.345987148548282e-07, "previous_action_write_max": 0.0, "unclipped_peak": 0.6399250500994774}, "continuous": {"rows": 8928, "total_active_rows": 8928, "complete_active_interval": true, "h_max": 9.802878486175892e-07, "action_max": 9.81830439339415e-07, "input_history_max": 9.75701513750149e-07, "seconds": 35.708, "compute_s": 0.3651236221194267, "initialization": "first active pre-GRU and previous_action exactly once; history counter reset by original activation", "missing_call_boundaries": []}, "gates": {"single_h": true, "single_action": true, "continuous_h": true, "continuous_action": true, "input_reconstruction": true, "complete_continuous": true, "all_control_calls": true, "truth_present": true, "policy": true}}
+{"status": "PASS", "motors": {"0": {"rows": 23977, "continuous_max_rad_s": 4.547473508864641e-13, "old_rows_without_execution": 0}, "1": {"rows": 23977, "continuous_max_rad_s": 3.410605131648481e-13, "old_rows_without_execution": 0}, "2": {"rows": 23977, "continuous_max_rad_s": 3.410605131648481e-13, "old_rows_without_execution": 0}, "3": {"rows": 23977, "continuous_max_rad_s": 3.410605131648481e-13, "old_rows_without_execution": 0}}}
+{"status": "PASS", "gates": {"complete_active": true, "predicted_actual_commit": true, "history_input": true, "history_after": true, "history_count": true, "call_index": true, "read_phase": true, "activation_T0": true, "strict_timeout": true, "correlated_position": true, "repair_only_after_external": true}, "phases": ["CAPTURE_ON_INTERMEDIATE_AFTER_PRIOR_COMMIT"], "captures": 2}
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p15/analyze.py", line 48, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/car/uav_handover/tools/p15/analyze.py", line 24, in main
+    try:ob=observer(run,target/'observer-audit-v1');opok=True
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14r/observer.py", line 29, in audit
+    core,ch=read(run/'gz-motor/observer-core.bin',CORE,b'P14RCORE',True);fusion,fh=read(run/'gz-motor/observer-fusion.bin',FUSION,b'P14RFUS1',True);gyro,gh=read(run/'gz-motor/observer-gyro.bin',CORE,b'P14RGYRO',True)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14r/observer.py", line 11, in read
+    with path.open('rb') as f:h=f.read(HEAD.size)
+         ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/car/uav_handover/data/p15-20261027/runs/p15-d01-F2-NORMAL/run/gz-motor/observer-core.bin'

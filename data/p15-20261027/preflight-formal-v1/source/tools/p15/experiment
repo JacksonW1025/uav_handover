@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -e
+project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "$project_root/tools/lab-env.sh" raptor
+exec python "$project_root/tools/p15/runner.py" "$@"

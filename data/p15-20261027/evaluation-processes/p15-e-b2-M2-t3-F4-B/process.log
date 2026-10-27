@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p15/evaluate.py", line 39, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/car/uav_handover/tools/p15/evaluate.py", line 26, in main
+    direct=load_reads(run/'gz-motor/read-p12b.bin');body,header=read(run/'gz-motor/physics-p13-body.bin',BODY,b'P13BODY1');body=body[(body['phase']==1)&(body['valid']==63)&(body['wall_ns']>=epoch)];physicalH0=float(body['com_p'][np.searchsorted(body['wall_ns'],epoch),2]);physicalD=np.maximum.accumulate(physicalH0-body['com_p'][:,2]);actualevents=[];stale=raw['stale'].astype(bool);changes=np.flatnonzero(np.diff(stale.astype(int))!=0)+1
+                                                                                                                                                                                                                       ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+IndexError: index 0 is out of bounds for axis 0 with size 0

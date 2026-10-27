@@ -28,3 +28,15 @@ A保留P14H源物理+OP队列模型作为有成本的离线参照；B=L15以真�
 原P11 task规范保持：共同计划首事件时刻至post_stream结束，LP损高>1m或倾角>45°。原flight frozen结果并列。失败见证可在截断前成立；无失败但未完整覆盖为UNKNOWN。controller-read前缀和直接COM为另列诊断，不能替换原LP/姿态判据。未到达B不能记组合成功。独立block、共享对照、模型和窗口分别计数。
 
 M0全局均匀，M1分前缀均匀，M2分前缀无方向廉价基线，M3分前缀方向闭环；各方法同级可用输入、相同启动额度，额外建模/在线/前缀费用单列。物理同seed不等于同状态，不做免费物理快照复用主张。
+
+## 最终接口资格与分析版本
+
+启动42=开发6/搜索32/地图4，全部唯一终态。冻结控制/模型/配置仍为b303；分析修正版独立放在data路径，未改变运行模型。`tools/p15/report.py`是冻结原汇总，只有物理成本且把非PASS的有效前缀遗漏，保留原版本。最终读`delivery-v4/machine.json`的资格与结论、`delivery-v2/method-total-costs.json`及最终成本补充；不要把旧汇总当全费用结果。
+
+资格类型分开：完整平台；`PASS_SCORED_TASK_PREFIX_AUX_TAIL_UNKNOWN`（OP尾部未知）；`PARTIAL_CONTROLLER_TASK_PHYSICS_MISSING`（NN/LP任务可用、COM/物理不可用）。后一项没有恢复物理数据，也没有取消其原START/错误。所有组按实际资格使用，未把未执行候选赋标签。
+
+`evaluation/*/event-states.json`分别给COM/model-origin、直接物理W和LP/cache、h/action/history、执行、native/sample/commit/read。LP判据的H0、控制器缓存比较H0及物理COM H0分开，不能直接拼减。首次Bpre原字段为首次模型call>=B；`extra-metrics`和`delivery-v4`另用双方严格<B的行，保留各自时刻、不事后对齐。v3曾把独立ULog任务H0与控制器模型H0混用比较，原结果保留，地图误差仅使用v4。
+
+地图输出同时含：名义时间轨迹、全部前缀L/D/W/倾角、完整声明模型后继、守卫/时钟原点、适用条件、误差未知项、真实锚点及费用。当前后继是条件点；未闭合真实联合域不能用任意小盒冒充。运行时标量局部更新没有改变4次选择，不能声称认证边界扩展。新seed采用已经FINISH且payload hash核对的前条更新，未来本条数据只评分。
+
+模型拼接必须保存原始profile/sample算术原点，不能仅保留数值相等的局部t。`model-clock-reuse-v2`将该项加入离线模型实现，保留完整h/mean/previous/count、LP/姿态缓存、plant、reference、pending、filter、D与失败；不改变冻结独立选择与预测成绩。真实未观测pending和未来时序条件仍UNKNOWN。模式C→N→C的真实控制接口沿用历史源码，但本轮地图不新增经典闭环交接效果主张。

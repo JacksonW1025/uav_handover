@@ -9,7 +9,7 @@
 * task0过去输入：`inputs-v3/<id>/task-input-nav.json`；A前条件输入：同目录`edge-input.json`。不要用旧`task-input.json`替代正确导航版本。
 * 最终点预测：`point-v2`；全量四例新评分/首次偏离/事件窗：`analysis-v2`；有限未来缓存替换：`cache-diagnostics-v1/v2/v3-edge`，绝不可计为自主。
 * 最终管束：`tubes-final-v2/summary.json`。前两项是`final-v1`已完成结果的明确引用；驱动先核对core/tube/algebra hash再复用。未重复已完成离线项冒充新实验。
-* 地图/图/机器结论：`delivery-v5/map-edge.json`、`edge-regions/`、`machine-conclusion.json`；三图在`docs/figures/p14-motion/`。实际NDArray由local hash清单绑定，沿用已有p14 NPZ忽略规则。
+* 地图：最终`delivery-v6-edge/map-edge.json`及`serialization-audit.json`；数值区域、图、机器结论沿用`delivery-v5`。v6补齐显式后继queue/clock，D区间与当前L的关系单列，旧v5不改。三图在`docs/figures/p14-motion/`。实际NDArray由local hash清单绑定，沿用已有p14 NPZ忽略规则。
 
 ## 计算
 
@@ -21,6 +21,7 @@ OPENBLAS_NUM_THREADS=1 uav_lab/.local/venv/bin/python tools/p14_motion/run_point
 OPENBLAS_NUM_THREADS=1 uav_lab/.local/venv/bin/python tools/p14_motion/reproduce.py /tmp/p14-motion-independent-repro
 OPENBLAS_NUM_THREADS=1 uav_lab/.local/venv/bin/python tools/p14_motion/final_tubes.py /tmp/p14-motion-tubes-repro
 OPENBLAS_NUM_THREADS=1 MPLCONFIGDIR=/tmp/p14-motion-mpl uav_lab/.local/venv/bin/python tools/p14_motion/assemble.py /tmp/p14-motion-delivery-repro
+OPENBLAS_NUM_THREADS=1 uav_lab/.local/venv/bin/python tools/p14_motion/complete_edge.py /tmp/p14-motion-edge-serialization-repro
 OPENBLAS_NUM_THREADS=1 MPLCONFIGDIR=/tmp/p14-motion-mpl uav_lab/.local/venv/bin/python -m pytest -q tests/test_p14_motion.py tests/test_p14.py tests/test_p13.py tests/test_p12_score.py
 ```
 

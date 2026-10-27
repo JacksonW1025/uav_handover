@@ -26,7 +26,7 @@ Lab 前缀：`uav_lab/.local/checkouts/px4-raptor/`。统一坐标见原 `THOR_P
 
 ## 地图边类型
 
-机器实例：`data/p14-motion-20261027/delivery-v5/map-edge.json`，完整区域数组本机保存并入 hash 清单。输入/输出均包含：
+机器实例：`data/p14-motion-20261027/delivery-v6-edge/map-edge.json`，数值/区域数组沿用v5，本机保存并入 hash 清单。v6补齐queue/last-send/sample/native/下一提交位，四个checkpoint与原live-loop的index/count/last-read/stale逐项相等，并作JSON往返核验。输入/输出均包含：
 
 `owner, pCOM/vCOM/qphys/omega, qhat/LP/gyro/filter-delays/bias/origin, caches+ages,
 h/previous/mean/count/index, filter/rotor-phase/pending-command,
@@ -47,7 +47,7 @@ flowchart LR
  B --> T[继续有界 或 TOP+首个义务]
 ```
 
-任意三、四或有限事件词沿同一类型迭代。`TOP` 不重置，历史 D 不撤销，不能以每条边重新独立采样初态来制造可组合性。时间守卫不确定时需要分支/区间；当前数值实例只有一个明确条件词，分支数=1。
+任意三、四或有限事件词沿同一类型迭代。`TOP` 不重置，历史 D 不撤销，不能以每条边重新独立采样初态来制造可组合性。D本轮用单调标量区间及`D>=当前L`关系约束，尚未保留整个过去max与所有状态的生成元相关性；其他内部状态保留共同列。这是保守投影而非历史清零，后续可将max写成共享ReLU算子进一步保留关系。时间守卫不确定时需要分支/区间；当前数值实例只有一个明确条件词，分支数=1。
 
 ## 可复用的真实控制权交接
 

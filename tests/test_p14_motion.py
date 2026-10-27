@@ -55,3 +55,14 @@ def test_map_keeps_global_height_history_and_conditions():
  assert not doc['edge_composition']['B_capture_enclosed']
  assert doc['output']['stages']['resume_plus_p5']['prefix_margin']['height_margin_m']>0
  assert doc['output']['full_requested_2s_recovery']=='NOT_ENCLOSED'
+
+def test_serialized_successor_restores_queue_clocks_and_D_relation():
+ from p14_motion.complete_edge import discrete
+ edge=json.load(open(ROOT/'data/p14-motion-20261027/delivery-v6-edge/map-edge.json'))
+ doc=json.load(open(ROOT/edge['input']['initial']))
+ for x in edge['output']['stages'].values():
+  d=discrete(doc,x['metrics']['call']);assert d==x['successor_discrete']
+  assert 'target_pending_slot' in d and 'last_send_profile_s' in d
+  assert d['next_call_commit']==(d['index']%2==0)
+  history=x['history_D_outer_relation'];assert history['interval_m'][1]>=max(0,x['metrics']['L_interval_m'][1])-1e-10
+  assert 'full past-max generator correlation NOT retained' in history['representation']

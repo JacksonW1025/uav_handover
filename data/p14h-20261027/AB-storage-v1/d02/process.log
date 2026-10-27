@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/data/p14h-20261027/AB-storage-extension-v1.py", line 48, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/car/uav_handover/data/p14h-20261027/AB-storage-extension-v1.py", line 44, in main
+    if sys.argv[1]=='child':compute(Path(sys.argv[2]),sys.argv[3]);return
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/data/p14h-20261027/AB-storage-extension-v1.py", line 33, in compute
+    result,_=tube(d,P,0,end=d['initial']['profile_s']+1.96,compress_rank=None,group=True,observer_library=R/'data/p14r-20261027/offline-build-v2/libop.bin',liveness=True,tangent_hook=hook);N=Js[0].shape[0];terminal=np.zeros((N,N));a=layout['v'][0]+2;terminal[a,a]=1/.15**2;Qs=[None]*(len(Js)+1);Qs[-1]=terminal;Wpost=[None]*(len(Js)+1)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14r/tube.py", line 141, in run
+    if tangent_hook is not None:s=tangent_hook('post',k,t,s)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/data/p14h-20261027/AB-storage-extension-v1.py", line 31, in hook
+    if len(Js)%16==0:write(out/'forward-progress.json',dict(calls=len(Js),N=Js[-1].shape[0],layout=layout,last_profile_s=t,raw_matrices_committed=True))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14/common.py", line 22, in write
+    if p.exists():raise FileExistsError(p)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^
+FileExistsError: /home/car/uav_handover/data/p14h-20261027/AB-storage-v1/d02/result/forward-progress.json

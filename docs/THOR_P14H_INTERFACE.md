@@ -20,3 +20,31 @@
 地图边输入：模式、联合初态、事件A/B时刻、reference/history/cache规则、时钟分支、模型误差域。输出：运动中心、逐前缀倾角/LP/COM余量、D和后继内部状态、UNKNOWN来源、成本。机器实例map-v1/result/edge.json；实际同源联合域尝试sets-AB-v1。失精度前缀与失域后的TOP明确分界。
 
 W为完整前缀输出的固定分支pullback，856维、192调用：Qpre[k]=Jkᵀ(CpostkᵀCpostk+Qpre[k+1])Jk。采用PSD半范数，不把最大特征值或瞬时h范数称恢复能力。非线性r、时序跳变和浮点预算未闭合时不能用此恒等式推出实际安全。
+
+## 收尾语义更正（保留冻结模型和旧结果）
+
+源码真实顺序为Runstart→gyro copy→LP copy→attitude copy→外部目标read→observe/NN/history→publish→cycleend。生产者可以在Run内部完成：`run_wall_ns`是缓存copy下界，`read_wall_ns`是上界。初态h_after等当行信息应取cycleend为可用上界；16条都早于A，最小约6.785ms。原包仍保留，Runstart瞬时完整快照主张撤回，评分不事后平移。名义PRE_COMPLETE/4ms源模式不是全部真实顺序覆盖。
+
+```mermaid
+flowchart LR
+  P[物理 Pre/Post 与 COM] --> I[IMU sample / 下采样状态]
+  I --> E[EKF 与 OP 环及校正]
+  E --> L[LP publish]
+  L --> A[attitude publish]
+  I --> G[独立 gyro/filter/bias]
+  G --> R[Run 内依次 copy gyro LP att]
+  L --> R
+  A --> R
+  T[任务 publisher / transport / pending] --> S[实际 read slot 与严格 timeout]
+  R --> S
+  S --> N[capture/resume observe GRU/history]
+  N --> U[latest actuator / ESC / GZ command]
+  U --> F[filter 与 joint / SERVO]
+  F --> P
+```
+
+独立e11原host端点审计FAIL保留。新分析仅以精确同末sample、完整source PRE/POST且生产者先于消费者完成验证；不添加时间容差或补造字段。冻结实验源码未改，修订范围见terminal-audit-revision-v1。
+
+P12评分v2 `risk`采用共同观察窗；完整事前时域另由risk_scope.py报告。前者3/6高度失败时刻漏判保留；后者1/6完整高度漏判，另5条高度越界仍迟约0.060–0.452s。模型覆盖UNKNOWN与数值预测三值分类分列，不能用未知前提替换漏判以美化成绩。
+
+490调用储能扩展只为H0声明源码名义分支的线性/条件关系，H1异步producer和真实EKF误差没有自动纳入。真实来源联合域完整事件覆盖仍0。

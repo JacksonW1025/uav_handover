@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/data/p14h-20261027/diagnose-producer-v1.py", line 40, in <module>
+    if sys.argv[1]=='child':compute(sys.argv[2],sys.argv[3],sys.argv[4])
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/data/p14h-20261027/diagnose-producer-v1.py", line 34, in compute
+    M.Observer=Replaced;tmp=out/'inputs';tmp.mkdir();shutil.copyfile(R/'data/p14r-20261027/offline-build-v2/libop.bin',tmp/'libop.bin');shutil.copyfile(B/'cadence-recovery-v2/cadence.bin',tmp/'cadence.bin');end=i['profile_s']+.004*((int(obs['sample_us'][-1])-i['sample_us'])//4000);r=M.forecast(d,{},dict(np.load(R/'data/p13-20261026-freeze/models/policy.npz')),limit=end,observer_library=tmp/'libop.bin');np.savez_compressed(out/'trace.npz',**{k:v for k,v in r.items() if isinstance(v,np.ndarray)});tr=r['trace'];ix=np.flatnonzero((obs['sample_us']>i['sample_us'])&(obs['sample_us']<=i['sample_us']+4000*(len(tr)-1)));k=((obs['sample_us'][ix]-i['sample_us'])//4000).astype(int);b=d['plan']['windows_profile_s'][0][1];errs={'input':np.linalg.norm(r['inputs'][k]-obs['input'][ix],axis=1),'action':np.linalg.norm(tr[k,8:12]-obs['action'][ix],axis=1),'h':np.linalg.norm(tr[k,12:28]-obs['h_after'][ix],axis=1),'LP':np.linalg.norm(tr[k,42:45]-obs['position'][ix],axis=1),'attitude_deg':angle(tr[k,48:52],obs['attitude'][ix])};t=obs['t'][ix];windows=[]
+                                                                                                                                                                                                                                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14h/model.py", line 47, in forecast
+    lp,lv,att,gyro=observer.step(sample,p,v,q,w);oq,ov,og,_=observer.op.outputs();op=observer.op.project(og,observer.par['LP_reference_geo']);estimated_q=oq.astype(float);d1=observer.d1.copy();d2=observer.d2.copy()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/data/p14h-20261027/diagnose-producer-v1.py", line 29, in step
+    target,lp,att=mapping[control];self.lag=int(control-target);value=super().step(control,*args)
+                  ~~~~~~~^^^^^^^^^
+KeyError: 67848000

@@ -1,0 +1,22 @@
+"""Final read-only history/runtime/rule/raw integrity, scoped claims only."""
+import sys,json,subprocess,hashlib,datetime
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tools'))
+from p14h.common import *
+base='0a387decb7809b9005b308aa03499283410fe61b';out=register(sys.argv[1],'history/source/runtime andrawhash final audit, no flights; baseline protected, newHonly')
+changed=subprocess.check_output(['git','diff','--name-only',base],text=True).splitlines();allowed=['config/p14h/','tools/p14h/','tools/apply_p14h.py','research/state/P14HSnapshot.hpp','tests/test_p14h.py','tests/p14h_snapshot_test.cpp','docs/THOR_P14H_','data/p14h-20261027/'];unexpected=[p for p in changed if p!='.gitignore' and not any(p.startswith(x) for x in allowed)];assert not unexpected,unexpected;deleted=subprocess.check_output(['git','diff','--diff-filter=D','--name-only',base],text=True).splitlines();assert not deleted,deleted
+oldfiles=subprocess.check_output(['git','ls-tree','-r','--name-only',base],text=True).splitlines();selected=[p for p in oldfiles if p.startswith('docs/THOR_P') and any(p.endswith(x) for x in ['REPORT.md','INTERFACE.md','REPRODUCE.md'])];oldhash=[]
+for p in selected:
+ blob=subprocess.check_output(['git','show',base+':'+p]);expected=hashlib.sha256(blob).hexdigest();actual=sha(R/p);assert expected==actual,p;oldhash.append(dict(path=p,sha256=actual))
+archive=subprocess.run(['git','show-ref','--verify','refs/heads/archive/full-raw-history'],text=True,capture_output=True)
+f=json.load(open(B/'experiment-freeze-v1.json'));assert all(sha(R/p)==h for p,h in f['critical_source_files'].items());gate=json.load(open(B/'preflight-v5/gate.json'));assert all(sha(R/p)==r['sha256'] for p,r in gate['actual_runtime'].items());assert all(sha(R/r['path'])==r['sha256'] for r in gate['plugins']);plan=json.load(open(B/'independent-plan-v2/plan.json'));assert all(sha(R/r['config'])==r['config_sha256'] for r in plan['rows']);assert sha(B/'independent-plan-v2/plan.json')==f['plan_sha256'];assert sha(B/'selection-v3/rules.json')==f['selection_rules_sha256'];assert sha(B/'selection-v3/selection.json')==f['selection_sha256']
+oldraw=[]
+for case,r in json.load(open(R/'config/p14h/protocol-v1.json'))['cases'].items():
+ assert sha(R/r['input'])==r['sha256'];run=R/r['raw_run'];m=json.load(open(run/'metadata.json'));expected=m['ulog_sha256'];actual=sha(run/'flight.ulg');assert expected==actual,case;oldraw.append(dict(case=case,path=str((run/'flight.ulg').relative_to(R)),sha256=actual))
+manifest=json.load(open(B/'delivery-v2/manifest.json'))['files'];index={r['path']:r for r in manifest};newraw=[]
+for target in sorted((B/'runs').iterdir()):
+ run=target/'run';m=json.load(open(run/'metadata.json'));key=str((run/'flight.ulg').relative_to(R));assert index[key]['sha256']==m['ulog_sha256'];newraw.append(dict(id=target.name,ulog_sha256=index[key]['sha256'],raw_full_file_hash_already_in_delivery_manifest=True))
+assert len(newraw)==16
+write(out/'result.json',dict(status='PASS',baseline=base,old_tracked_count=len(oldfiles),old_tracked_changes_except_independentH_gitignore=unexpected,deleted_old_files=deleted,old_report_hashes=oldhash,old_raw_hashes_independently_rechecked=oldraw,new16_raw_hashes_match_recorded_metadata=newraw,all_frozen_model_runtime_policy_and_rule_hashes_unchanged=True,archive_ref=archive.stdout.strip() if archive.returncode==0 else 'UNAVAILABLE_NOT_CHANGED_BY_THIS_TASK',full_raw_history_not_rehashed='only five raw reused inputs independently rehashed; all16new raw hashes compared with final uniform manifest. No claim ofindependently rereading everyoldignoredraw.',preexisting_untracked_receipts='not staged or edited, no prestart fullsha snapshot; no retroactive claim'))
+write(out/'classification-and-scope.json',dict(common=json.load(open(B/'delivery-v2/classification.json')),full_forward=json.load(open(B/'risk-scope-v1/result.json')),timing_origin=json.load(open(B/'timing-window-audit-v2/result.json')),counterfactual_stops=[dict(path=str(p.relative_to(R)),stop=json.load(open(p))['stop'],sha256=sha(p)) for p in sorted((B/'counterfactual-response-v1').glob('[0-9][0-9][0-9]/result/result.json'))],publication_model_role='independent frozen selection; actual-initial forecasts postflight causal reconstruction with completed-row origin interval, not task0prospective'))
+print('INTEGRITY_PASS',len(oldfiles),len(oldhash),len(oldraw),len(newraw))

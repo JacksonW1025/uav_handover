@@ -93,3 +93,57 @@ def test_unknown_censored_scoring_does_not_hide_mechanism_tilt_miss():
   for x in case['models'].values():
    if case['case'] in [2,4]:assert x['observed']['height']=='UNKNOWN' and not x['classification_eligible']['height']
    if case['case']==4:assert x['comparisons']['tilt']=='DANGER_MISS'
+
+
+def test_terminal_endpoint_analysis_keeps_original_fail_and_exact_source_identity():
+ r=json.load(open(B/'terminal-audit-revision-v1/all-affected.json'));row=next(x for x in r['rows'] if x['id'].startswith('p14h-e11-'))
+ assert row['original_status']=='DATA_QUARANTINE' and row['original_FAIL_retained']
+ assert row['terminal_sample_equal'] and row['terminal_source_before_consumer']
+ assert row['source_completed_before_read_ns']==25150 and row['exact_sample_not_time_tolerance']
+ assert row['last_source_sample_us']==row['last_control_sample_us']==68432000
+
+def test_initial_completed_row_availability_is_interval_and_before_event():
+ r=json.load(open(B/'timing-window-audit-v2/result.json'));assert len(r['rows'])==16
+ assert r['strict_Runstart_cut_claim'].startswith('WITHDRAWN')
+ for x in r['rows']:
+  assert x['all_controller_row_fields_available_before_A'] and x['initial_end_before_next_forecasted_control']
+  assert x['initial_origin_interval_ns'][0]<x['initial_information_upper_cycleend_ns']
+ assert sum(x['actual_attitude_post_inside_window'] for x in r['rows'])==65
+
+def test_all_starts_have_unique_identities_and_no_remaining_budget():
+ a=[json.loads(l) for l in (B/'attempts.jsonl').read_text().splitlines()];s=[x for x in a if x['event']=='START_INTENT'];assert len(s)==len({x['id'] for x in s})==16
+ assert sum(x['budget_class']=='mechanism' for x in s)==4 and sum(x['budget_class']=='independent' for x in s)==12
+ assert json.load(open(B/'independent-execution-v2/complete.json'))['status']=='FINISHED'
+
+def test_known_timestamp_replacements_never_become_autonomous_predictions():
+ rows=[json.load(open(p)) for p in (B/'producer-diagnostic-v2').glob('d*-*/result/result.json')];assert len(rows)==8
+ assert sum(x['status']=='DIAGNOSTIC_UNCLOSED' for x in rows)==4
+ assert all(x['not_in_autonomous_scores'] for x in rows)
+ r=json.load(open(B/'counterfactual-response-v1/result.json'));assert len(r['rows'])==8 and r['future_data_hidden']
+ assert all(x['no_real_same_initial_counterfactual'] for x in r['rows'])
+
+def test_independent_scores_keep_height_censoring_and_misses_visible():
+ r=json.load(open(B/'delivery-v1/classification.json'))
+ for m in ['held','source-queue']:
+  assert r[m]['height']['observed_FAILURE']==6 and r[m]['height']['UNKNOWN']==6 and r[m]['height']['DANGER_MISS']==3
+  assert r[m]['tilt']['DANGER_MISS']==0 and r[m]['tilt']['FALSE_ALARM']==1
+  assert r[m]['task']['DANGER_MISS']==1 and r[m]['task']['N']==12
+
+def test_actual_AB_storage_extension_is_full_prefix_linear_only():
+ r=json.load(open(B/'AB-storage-v2/d02/result/result.json'))
+ assert r['actual_AB'] and r['calls']==490 and r['requested_horizon_s']==1.96
+ assert r['forward_backward_energy_absolute_error']<1e-18
+ assert r['PSD_semidefinite_not_full_state_norm'] and 'not certified' in r['nonlinear_error_relation']
+ assert r['first_source_domain_loss'] is None
+
+def test_search_extrapolation_limit_and_saturated_pool_are_not_hidden():
+ r=json.load(open(B/'selection-v3/selection.json'));assert len(r['validation'])==16
+ assert all(x['valid_same_branch'] for x in r['validation'])
+ assert not any(x['branches_at_validation_equal'] for x in r['validation'])
+ m=json.load(open(B/'delivery-v1/methods.json'))['methods'];assert all(x['N']==x['task_failures']==4 for x in m.values())
+
+def test_full_forward_risk_never_erases_common_prefix_height_misses():
+ rows=json.load(open(B/'risk-scope-v1/result.json'))['rows'];assert len(rows)==12
+ assert sum(r['models']['source-queue']['old_common_window_risk']['comparisons']['height']=='DANGER_MISS' for r in rows)==3
+ assert sum(r['models']['source-queue']['full_forward_risk']['comparisons']['height']=='DANGER_MISS' for r in rows)==1
+ delays=[r['models']['source-queue']['delay_intervals_s']['height'] for r in rows];delays=[x for x in delays if x is not None];assert len(delays)==5 and all(x[0]>0 for x in delays)

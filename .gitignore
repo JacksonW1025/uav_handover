@@ -152,3 +152,18 @@ data/p11-*/**/p11-sends.jsonl
 # P14G: fully offline full arrays/checkpoints are local, uniformly hashed.
 /data/p14g-*/**/*.npz
 /data/p14g-*/**/*.bin
+
+# P14H independent raw arrays/runtime snapshots remain local.
+/data/p14h-*/**/*.npz
+/data/p14h-*/**/*.bin
+/data/p14h-*/**/rootfs/
+/data/p14h-*/**/cli/
+/data/p14h-*/**/p11-sends.jsonl
+# Full per-call forecast/branch records are local raw derived data. Every
+# terminal result, failure and source hash is indexed in the P14H delivery.
+/data/p14h-*/offline-v*/[0-9][0-9][0-9]/result/result.json
+/data/p14h-*/response-trials-v*/[0-9][0-9][0-9]/result/result.json
+/data/p14h-*/selection-v*/[0-9][0-9][0-9]/result/result.json
+/data/p14h-*/prediction-*/worker/result/*.json
+/data/p14h-*/**/*.lock
+/data/p14h-*/evaluation-*/**/result/result.json

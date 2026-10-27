@@ -1,0 +1,47 @@
+SELECT_FORECAST 0 0 0.37
+SELECT_FORECAST 1 0 0.39
+SELECT_FORECAST 2 0 0.42
+SELECT_FORECAST 3 0 0.44
+SELECT_FORECAST 4 0 0.47
+SELECT_FORECAST 5 0 0.49
+SELECT_FORECAST 6 0 0.54
+SELECT_FORECAST 7 0 0.57
+SELECT_FORECAST 8 0 0.59
+SELECT_FORECAST 9 0 0.61
+SELECT_FORECAST 10 0 0.64
+SELECT_FORECAST 11 0 0.66
+SELECT_FORECAST 12 0 0.68
+SELECT_FORECAST 13 0 0.71
+SELECT_FORECAST 14 0 0.74
+SELECT_FORECAST 15 0 0.76
+SELECT_FORECAST 16 0 0.79
+SELECT_FORECAST 17 0 0.81
+SELECT_FORECAST 18 0 0.83
+SELECT_FORECAST 19 0 0.86
+SELECT_FORECAST 20 0 0.89
+SELECT_FORECAST 21 0 0.91
+SELECT_FORECAST 22 0 0.94
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p14h/selection.py", line 92, in <module>
+    elif sys.argv[1]=='calculate':calculate(sys.argv[2])
+                                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14h/selection.py", line 48, in calculate
+    jf=inp/f'job-{n:03d}.json';write(jf,job);dest=tmp/f'output-{n:03d}';dest.mkdir();cmd=[shutil.which('bwrap'),'--ro-bind','/','/','--tmpfs',str(R/'data'),'--tmpfs',str(R/'export'),'--unshare-net','--unshare-pid','--proc','/proc','--bind',str(dest),str(dest),'--chdir',str(R),str(PY),str(Path(__file__).resolve()),'worker',str(inp),str(jf),str(dest/'result')];rr=run(cmd,out/f'{n:03d}',cpu=30,wall=40,scope='H3 isolated frozen-pool forecast');used+=rr['CPU_s'];rows.append(rr)
+                                                                                                                                                                                                                                                                                                                                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14h/common.py", line 38, in run
+    try:rc=subprocess.run(guarded,stdout=f,stderr=subprocess.STDOUT,timeout=wall).returncode
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 2141, in _communicate
+    self.wait(timeout=self._remaining_time(endtime))
+  File "/usr/lib/python3.12/subprocess.py", line 1264, in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 2047, in _wait
+    time.sleep(delay)
+KeyboardInterrupt

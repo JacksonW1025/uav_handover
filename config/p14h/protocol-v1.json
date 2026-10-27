@@ -1,0 +1,128 @@
+{
+  "schema": "P14H-preregistered-1",
+  "time": "2026-10-27T11:27:04.583793+00:00",
+  "baseline": "0a387decb7809b9005b308aa03499283410fe61b",
+  "budget": {
+    "mechanism_START_INTENT": 4,
+    "independent_START_INTENT": 12,
+    "total_START_INTENT": 16,
+    "no_transfers": true
+  },
+  "hypotheses": {
+    "H1": "branch+event-time local response predicts actions/margins better than continuous-only across legal read boundary; same-cell derivatives assessed separately",
+    "H2": "biased nominal model can retain accurate perturbation differences only under stated shared errors/branches; compare changes, not just absolute fit",
+    "H3": "equal-domain equal-execution-budget branch search locates failure/tightens boundary at lower total cost than random/continuous; small sample no population claim"
+  },
+  "cases": {
+    "d02": {
+      "input": "data/p14r-20261027/source-inputs-v3/d02/input.json",
+      "sha256": "3ee21e4a2ce050c7827f31d280f1b02071cfeae37151d6ab0caf0a985df96e9f",
+      "raw_run": "data/p14r-20261027/runs/p14r-d02-A-s270101/run",
+      "role": "retrospective exposed; d05 censored height UNKNOWN, d06 tilt beforeB"
+    },
+    "d03": {
+      "input": "data/p14r-20261027/source-inputs-v3/d03/input.json",
+      "sha256": "96505bd3d1cd9fccee608a1e191210e75e21e80a061ec7f71a6d6790260a664e",
+      "raw_run": "data/p14r-20261027/runs/p14r-d03-A-s270102/run",
+      "role": "retrospective exposed; d05 censored height UNKNOWN, d06 tilt beforeB"
+    },
+    "d04": {
+      "input": "data/p14r-20261027/source-inputs-v3/d04/input.json",
+      "sha256": "92d4b86816e09bdf7086f048c47dd9e6bb053d209cfbab9bb6e5b396ca5794ed",
+      "raw_run": "data/p14r-20261027/runs/p14r-d04-NORMAL-s270102/run",
+      "role": "retrospective exposed; d05 censored height UNKNOWN, d06 tilt beforeB"
+    },
+    "d05": {
+      "input": "data/p14r-20261027/source-inputs-v4/d05/input.json",
+      "sha256": "6ad0f7f620425ca122da92e92bd682b702696d06a4bf90f30de71a00ecbdf70f",
+      "raw_run": "data/p14r-20261027/runs/p14r-d05-F2-AB-short-s270103/run",
+      "role": "retrospective exposed; d05 censored height UNKNOWN, d06 tilt beforeB"
+    },
+    "d06": {
+      "input": "data/p14r-20261027/source-inputs-v4/d06/input.json",
+      "sha256": "8b9b8d9882580a0d26e1b82884f94306e70a301fa843535e3f5a5fa862c64dcc",
+      "raw_run": "data/p14r-20261027/runs/p14r-d06-F4-AB-medium-s270103/run",
+      "role": "retrospective exposed; d05 censored height UNKNOWN, d06 tilt beforeB"
+    }
+  },
+  "old_exposure": "all oldd02-d06 retrospective;d01isolated,d05censored,d06tiltbeforeB",
+  "offline_axes": {
+    "release_offset_ms": [
+      -4,
+      -2,
+      -0.5,
+      0,
+      0.5,
+      2,
+      4
+    ],
+    "A_duration_delta_ms": [
+      -40,
+      -20,
+      -4,
+      0,
+      4,
+      20,
+      40
+    ],
+    "recovery_interval_delta_ms": [
+      -200,
+      -100,
+      -20,
+      0,
+      20,
+      100,
+      200
+    ]
+  },
+  "derivative_steps_s": [
+    0.00025,
+    0.0005,
+    0.001
+  ],
+  "metrics": {
+    "first_action_L2": true,
+    "max_cached_tilt_deg": true,
+    "max_LP_loss_m": true,
+    "max_COM_loss_m": true,
+    "recovery_W_m_s": true,
+    "windows_after_resume_s": [
+      0.064,
+      0.5,
+      2.0
+    ],
+    "full_prefix": true,
+    "task_tilt_deg": 45,
+    "task_height_loss_m": 1,
+    "information_effect_scales": {
+      "action": 0.02,
+      "tilt_deg": 2.5,
+      "height_m": 0.1,
+      "downW": 0.15
+    }
+  },
+  "source_rules": "native strictguard/capture beforeduplicate, latestslot, pre-readphase, commit/history, physicalconsume remain; polling crossings compare branches, no invalid saltation",
+  "resources": {
+    "whole_offline_CPU_s": 14400,
+    "whole_wall_s": 25200,
+    "per_point_CPU_s": 30,
+    "per_point_wall_s": 40,
+    "per_tube_CPU_s": 180,
+    "per_tube_wall_s": 210,
+    "memory_per_job_GiB": 24,
+    "analysis_validation_reserve_CPU_s": 600,
+    "controller_build_CPU_reserve_s": 1800,
+    "mechanism_analysis_CPU_s": 1800,
+    "offline_axes_CPU_s": 2400,
+    "theory_tubes_CPU_s": 3000,
+    "search_CPU_s": 2400,
+    "postflight_analysis_CPU_s": 2400,
+    "all_costs_metered": true,
+    "finite_one_structural_revision": true
+  },
+  "mechanism_rule_before_any_start": "offline audit first, choose source legal read-boundary sides; 2newseeds each side; eachrunreview before next. Missingcoreidentity isolates dependents; no replacement",
+  "independent_rule": "freeze rules and pool/seed/execution budgets after diagnostic; 3methods <=4 executions each, shared candidates singlephysicalcount and shared cost, no invented unseenlabels",
+  "prediction_contract": "initial+plan only, future replacements diagnostic separated. FullP not replaced by diagonal. Stop oldEKFdecayproxy andoldsmallinnovationproof",
+  "safety": "unchanged weights and safeguards, SITLonly",
+  "status": "offlinefirst, no starts yet"
+}

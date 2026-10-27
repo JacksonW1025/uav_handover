@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p14h/offline.py", line 49, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/car/uav_handover/tools/p14h/offline.py", line 47, in main
+    jf=out/f'job-{j:03d}.json';write(jf,job);target=out/f'{j:03d}';row=run([PY,Path(__file__),'child',inp,jf,target/'result'],target,cpu=30,wall=40);used+=row['CPU_s'];print('P14H_OFFLINE',j,row['rc'],round(used,2),flush=True)
+                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14h/common.py", line 19, in run
+    out=Path(out);out.mkdir(parents=True,exist_ok=False);ledger=B/'resource-ledger.jsonl';old=[json.loads(l) for l in ledger.read_text().splitlines()] if ledger.exists() else [];used=sum(x.get('CPU_s',0) for x in old if x['event']=='END');assert used+cpu<=13800,'leave600CPUvalidationreserve';append(ledger,{'event':'BEGIN','id':str(out.relative_to(R)),'reservation_CPU_s':cpu,'scope':scope,'command':list(map(str,command))});before=resource.getrusage(resource.RUSAGE_CHILDREN);start=time.perf_counter()
+                                                                                                                                                                                                                                                                                                                                             ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 682, in relative_to
+    raise ValueError(f"{str(self)!r} is not in the subpath of {str(other)!r}")
+ValueError: 'data/p14h-20261027/offline-v1/000' is not in the subpath of '/home/car/uav_handover'

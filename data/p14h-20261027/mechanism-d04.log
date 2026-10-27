@@ -1,0 +1,23 @@
+P14H_START 4 p14h-d04-F4-A-before-s142710202
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p14h/campaign.py", line 32, in main
+    try:measured=process(runout,target/'analysis-v1',R/'data/p12-cont-20261026-freeze/models',predict=False)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14h/workflow.py", line 17, in process
+    tool('p12/observe.py',[run,'--output',out/'observation'],'observation');tool('p12/execution.py',[run,'--output',out/'execution'],'execution');sync=out/'observation/synchronized.npz'
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p14h/workflow.py", line 16, in tool
+    if q['rc'] and not allow:raise RuntimeError('offline evidence tool failed '+label)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: offline evidence tool failed observation
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p14h/campaign.py", line 53, in <module>
+    if __name__=='__main__':main()
+                            ^^^^^^
+  File "/home/car/uav_handover/tools/p14h/campaign.py", line 34, in main
+    oldengineering=json.load(open(target/'analysis-v1/engineering.json'))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/car/uav_handover/data/p14h-20261027/runs/p14h-d04-F4-A-before-s142710202/analysis-v1/engineering.json'

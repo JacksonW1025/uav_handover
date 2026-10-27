@@ -1,0 +1,76 @@
+{
+  "schema": "P14H-independent-experiment-freeze-1",
+  "time": "2026-10-27T13:30:47.110284+00:00",
+  "source_parent": "0a387decb7809b9005b308aa03499283410fe61b",
+  "preflight": "data/p14h-20261027/preflight-v5/gate.json",
+  "preflight_sha256": "fe6aa8dbd0964b045c8f7805468907f3ec43ac4363cb0a3d507237b04d82db47",
+  "plan": "data/p14h-20261027/independent-plan-v2/plan.json",
+  "plan_sha256": "53ede62d4da978827bc065912cda3488e5b41ec09e3c06a5088f6991e58dfd24",
+  "selection_rules_sha256": "e00a2da1dc19061266faea280d4c4f9517a2bc284d735dc86d11f7a0c87354a8",
+  "selection_sha256": "81d56e8aba5b6798d0ce5a15df9204bb3ea865b2ad7564d3427d5ef22b638544",
+  "critical_source_files": {
+    "tools/p14h/model.py": "5746a8582f81e87ddb3c11760fee6fb0e590246bf26f60ba8b6e440a4df31912",
+    "tools/p14h/causal_observer.py": "c01f84734811f4f801ec83b37e3efe8448752ac1fe6a0544c42309e43afa103a",
+    "tools/p14h/control.py": "e3bc33b6cebb149949b0e84cb1b29a1b0a71baf6f264413dcbeb63ac5257defe",
+    "tools/p14h/delivery.py": "e314b9f965cdea92548256fea5c385d43807e588790adc13a204fd06b7bda40d",
+    "tools/p14h/cadence.py": "edec516530adf8786a45378529842a849d86a448c5ba482c7fccbb19edfdd304",
+    "tools/p14h/cadence.cpp": "ebfb0e1c53aef450ee94ef44ae7d10a7b33dba7c16f99a14cff4aac24ae54ddc",
+    "tools/p14h/feedback.py": "0888e77eaf163095f0e44e1767b27da98a757699b8e1f1fb54fcd2f42c05eb0f",
+    "tools/p14h/runner.py": "04b9891974c0e13228b352d099af6958c511559dde9a7cb4703c8fe78ce68635",
+    "tools/p14h/experiment": "b1739a09ccec949814b48bc69fe780f5f0ee061c60379c33bf4833bdb4a8a7e2",
+    "tools/p14h/campaign.py": "75baede0868c7e45c647259b68eb841884ff7cb339f44f4a00162f9dfc5e665d",
+    "tools/p14h/pipeline.py": "09152f79891ace7b41011c62c84044628104fa08c87bba62f8bb8ad9f6b98c54",
+    "tools/p14h/record_packet.py": "59f999099ebf7a7f6b2e08e98a7f4c8ab83b3cd397aafc98d3f9b6084fc472b4",
+    "tools/p14h/evaluate.py": "de1c46801311ca1339903e38f9b43f478cde9d302238c2582428f7560c63cbff",
+    "tools/p14h/response_trials.py": "02da6bf3922c1d21cdb3950b2539714c798dd3dce828419e25143722af5445e2",
+    "tools/p14h/selection.py": "c33d8bc27f10742d6157542c3c38cf8114af071611a1f047ccaf0608dd2e65db",
+    "tools/p14h/scope_audit.py": "4636aec66af63053fc051a7768b757e995d84d333dc14ab15d4635255b6ce006",
+    "tools/p14h/observe_scoped.py": "2d667228de74dbb416428141c5a40f9280345eeae91315ddc6d4ff2e553f9c92",
+    "tools/p14h/workflow.py": "fd640b931f0a1d68155b99bdac3cb45ac57d58232e3f18ec1b3d78a5619e4c76",
+    "tools/p14h/review.py": "0c6ff801df2d31742f0f1b943fe273bbd59ad14635368774bd7d667943182883"
+  },
+  "validation": {
+    "regression": "development-regression-v2:46 passed",
+    "injection": "injection-idempotence-v1 PASS",
+    "final_record_recipe": "evaluation-dev-d01-v1: two isolated forecasts+threevalued scoring PASS",
+    "runtime": {
+      "uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4": {
+        "copy": "data/p14h-20261027/preflight-v5/00-px4.bin",
+        "sha256": "784f4fd32a246b0de04c4c074f88bc1833231e71b4b80b7c0f6d7e798a1d41a1"
+      },
+      "data/p13-20261026-freeze/models/policy.npz": {
+        "copy": "data/p14h-20261027/preflight-v5/01-policy.npz",
+        "sha256": "734684ed4e899f7c807519bf6d1fa4cf532f36058d56de77177a35bdab73f17e"
+      },
+      "uav_lab/.local/checkouts/px4-raptor/src/modules/ekf2/EKF2.cpp": {
+        "copy": "data/p14h-20261027/preflight-v5/02-EKF2.cpp",
+        "sha256": "29726c24a38e238db62ffc0dbea791287bec3e7d9ae3e0d9f75b25e22183e8e1"
+      },
+      "uav_lab/.local/checkouts/px4-raptor/src/lib/handover_research/P14HSnapshot.hpp": {
+        "copy": "data/p14h-20261027/preflight-v5/03-P14HSnapshot.hpp",
+        "sha256": "01d0c36f07a069881709ecc9cc3fad57feba62a373f2eb531d6be096b037d440"
+      },
+      "uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/blob/policy.tar": {
+        "copy": "data/p14h-20261027/preflight-v5/04-policy.bin",
+        "sha256": "5327c83dc57f094ca1977a2533ebce318645be010e16b9354c96c337cd5c278b"
+      }
+    },
+    "plugins": [
+      {
+        "path": "uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/src/modules/simulation/gz_plugins/libResearchMulticopterMotorModel.so",
+        "copy": "data/p14h-20261027/preflight-v5/libResearchMulticopterMotorModel.so.bin",
+        "sha256": "21211d96e9d929b3d3f5a6dea32ba4d319dca82b353617105cefde4cc6fb58ea"
+      }
+    ]
+  },
+  "theory_gate": "separate, no complete joint-event certificate; does not independently block mechanism/search tests",
+  "prior_starts": {
+    "mechanism": 4,
+    "independent": 0
+  },
+  "independent_cap": 12,
+  "total_cap": 16,
+  "unknown_initial_coverage": "four development prior points, not guaranteed cover new initialization; all covariates scored without selection",
+  "future_observation_coverage": "conditional nominal, unknown aiding/producer branches retained",
+  "code_frozen_before_independent": true
+}

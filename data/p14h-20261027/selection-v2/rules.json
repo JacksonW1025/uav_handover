@@ -1,0 +1,162 @@
+{
+  "pool": [
+    {
+      "id": "D0.340-G0.650-BEFORE",
+      "D": 0.34,
+      "G": 0.65,
+      "side": "BEFORE"
+    },
+    {
+      "id": "D0.340-G0.650-AFTER",
+      "D": 0.34,
+      "G": 0.65,
+      "side": "AFTER"
+    },
+    {
+      "id": "D0.340-G0.850-BEFORE",
+      "D": 0.34,
+      "G": 0.85,
+      "side": "BEFORE"
+    },
+    {
+      "id": "D0.340-G0.850-AFTER",
+      "D": 0.34,
+      "G": 0.85,
+      "side": "AFTER"
+    },
+    {
+      "id": "D0.340-G1.050-BEFORE",
+      "D": 0.34,
+      "G": 1.05,
+      "side": "BEFORE"
+    },
+    {
+      "id": "D0.340-G1.050-AFTER",
+      "D": 0.34,
+      "G": 1.05,
+      "side": "AFTER"
+    },
+    {
+      "id": "D0.360-G0.650-BEFORE",
+      "D": 0.36,
+      "G": 0.65,
+      "side": "BEFORE"
+    },
+    {
+      "id": "D0.360-G0.650-AFTER",
+      "D": 0.36,
+      "G": 0.65,
+      "side": "AFTER"
+    },
+    {
+      "id": "D0.360-G0.850-BEFORE",
+      "D": 0.36,
+      "G": 0.85,
+      "side": "BEFORE"
+    },
+    {
+      "id": "D0.360-G0.850-AFTER",
+      "D": 0.36,
+      "G": 0.85,
+      "side": "AFTER"
+    },
+    {
+      "id": "D0.360-G1.050-BEFORE",
+      "D": 0.36,
+      "G": 1.05,
+      "side": "BEFORE"
+    },
+    {
+      "id": "D0.360-G1.050-AFTER",
+      "D": 0.36,
+      "G": 1.05,
+      "side": "AFTER"
+    },
+    {
+      "id": "D0.380-G0.650-BEFORE",
+      "D": 0.38,
+      "G": 0.65,
+      "side": "BEFORE"
+    },
+    {
+      "id": "D0.380-G0.650-AFTER",
+      "D": 0.38,
+      "G": 0.65,
+      "side": "AFTER"
+    },
+    {
+      "id": "D0.380-G0.850-BEFORE",
+      "D": 0.38,
+      "G": 0.85,
+      "side": "BEFORE"
+    },
+    {
+      "id": "D0.380-G0.850-AFTER",
+      "D": 0.38,
+      "G": 0.85,
+      "side": "AFTER"
+    },
+    {
+      "id": "D0.380-G1.050-BEFORE",
+      "D": 0.38,
+      "G": 1.05,
+      "side": "BEFORE"
+    },
+    {
+      "id": "D0.380-G1.050-AFTER",
+      "D": 0.38,
+      "G": 1.05,
+      "side": "AFTER"
+    }
+  ],
+  "seeds": [
+    142710301,
+    142710302,
+    142710303,
+    142710304
+  ],
+  "methods": [
+    "random",
+    "continuous",
+    "branch"
+  ],
+  "execution_budget_per_method": 4,
+  "shared_candidate_same_seed": "one physical start, all method credits explicitly dependent; unspent starts not replaced",
+  "initial_ensemble": [
+    "d01",
+    "d02",
+    "d03",
+    "d04"
+  ],
+  "initial_coverage": "four observed development points, no convex-hull or full initial-set guarantee",
+  "origin": {
+    "D": 0.36,
+    "G": 0.85
+  },
+  "derivative_steps": {
+    "D": 0.0005,
+    "G": 0.0005
+  },
+  "trust_radii": {
+    "D": 0.02,
+    "G": 0.2
+  },
+  "derivative_guard": "both perturbations must have identical complete source branch signature, else derivative unavailable and axis fixed",
+  "validation_steps": {
+    "D": 0.01,
+    "G": 0.1
+  },
+  "linearization_error_rule": "report relative prediction error at fixed forward holdout, never tune/rerank after physical validation",
+  "objective": "max(peak tilt/45, all-prefix LP D/1m, all-prefix COM D/1m) over A through B-resume+2s; publish components, conditional center only",
+  "ensemble_aggregation": "arithmetic mean of four source-initial conditional objectives, every initial retained",
+  "random": "Random(seed) uniform pool candidate; seed is block identity",
+  "continuous": "choose anchor side using Random(seed+1); one same-branch gradient step to registered pool corner maximizing linear objective within trust rectangle; invalid derivative axis fixed at origin",
+  "branch": "same finite gradient construction separately in both release cells; maximize piecewise objective including cell intercept jump",
+  "ties": "objective rounded 1e-10, lexicographic candidate id",
+  "order": "Random(seed+2) shuffle method order within seed; merge duplicate candidate/seed at first occurrence",
+  "all_prior_exposed": true,
+  "independent_model_parameters_frozen_after_development": true,
+  "safety": "original task/safety thresholds and policy unchanged; scientific failure retained",
+  "failure_categories": "physical/identity/time/critical observation fault pauses dependents; pure analysis fixes versioned; resource loss preserves prefix; no replacements",
+  "all_costs": "all forecasts, gradients, validation pool, theory, development, errors, shared anchors, SITL and review separately charged; 2400 search CPU cap includes all jobs"
+}

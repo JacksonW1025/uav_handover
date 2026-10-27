@@ -1,0 +1,16 @@
+.............F.......................................................... [ 69%]
+................................                                         [100%]
+=================================== FAILURES ===================================
+__________ test_source_commonmode_proof_is_not_fullflight_certificate __________
+
+    def test_source_commonmode_proof_is_not_fullflight_certificate():
+     d=json.load(open(B/'C-PI-proof.json'));g=d['numeric_g'];assert 0<g<=1 and .1*g*g>0 and 4-2*g-.1*g*g>0
+>    r=json.load(open(B/'C-source-transfer-v1/result.json'));assert r['source_Cpp_velocity_probe_max_abs']<1e-6 and 'notfullflight' in r['scope'].replace(' ','')
+E    AssertionError: assert (1.2976312036006021e-07 < 1e-06 and 'notfullflight' in 'conditionalscalarsourcetransferwithsameorientation/IMU/biasinput,notfreezingattitudeinmainfullfeedbacktube;mainBretainsallanglesandhistory.NumericvaluesnotoutwardIEEEcertified.')
+E     +  where 'conditionalscalarsourcetransferwithsameorientation/IMU/biasinput,notfreezingattitudeinmainfullfeedbacktube;mainBretainsallanglesandhistory.NumericvaluesnotoutwardIEEEcertified.' = <built-in method replace of str object at 0xffff860fa2e0>(' ', '')
+E     +    where <built-in method replace of str object at 0xffff860fa2e0> = 'conditional scalar source transfer withsame orientation/IMU/bias input, not freezingattitude inmainfullfeedbacktube; mainBretainsallangles andhistory. Numericvalues notoutwardIEEEcertified.'.replace
+
+tests/test_p14g.py:101: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_p14g.py::test_source_commonmode_proof_is_not_fullflight_certificate
+1 failed, 103 passed in 4.36s

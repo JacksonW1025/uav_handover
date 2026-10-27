@@ -1,0 +1,200 @@
+{
+  "version": "P14G-1",
+  "registered_utc": "2026-10-27T08:43:52.347412+00:00",
+  "baseline": "5d035fc10b80fc171a24fe33d728db8af4a43d31",
+  "dirty_before": [
+    "?? AGENTS.md",
+    "?? data/p11-20261026-analysis/publication-after-push.json",
+    "?? data/p11-20261026-analysis/publication-count-correction.json",
+    "?? data/p12-20261026-score-review/publication-receipt.json",
+    "?? data/p12-cont-20261026-publication-local.json",
+    "?? data/p12b-20261026-publication-local.json",
+    "?? data/p12c-20261026-publication-local.json",
+    "?? data/p13-20261026-publication-local.json",
+    "?? data/p14-20261027-publication-local.json",
+    "?? data/p14-motion-20261027-publication-local-v2.json",
+    "?? data/p14-motion-20261027-publication-local.json",
+    "?? data/p14r-20261027-publication-ci-checks.json",
+    "?? data/p14r-20261027-publication-ci-status.json",
+    "?? data/p14r-20261027-publication-local.json",
+    "?? data/p14r-20261027/publication-ci-actions.json",
+    "?? data/p14r-20261027/publication-ci-checks.json",
+    "?? data/p14r-20261027/publication-ci-public-actions.txt",
+    "?? data/p14r-20261027/publication-ci-status.json",
+    "?? data/p9-20261024-preparation/attempts.lock"
+  ],
+  "new_SITL": 0,
+  "launcher_calls": 0,
+  "historical_budget": 0,
+  "cases": {
+    "d02": {
+      "input": "data/p14r-20261027/source-inputs-v3/d02/input.json",
+      "sha256": "3ee21e4a2ce050c7827f31d280f1b02071cfeae37151d6ab0caf0a985df96e9f",
+      "raw_run": "data/p14r-20261027/runs/p14r-d02-A-s270101/run",
+      "role": "retrospective exposed; d05 censored height UNKNOWN, d06 tilt beforeB"
+    },
+    "d03": {
+      "input": "data/p14r-20261027/source-inputs-v3/d03/input.json",
+      "sha256": "96505bd3d1cd9fccee608a1e191210e75e21e80a061ec7f71a6d6790260a664e",
+      "raw_run": "data/p14r-20261027/runs/p14r-d03-A-s270102/run",
+      "role": "retrospective exposed; d05 censored height UNKNOWN, d06 tilt beforeB"
+    },
+    "d04": {
+      "input": "data/p14r-20261027/source-inputs-v3/d04/input.json",
+      "sha256": "92d4b86816e09bdf7086f048c47dd9e6bb053d209cfbab9bb6e5b396ca5794ed",
+      "raw_run": "data/p14r-20261027/runs/p14r-d04-NORMAL-s270102/run",
+      "role": "retrospective exposed; d05 censored height UNKNOWN, d06 tilt beforeB"
+    },
+    "d05": {
+      "input": "data/p14r-20261027/source-inputs-v4/d05/input.json",
+      "sha256": "6ad0f7f620425ca122da92e92bd682b702696d06a4bf90f30de71a00ecbdf70f",
+      "raw_run": "data/p14r-20261027/runs/p14r-d05-F2-AB-short-s270103/run",
+      "role": "retrospective exposed; d05 censored height UNKNOWN, d06 tilt beforeB"
+    },
+    "d06": {
+      "input": "data/p14r-20261027/source-inputs-v4/d06/input.json",
+      "sha256": "8b9b8d9882580a0d26e1b82884f94306e70a301fa843535e3f5a5fa862c64dcc",
+      "raw_run": "data/p14r-20261027/runs/p14r-d06-F4-AB-medium-s270103/run",
+      "role": "retrospective exposed; d05 censored height UNKNOWN, d06 tilt beforeB"
+    }
+  },
+  "H1": {
+    "compare": "source constrained zones/state-machine vs fixed8words, coverage and illegal-order rejection separate from dynamic equivalence",
+    "service_bound_us": 10000,
+    "transport_bound_us": 4000,
+    "read_wait_bound_us": 8000,
+    "clock_debt_bound_us": 8000,
+    "bin": "continuous polygon in publisher/delivery times, not independent iid timestamps",
+    "clock_growth_horizons_calls": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "main_records": [
+      "d02",
+      "d03",
+      "d04",
+      "d05",
+      "d06"
+    ],
+    "historical_counterexample": "p13-F2-b1-AB-short missed Bcapture andA publication+.19ms afterallowedread"
+  },
+  "H2": {
+    "initial_domain": "same P14R d02/d03 staged joint histories, both publisher-clock fibers x4quarters, no shrinking; rank512, same4ms mode PRE nominal condition",
+    "variants": [
+      "default",
+      "no_compression",
+      "source_relations",
+      "source_relations_output_weighted"
+    ],
+    "panels": [
+      "zero",
+      "small_0.001",
+      "observed_joint_union"
+    ],
+    "main_horizon_s": 0.8,
+    "small_zero_horizon_s": 0.064,
+    "calls_weight_design": 192,
+    "output_weighting": "analytic source discrete tangent, all-prefix physical tilt, COM L and LP L plus terminal W; ranking only, nonlinear/remainder bounds retained",
+    "information_gate": {
+      "p_m": 0.1,
+      "v_m_s": 0.15,
+      "SO3_deg": 2.5,
+      "omega_rad_s": 0.1,
+      "action_width": 0.2
+    },
+    "domain": {
+      "tilt_deg": 80,
+      "velocity_norm": 8,
+      "omega_max": 8
+    },
+    "interpretation": "same fullunion/common-prefix/timecost, no best-quarter or nominal-danger claims; source chart/EKF/FP remain conditions"
+  },
+  "C": {
+    "models": [
+      "held_initial_template",
+      "persistent",
+      "independent_per_fusion",
+      "fading_past_innovation_rate"
+    ],
+    "new_model_parameters": "last two past fusion error samples produce initial rate; decay time from source OP velocity timeconstant. Proxy assumption for EKF evolution, not certified. Same rule all5, not tuned on d06.",
+    "parameter_boxes": {
+      "small": {
+        "theta_rad": 0.001,
+        "velocity_m_s": 0.01,
+        "position_m": 0.01
+      },
+      "large": {
+        "theta_rad": 0.05,
+        "velocity_m_s": 0.15,
+        "position_m": 0.1
+      }
+    },
+    "past_only_cutoff": "same Runbegin producerprefix asP14R; initialhistory callpost beforefirstprediction",
+    "point_horizon": "complete fixed plan, no actual future termination",
+    "set_horizon_s": 0.32,
+    "set_domain": "same8fiber union, smallbudget fading state vs persistent andiid controls"
+  },
+  "D": {
+    "pool": "all5cases x A-resume offsets[-8,-4,-2,0,2,4,8]ms; Astart/Babsoluteplan unchanged; hypothetical modifications labeled unexecuted",
+    "models": [
+      "fusion_dynamic_nominal_delivery",
+      "held_fusion_partition_delivery",
+      "joint_dynamic_partition_delivery"
+    ],
+    "features": [
+      "first_after_resume_action4",
+      "cache_age_attLP",
+      "tiltmax_next0.5s",
+      "COM loss_next0.5s"
+    ],
+    "sets": "finite declared scheduling/innovation-model hypothesis ensembles, not certified physical outer bounds",
+    "rankings": [
+      "lexical_uniform",
+      "nominal_danger",
+      "minimum_standardized_set_gap"
+    ],
+    "tie": "descending criterion thencaseid thenoffsetascending, eps1e-12",
+    "feature_scales": {
+      "action": 0.1,
+      "age_ms": 4,
+      "tilt_deg": 5,
+      "height_m": 0.2
+    },
+    "retrospective_score": "actualoffset0 anchors5only; unexecuted35pool candidates no physical validation; labels absent during ranking"
+  },
+  "resources": {
+    "global_CPU_s": 5400,
+    "global_wall_s": 7200,
+    "memory_GiB": 24,
+    "A_CPU_s": 450,
+    "B_CPU_s": 3300,
+    "B_per_job_CPU_s": 90,
+    "B_per_job_wall_s": 110,
+    "weights_CPU_s": 300,
+    "C_CPU_s": 600,
+    "D_CPU_s": 450,
+    "validation_CPU_s": 300,
+    "stop": "checkpoint atlimit; no endlessvariantsearch, independent work continues; no flights to fillmissing"
+  },
+  "outcomes_separate": [
+    "H1",
+    "H2",
+    "H3"
+  ],
+  "unknown_categories": [
+    "future_model_observation",
+    "outer_propagation_conservatism",
+    "legal_mode_mixture",
+    "possible_domain_outcome_variability",
+    "numerical_certification"
+  ],
+  "thresholds": {
+    "task_tilt_deg": 45,
+    "task_LP_D_m": 1,
+    "physical_COM_margin": "separate diagnostic, not LP task criterion"
+  },
+  "selection_uses_future": false,
+  "data_exposure": "all retrospective, not independent prospective"
+}

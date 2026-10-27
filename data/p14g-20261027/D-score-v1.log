@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/p14g/evaluate.py", line 44, in <module>
+    {'C':cscore,'D':dscore}[sys.argv[1]](Path(sys.argv[2]))
+  File "/home/car/uav_handover/tools/p14g/evaluate.py", line 33, in dscore
+    record=next(x for x in ranking['rows'] if x['case']==name and x['offset_ms']==0);run=R/c['raw_run'];d=load(run,run.parent/'analysis-v1');packet=doc(name);b=packet['plan']['full_source_windows_profile_s'][0][1];hit=np.flatnonzero(~d['stale'].astype(bool)&np.r_[False,d['stale'][:-1].astype(bool)]&(d['t']>=b));j=int(hit[0]) if len(packet['plan']['windows_profile_s']) and len(hit) else int(np.searchsorted(d['t'],b));window=(d['t']>=b)&(d['t']<=b+.5);body,_=pread(run/'gz-motor/physics-p13-body.bin',BODY,b'P13BODY1');body=body[(body['phase']==1)&(body['valid']==63)];q=np.searchsorted(body['wall_ns'],d['run_wall_ns'][window],side='right')-1;physical_loss=-body['com_p'][q,2]-packet['initial']['physical_H0_NED_z'];from p11.models import tilt
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+StopIteration

@@ -1,0 +1,114 @@
+{
+  "source_common_mode_matrix": [
+    [
+      0.9678976022194863,
+      0.00010239998588562061
+    ],
+    [
+      -1,
+      1
+    ]
+  ],
+  "input_column": [
+    0.03210239778051376,
+    1
+  ],
+  "characteristic": "lambda²-(2-g-.1g²)lambda+(1-g)",
+  "Jury_analytic_conditions": {
+    "1-trace+det": ".1g²>0",
+    "1+trace+det": "4-2g-.1g²>=1.9>0 for0<g<=1",
+    "1-det": "g>0"
+  },
+  "source_gain_range": "initialized dtavg>0, g=dtavg/clamp(tau,dtavg,10) in(0,1]; constantgainperiod only, no arbitrary switchedcommonLyapunovclaim",
+  "meaning": "conditional source OP common-mode velocitytracking stable to bounded fusedtarget forcing. Doesnotmean external EKFtarget error decays withtau; no fullflight stability claim. Full42statefinitehorizon transfer relation separate.",
+  "numeric_g": 0.03199999779462814,
+  "all_prefix_gain_examples": [
+    {
+      "fusion_calls": 8,
+      "time_s": 0.064,
+      "persistent_v_p_component_gains": [
+        0.23226336846379783,
+        0.23905299927503904
+      ],
+      "independent_v_p_component_gains": [
+        0.2322633684637978,
+        0.23905299927503904
+      ],
+      "fading_same_origin_gains": [
+        0.20718797354643756,
+        0.21355765878807587
+      ]
+    },
+    {
+      "fusion_calls": 16,
+      "time_s": 0.128,
+      "persistent_v_p_component_gains": [
+        0.4158173060239643,
+        0.4428383145641354
+      ],
+      "independent_v_p_component_gains": [
+        0.41581730602396433,
+        0.44283831456413547
+      ],
+      "fading_same_origin_gains": [
+        0.32412734942244753,
+        0.3474185544182578
+      ]
+    },
+    {
+      "fusion_calls": 32,
+      "time_s": 0.256,
+      "persistent_v_p_component_gains": [
+        0.6750453885561278,
+        0.7695849009762149
+      ],
+      "independent_v_p_component_gains": [
+        0.6750453885561283,
+        0.7695849009762152
+      ],
+      "fading_same_origin_gains": [
+        0.39628009115518736,
+        0.4647472237994313
+      ]
+    },
+    {
+      "fusion_calls": 64,
+      "time_s": 0.512,
+      "persistent_v_p_component_gains": [
+        0.934802163668091,
+        1.1727979439609353
+      ],
+      "independent_v_p_component_gains": [
+        0.9348021636680923,
+        1.1727979439609366
+      ],
+      "fading_same_origin_gains": [
+        0.29448282374529355,
+        0.4082217619295717
+      ]
+    },
+    {
+      "fusion_calls": 125,
+      "time_s": 1.0,
+      "persistent_v_p_component_gains": [
+        1.06114712661152,
+        1.419752022039037
+      ],
+      "independent_v_p_component_gains": [
+        1.061147126611521,
+        1.419752022039039
+      ],
+      "fading_same_origin_gains": [
+        0.08238844895898652,
+        0.13944034550504938
+      ]
+    }
+  ],
+  "not_certified": [
+    "IEEEroundingperturbation",
+    "unknownfutureEKFinnovation/bias/inputbudget",
+    "q/IMUuncertaintyfeedback",
+    "sourcephysicalsolverdefect",
+    "arbitrarygain/modeswitch"
+  ]
+}

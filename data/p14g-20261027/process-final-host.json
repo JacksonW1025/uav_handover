@@ -1,0 +1,16 @@
+{
+  "UTC": "2026-10-27T10:13:31.070836+00:00",
+  "scope": "host process namespace, read-only, no stop/launch",
+  "rows": [
+    {
+      "status": "sleeping",
+      "cmdline": [
+        "/bin/bash",
+        "-lc",
+        "uav_lab/.local/venv/bin/python - <<'PY'\nimport psutil,json,datetime\nfrom pathlib import Path\nrows=[]\nfor p in psutil.process_iter(['pid','name','cmdline','status']):\n try:\n  i=p.info;n=(i['name'] or '').lower();c=i['cmdline'] or []\n  if n in {'px4','microxrceagent','micro-xrce-dds-agent','gz','gz-sim','ruby'} or any('gz-sim-server' in x for x in c):rows.append(i)\n except (psutil.NoSuchProcess,psutil.AccessDenied):pass\nout=Path('data/p14g-20261027/process-final-host.json');assert not out.exists();out.write_text(json.dumps({'UTC':datetime.datetime.now(datetime.timezone.utc).isoformat(),'scope':'host process namespace, read-only, no stop/launch','rows':rows},indent=2));print(out,rows)\nPY\ngit ls-remote origin refs/heads/main"
+      ],
+      "pid": 3347671,
+      "name": "bash"
+    }
+  ]
+}

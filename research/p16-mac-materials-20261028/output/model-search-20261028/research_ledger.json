@@ -1,0 +1,93 @@
+{
+  "objective": "Find an event-interface model method with independently verified advantage over strong cheap baselines on existing P1-P15 evidence, preserving testing / reusable response maps / repair narrative. Keep iterating without new experiments or Thor use.",
+  "status": "completed_with_scoped_independent_map_advantage",
+  "constraints": [
+    "No new flight, SITL, or Thor workloads",
+    "Keep every failed hypothesis and revision",
+    "Separate exploratory method search from held-out evidence",
+    "Use whole conditions / interventions / event combinations as holdouts",
+    "Match decision-time information and compare sufficiently strong inexpensive baselines",
+    "Do not claim a short-horizon prediction win completes the broader research objective"
+  ],
+  "completion_requirements": [
+    "Concrete core research problem justified across P1-P15",
+    "Executable model with explicit inputs, learned parameters, source-known structure and update rules",
+    "Explicit independent contribution of classical theory if retained; name alone insufficient",
+    "At least one nontrivial held-out independent advantage over cheap baselines, with errors and costs reported",
+    "Check transfer to both dropout and switching where existing data permits",
+    "Explain implications for testing, map reuse and repair, distinguish verified from proposed",
+    "Reproducible evidence and sensitivity / ablation audit without hidden outcome leakage"
+  ],
+  "prior_rejections": [
+    "P15 model search tied cheap baseline 4/8; map update no choice changes",
+    "P14 tube coverage insufficient",
+    "Adjoint offline audit no independent ranking advantage",
+    "Whole-prefix state partition audit did not outperform cheap regression; local map improvements did not establish selection benefit"
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "status": "component_prediction_gain_but_no_independent_decision_gain",
+      "claim": "A source-constrained intervention response model can predict the effect of completely held-out memory/reference treatments better than outcome lookup or feature regression; test immediate output and short transient first, then task effects.",
+      "falsifiers": [
+        "uses post-intervention state unavailable to counterfactual prediction",
+        "gain disappears against direct cheap source features",
+        "only one-frame exact replay improves with no meaningful intervention decision advantage"
+      ],
+      "evidence": "h1_results.json: 36 P3 records. Whole N0/N2s treatment holdout source replay MAE .0133/.0155 vs numeric-state cheap regression .1174/.1020, but static previous-action difference MAE .0122/.0209; all D1/D2/D3 worst-choice and best-choice decisions matched by previous-only baseline. Does not complete objective."
+    },
+    {
+      "id": "H2",
+      "status": "retained_core_method_after_strict_refit_and_strong_baselines",
+      "claim": "A physically structured response model can compose finite-amplitude intervention effects into cumulative height/tracking consequences with transferable error cancellation.",
+      "falsifiers": [
+        "requires measured future commands or states at prediction time",
+        "fails unseen event combinations",
+        "simple impulse / kinematic feature baseline matches"
+      ],
+      "evidence": "Strict all-multievent exclusion from P11 parameter fitting:18 normal/single flights, P13 AB18 heldout. Source full-horizon task17/18 vs best lookup14/18 and state/ExtraTrees13/18. Complete-height MAE .08323m vs ExtraTrees .13123m, lookup .13154m. Mean complete-tilt error .811deg is slightly worse than ExtraTrees .756deg, but source misses1/7 witnessed tilt failures vs6/7 for that ExtraTrees model. Source picksF2-short vs cheapF4-long for continuous tilt; b3 measured lower bound50.849deg exceeds full45.884deg. Generic task-failure top1 yield tied3/3.66 archived inputs verified,2 future-outcome permutation checks. Original source-stage comparisons superseded by strict refit and accounting-aligned metrics."
+    },
+    {
+      "id": "H3",
+      "status": "existing_repair_choice_support_weak",
+      "claim": "Predicting repair tradeoffs and admissible interventions is a better model use than repeatedly ranking obvious failures; source-aware repair transfer can beat fixed repair and cheap conditional rules on existing paired intervention data.",
+      "falsifiers": [
+        "one fixed repair dominates every observed condition",
+        "improvement depends on invented retrospective constraints",
+        "no matched intervention outcomes support the claimed decision"
+      ],
+      "evidence": "P9 original report: C 9/9 and CR 8/8 both meet original task/cost requirements; fixed C remains a strong safe/low-tracking-cost rule. No independent selection gain established; do not invent new constraints."
+    },
+    {
+      "id": "H4",
+      "status": "retain_shared_parameter_map_update_drop_D_optimal_independent_claim",
+      "claim": "Information-directed single-event identification improves held-out composition maps more efficiently than repeatedly selecting high-risk cases.",
+      "evidence": "6 normal to6 normal+2 F1-A single-event records reduces untrained AB height MAE .54199 to .07558m. All6 possible single-condition updates give .07540-.08512m; D-opt .07558 vs cheap complete-trajectory-screen average .07571, no meaningful independent selection gain. Maximum-risk query .08512m with2 heightFP vs D-opt0. Keep transferable identification update, not D-optimal novelty."
+    },
+    {
+      "id": "H5",
+      "status": "rejected",
+      "claim": "Integral angular-dynamics identification can recover transferable parameters from normal flights alone, avoiding extra single-event evidence.",
+      "evidence": "Whole-flight CV on normal data selects64ms integration. Held P13 AB height MAE .601m, tilt MAE1.672deg, heightFP3; worse than derivative normal-only .542m. Normal-data fitting accuracy does not establish intervention extrapolation."
+    },
+    {
+      "id": "H6",
+      "status": "structural_contribution_verified",
+      "claim": "Known nonlinear thrust-direction geometry improves unseen composition response prediction beyond equal-data local linearization and generic affine dynamics.",
+      "evidence": "Identical18 single/normal trajectories, controller source, event logic, angular model. AB height MAE: physical .08323m, local force linearization .17730m, affine regression .12646m. HeightFP0 vs3 vs3; no domain exits. Classical structure has a concrete independently ablated role in the model."
+    }
+  ],
+  "retained_method": {
+    "problem": "Extract transferable information from full single-event trajectories to predict and update unmeasured event-combination response maps.",
+    "model": "Frozen actual GRU16/source clocks/history/target events + nonlinear rigid-body/4-filter execution model with10 identified effective coefficients.",
+    "theory": "Structured grey-box system identification with explicit nonlinear force geometry and shared parameters. D-optimal independent selection benefit not established.",
+    "verified": "Full-horizon strict composition holdout map advantage; cross-cell/shared-parameter update; a concrete stronger-tilt selection.",
+    "not_verified": [
+      "Generic faster failure discovery versus best cheap baseline",
+      "Independent switch-ranking gain",
+      "Cross-platform transfer",
+      "Repair choice gain over fixed good repair",
+      "Hard coverage or safety guarantee"
+    ]
+  }
+}

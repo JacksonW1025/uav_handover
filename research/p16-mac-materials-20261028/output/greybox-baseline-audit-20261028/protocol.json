@@ -1,0 +1,18 @@
+{
+  "scope": "Local retrospective audit; existing trajectories only. No simulator, flight, remote host or Thor.",
+  "training": "Exactly the 18 P11 NORMAL/A/B full trajectories in h2_strict_singles.json; no AB or REPAIR trajectories or P13 outcomes used in fitting.",
+  "baseline_EE": "Ordinary nonlinear grey-box state-space dynamics with the same 10 coefficients, parameter bounds, source controller, event rules, motor filter, state and clocks. Independently assemble equation-error regression from raw training measurements and independently implement plant integrator. Bounded least squares. The hypothesis that the proposed model is this ordinary grey box is allowed to be confirmed.",
+  "baseline_OE": "Additional ordinary multi-step output-error nonlinear least squares: fixed 64ms plant response windows from the same full trajectories, measured commands only in training, all source controller and event rules at test time. Initial coefficients from EE; no held-out outcome tuning. Fit to velocity and angular velocity endpoints with fixed scales 0.1m/s and0.2rad/s. Every16th eligible fresh-LP sample starts a window. Maximum80 function evaluations. This is an additional retained baseline, not a replacement chosen on AB scores.",
+  "evaluation": "All18 P13 AB cases. Primary: same per-case pre-stream initial states as prior strict comparison. Sensitivity: known NORMAL initial-state templates, matched to sequential-budget audit. Report both per-case and group-map means, never mix them.",
+  "ablations": {
+    "full": "Full semantics and all inherited state.",
+    "hold_target": "Keep packet absence, source network, physical model and clocks, but replace timeout/capture target semantics by last-received-target zero-order hold. No recapture at timeout.",
+    "no_carry": "At the B-start seam replace all predictive state by the same-time state of a no-A nominal rollout from exactly the same initial condition. Preserve observed-in-model prefix metrics and failure history. No measured B-pre state. This is an information-deletion ablation, not a proposed physical reset or a fair full-information baseline.",
+    "hold_target_no_carry": "Factorial combination of the preceding two deletions.",
+    "no_neural_carry": "Replace only h/previous/history/count at the seam by their no-A predicted values; preserve physical, event and clock states.",
+    "no_physical_carry": "Replace p/v/q/omega/motor/filter/pending and observation caches at the seam by no-A predicted values; preserve controller and event states."
+  },
+  "metrics": "Task classification on18; height MAE on fixed13 complete cases; tilt MAE on same13; witnessed-failure false negatives and known-safe false positives; domain exits count. Do not treat censored values as exact peak heights. Per-block top-risk choices retained but failure-finding superiority not inferred from map accuracy.",
+  "interpretation": "Ablation benefits establish the need for components inside a model; ordinary grey-box models with the same components receive those benefits too. Novel algorithm contribution requires improvement over the full-information grey-box baseline.",
+  "limitations": "Data were already inspected during prior method development; no prospective independence. Deterministic model forecasts, overlapping records, limited conditions. Frozen source clocks are approximate. No global error guarantee. No new switching or cross-platform claim."
+}

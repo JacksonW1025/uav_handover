@@ -1,0 +1,73 @@
+...F                                                                     [100%]
+=================================== FAILURES ===================================
+______________ test_end_to_end_synthetic_fullgrid_no_real_ledger _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-car/pytest-157/test_end_to_end_synthetic_full0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0xffffae7a8740>
+
+    def test_end_to_end_synthetic_fullgrid_no_real_ledger(tmp_path,monkeypatch):
+     # Synthetic test records only, isolated from real run identity and maps.
+     import json,copy
+     real=m.B;fake=tmp_path/'synthetic';fake.mkdir();monkeypatch.setattr(m,'B',fake)
+     def w(p,x):p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(x))
+     pool=m.read(real/'frozen/pool.json');rows=m.read(real/'frozen/rows.json');initial=m.read(real/'frozen/initial-predictions.json');rep=m.read(real/'frozen/replication-plan.json')
+     for name,x in [('pool',pool),('rows',rows),('initial-predictions',initial),('replication-plan',rep)]:w(fake/f'frozen/{name}.json',x)
+     w(fake/'freeze-receipt.json',dict(commit='SYNTHETIC_TEST_ONLY'))
+     w(fake/'reuse-calibration-history-v2/summary.json',dict(CPU_s=1))
+     w(fake/'material-acceptance-v1/full.json',dict(elapsed_seconds=1))
+     ledger=[];truth={}
+     def run(row,tr):
+      rid=row['id'];w(fake/f'runs/{rid}/analysis-v1/result.json',tr);w(fake/f'runs/{rid}/execution.json',dict(wall_s=100,CPU_s=30));w(fake/f'runs/{rid}/review-cost.json',dict(wall_s=5,CPU_s=2));w(fake/f'runs/{rid}/manager-cost.json',dict(wall_s=106,CPU_s=1));ledger.append(dict(event='START_INTENT',id=rid,stage=row['stage'],role='synthetic'))
+     for c in pool:
+      pr=initial[c['id']];tr=dict(valid=True,complete=True,tilt=pr['tilt'],height=pr['height'],task=pr['task'],peak_tilt=pr['peak_tilt'],peak_loss=pr['peak_loss'],prefix_failed_before_B=bool(pr['prefix_failed_before_B']),B_plan_reached=True,capture_suffix=dict(pr['capture_suffix'],available=True,signature=pr['reuse_signature'],branch_compatible=True));truth[c['id']]=tr;run(rows[c['id']],tr)
+     seedpred=[]
+     for row in rep['rows']:run(row,truth[row['cell_id']]);seedpred.append(dict(row=row,initial=initial[row['cell_id']],G=initial[row['cell_id']],R=initial[row['cell_id']]))
+     w(fake/'replication-forecast.json',dict(rows=seedpred))
+     for i in range(2):run(dict(id=f'dev{i}',stage='development'),next(iter(truth.values())))
+     (fake/'attempts.jsonl').write_text(''.join(json.dumps(x)+'\n' for x in ledger))
+     for policy in ['G','R']:
+      h={}
+      for q in range(9):
+       pred,rr=m.model_map(pool,initial,h,policy);w(fake/f'policies/{policy}/maps/q{q:02d}.json',dict(query=q,prediction=pred,seen_ids=list(h)))
+       if q<8:
+        x=m.next_query(pool,initial,h,policy)['selected'];tr=truth[x['id']];w(fake/f'policies/{policy}/queries/q{q+1:02d}/decision.json',dict(cell=x));w(fake/f'policies/{policy}/queries/q{q+1:02d}/return.json',dict(cell_id=x['id'],record=tr));h[x['id']]=tr
+>    m.main(fake/'SYNTHETIC_OUTPUT_NOT_EXPERIMENT')
+
+data/p16-20261028/analysis-source-v1/test_analysis.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+data/p16-20261028/analysis-source-v1/report.py:41: in main
+    pool=read(B/'frozen/pool.json');rows=read(B/'frozen/rows.json');initial=read(B/'frozen/initial-predictions.json');truth,sources=load_truth(rows);assert all(x['valid'] for x in truth.values()),'all24 complete reviews required'
+data/p16-20261028/analysis-source-v1/report.py:35: in load_truth
+    if p.exists():out[c]=read(p);sources[c]=dict(path=str(p.relative_to(R)),sha256=sha(p))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/tmp/pytest-of-car/pytest-157/test_end_to_end_synthetic_full0/synthetic/runs/p16-main-F2-B-G0.550/analysis-v1/result.json')
+other = PosixPath('/home/car/uav_handover'), walk_up = False, _deprecated = ()
+step = 0
+
+    def relative_to(self, other, /, *_deprecated, walk_up=False):
+        """Return the relative path to another path identified by the passed
+        arguments.  If the operation is not possible (because this is not
+        related to the other path), raise ValueError.
+    
+        The *walk_up* parameter controls whether `..` may be used to resolve
+        the path.
+        """
+        if _deprecated:
+            msg = ("support for supplying more than one positional argument "
+                   "to pathlib.PurePath.relative_to() is deprecated and "
+                   "scheduled for removal in Python {remove}")
+            warnings._deprecated("pathlib.PurePath.relative_to(*args)", msg,
+                                 remove=(3, 14))
+        other = self.with_segments(other, *_deprecated)
+        for step, path in enumerate([other] + list(other.parents)):
+            if self.is_relative_to(path):
+                break
+            elif not walk_up:
+>               raise ValueError(f"{str(self)!r} is not in the subpath of {str(other)!r}")
+E               ValueError: '/tmp/pytest-of-car/pytest-157/test_end_to_end_synthetic_full0/synthetic/runs/p16-main-F2-B-G0.550/analysis-v1/result.json' is not in the subpath of '/home/car/uav_handover'
+
+/usr/lib/python3.12/pathlib.py:682: ValueError
+=========================== short test summary info ============================
+FAILED data/p16-20261028/analysis-source-v1/test_analysis.py::test_end_to_end_synthetic_fullgrid_no_real_ledger
+1 failed, 3 passed in 0.43s

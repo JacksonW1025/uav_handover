@@ -64,7 +64,7 @@ A_grid、A_cheap均为封存算法在同实际表上的盲oracle回放，非另�
 - [原费用](../data/p16-20261028/analysis-v2-results/costs.json)、[分层费用重构](../data/p16-20261028/cost-inventory-results-v4/inventory.json)、[Grid任务标签敏感性](../data/p16-20261028/task-only-grid-sensitivity-results-v1/result.json)。
 - [新原始文件路径/hash](../data/p16-20261028/final-audit-v1/raw-manifest.json)、[历史/源码/实物审核](../data/p16-20261028/final-audit-v1/audit.json)、[复现命令](THOR_P16_REPRODUCE.md)。ULog、telemetry、Gazebo原始数据和普通二进制副本保留Thor；小证据入Git。
 
-145项物理结束后的相关回归通过；补充产物一致性检查见最终回执。旧tracked文件除授权.gitignore新增规则外无变化；没有全量重读整个历史raw的虚构声明。正常最终提交/推送、远端SHA和实际CI查询由发布回执记录，本地测试与CI分别报告。
+145项物理结束后的相关回归、151项产物回归及最新152项最终回归均通过，原日志保留。旧tracked文件除授权.gitignore新增规则外无变化；没有全量重读整个历史raw的虚构声明。正常最终提交/推送、远端SHA和实际CI查询由发布回执记录，本地测试与CI分别报告。
 
 ![有限网格三分项分类](../data/p16-20261028/classification-figures-v1/finite-grid-classes.png)
 
@@ -73,3 +73,5 @@ A_grid、A_cheap均为封存算法在同实际表上的盲oracle回放，非另�
 ![质量—查询数](../data/p16-20261028/analysis-v2-results/quality-query.png)
 
 ![已测费用下界—准确率](../data/p16-20261028/analysis-v2-results/quality-cost.png)
+
+交付提交`359a995f891e0974005e19e3d0c37441f3092b70`已正常推送并核实远端一致；该SHA实际CI为0个workflow、0个check、0条status，标为NO_CI_REPORTED，非绿灯。[发布回执](../data/p16-20261028/publication-receipt-v1.json)与[完成机器结论](../data/p16-20261028/delivery-v5.json)仅更新发布状态，不改变科学分数。

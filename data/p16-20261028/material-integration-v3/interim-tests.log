@@ -1,0 +1,28 @@
+...................F.......F..                                           [100%]
+=================================== FAILURES ===================================
+__________ test_main_campaign_always_requires_workflow_authorization ___________
+
+    def test_main_campaign_always_requires_workflow_authorization():
+     text=(Path(__file__).resolve().parents[1]/'tools/p16/campaign.py').read_text()
+>    assert "if row['stage']=='main':" in text and ".authorize(row,prediction_path)" in text
+E    assert ("if row['stage']=='main':" in '"""One unique P16 START. Never infer retries from service disconnection."""\nimport os,sys,json,subprocess,time,resou... plan[\'rows\'] if x[\'id\']==sys.argv[2]);run(row,Path(sys.argv[3]),Path(sys.argv[4]) if len(sys.argv)>4 else None)\n' and '.authorize(row,prediction_path)' in '"""One unique P16 START. Never infer retries from service disconnection."""\nimport os,sys,json,subprocess,time,resou... plan[\'rows\'] if x[\'id\']==sys.argv[2]);run(row,Path(sys.argv[3]),Path(sys.argv[4]) if len(sys.argv)>4 else None)\n')
+
+tests/test_p16_workflow.py:97: AssertionError
+_____________ test_real_historical_prefix_failure_witness_retained _____________
+
+    def test_real_historical_prefix_failure_witness_retained():
+     from p16.common import sha
+     root=Path(__file__).resolve().parents[1];p=root/'data/p16-20261028/review-v2/prefix-real-record.json';q=read(p)
+     assert q['new_START']==0 and not q['old_results_rewritten']
+     assert q['prefix']['risks']==dict(tilt='FAIL',height='SUCCESS',task='FAIL')
+     assert q['prefix']['measurement']['max_tilt_deg']>45 and q['prefix']['measurement']['max_altitude_loss_m']<1
+>    assert q['helper_sha256']==sha(root/'tools/p16/analyze.py')
+E    AssertionError: assert '0e6c516464b5...0b35aadb4f90a' == '2451fb591ced...1f9a2b24f1339'
+E      - 2451fb591ced47dd1abd0152e3326d60635bb03177cbd6a18be1f9a2b24f1339
+E      + 0e6c516464b5e21783a2ff23a4c15ea8d8d1ce173979b52173d0b35aadb4f90a
+
+tests/test_p16_workflow.py:141: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_p16_workflow.py::test_main_campaign_always_requires_workflow_authorization
+FAILED tests/test_p16_workflow.py::test_real_historical_prefix_failure_witness_retained
+2 failed, 28 passed in 0.53s

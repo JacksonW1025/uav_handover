@@ -1,0 +1,110 @@
+{
+  "scope": "First actuator ownership change. Start from first complete input sample at entry+4ms; original activation sample missing. N0/N2 effective memory states interpolated after that first call. Predict next 8ms by held initial exogenous input; recorded-input replay is an independent diagnostic.",
+  "adjoint": {
+    "baseline": 0.23843449163933678,
+    "slope": -0.16419253110284146
+  },
+  "finite_difference": [
+    {
+      "epsilon": 0.0001,
+      "central_slope": -0.1641925310016945,
+      "forward_change": -1.6419226293862277e-05
+    },
+    {
+      "epsilon": 0.001,
+      "central_slope": -0.16419252106070203,
+      "forward_change": -0.00016418984042204654
+    },
+    {
+      "epsilon": 0.01,
+      "central_slope": -0.16419152689849392,
+      "forward_change": -0.001641647207131891
+    },
+    {
+      "epsilon": 0.1,
+      "central_slope": -0.16409218737699793,
+      "forward_change": -0.016382432693436366
+    },
+    {
+      "epsilon": 1.0,
+      "central_slope": -0.17299603213870782,
+      "forward_change": -0.18854148587696867
+    }
+  ],
+  "common_initial_full_effect": -0.18854148587696867,
+  "observed_snapshot_path": {
+    "adjoint_full_change": -0.21208730723480754,
+    "central_fd_1e4": -0.21208730706823165,
+    "model_full_change": -0.22822009959190231,
+    "note": "Interpolates memory, observed exogenous state and incoming classic command. This matches endpoints but is not a pure memory intervention."
+  },
+  "cases": [
+    {
+      "case": "N0",
+      "held_input_prediction": 0.23843449163933678,
+      "recorded_input_prediction": 0.23841583867387245,
+      "actual": 0.23841592669487,
+      "motor_prediction": [
+        0.49001157474021034,
+        0.5577667478837463,
+        0.511892039833758,
+        0.5295023256276841
+      ],
+      "actual_motors": [
+        0.4900301396846771,
+        0.557532548904419,
+        0.5119786262512207,
+        0.5295102000236511
+      ],
+      "action_replay_max_error": 2.104784687095851e-07,
+      "physical_speed_baseline": 0.023810499844086664,
+      "tilt_peak_deg": 1.9176504611968994,
+      "altitude_loss_m": 0.04040956497192383
+    },
+    {
+      "case": "N2",
+      "held_input_prediction": 0.010214392047434462,
+      "recorded_input_prediction": 0.010328769380128722,
+      "actual": 0.01032876968383789,
+      "motor_prediction": [
+        0.7232479586435099,
+        0.7236166268042143,
+        0.7191418372578329,
+        0.7195112332266009
+      ],
+      "actual_motors": [
+        0.7237415313720703,
+        0.7236394882202148,
+        0.7190274596214294,
+        0.7192509770393372
+      ],
+      "action_replay_max_error": 2.843839896349287e-07,
+      "physical_speed_baseline": 0.016936762742707702,
+      "tilt_peak_deg": 0.6138932704925537,
+      "altitude_loss_m": 0.022718429565429688
+    }
+  ],
+  "actual_change": -0.2280871570110321,
+  "map": {
+    "train_N0_output_mean_residual": [
+      1.584928385811128e-05,
+      8.50310582452644e-05,
+      -0.0003613643989271535,
+      0.00016204720398938868
+    ],
+    "gradient": [
+      -0.7183826779109965,
+      -0.16189192842118783,
+      0.07709703153869255,
+      -0.14391366894040186
+    ],
+    "coordinate": 2,
+    "heldout_N2_old": 0.010214392047434462,
+    "heldout_N2_all_residual": 0.010157444393245396,
+    "heldout_N2_goal_coordinate": 0.010271746267777049,
+    "actual": 0.01032876968383789,
+    "old_error": 0.0001143776364034288,
+    "all_error": 0.00017132529059249446,
+    "goal_error": 5.7023416060841825e-05
+  }
+}

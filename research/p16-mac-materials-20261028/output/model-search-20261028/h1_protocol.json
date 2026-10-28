@@ -1,0 +1,11 @@
+{
+ "status":"Exploratory H1, specified before running this implementation. Outcomes and previous studies are already known.",
+ "question":"At reentry, can source-constrained finite-amplitude replay predict a held-out intervention's immediate actuator jump better than equally informed cheap predictors? This is a component test, not completion of the research goal.",
+ "data":"P3 36 archived second-entry records; whole treatment N0/N2/N2s/N3 and whole prefix D1/D2/D3 held out.",
+ "prediction_time":"Immediately before the reentry rewrite, after the actual inactivity history. Does not claim to forecast unseen inactivity evolution from before that history.",
+ "inputs":"Programmed memory rewrite, available pre-entry GRU/action or saved exit memory, last classic motor command strictly before entry, nominal hover observation. No post-entry observation, written-state field, actual owner-change latency or post-entry output used to predict.",
+ "models":"Frozen policy source replay at 4ms calls / 8ms hidden commits, marginalize the two commit phases, nominal fixed 12ms (4 calls). Also fixed first-call and fixed 8/16ms sensitivity. No outcome fitting of the replay.",
+ "baselines":"Raw previous-action difference; static hidden readout; one policy call; train-only group-CV linear/quadratic ridge and shallow tree with the same h16/previous4/classic4/plan features; nearest training features. Compare regression on all scalar coordinates and on simple norms.",
+ "metrics":"Motor step MAE/RMSE, held-out condition/repetition pool worst-jump and minimum-jump choices; include all folds, ties uniform. Metadata matching is not a same-state causal intervention trial.",
+ "failure_conditions":"No advantage against strong numeric-state baselines; source micro-replay equals one-call shortcut; initial hidden history relies on unavailable intervention; accurate jump fails to improve a relevant decision; no full-task transfer established."
+}

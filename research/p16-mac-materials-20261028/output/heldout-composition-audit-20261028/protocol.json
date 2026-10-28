@@ -1,0 +1,89 @@
+{
+  "version": 2,
+  "scope": "Fixed-rule retrospective extrapolation audit of archived observations. All outcomes have been discussed before; not a blind prospective preregistration. Local computations only; no new flights, simulations or Thor access.",
+  "source_commit": "d0f3924c762e7fbaf5d799ae582a5b59ebb578f0",
+  "data": {
+    "P13": "66 cases, 22 configurations x 3 blocks",
+    "P3": "36 cases, 12 configurations x 3 repetitions"
+  },
+  "input_rule": "Only planned prefix and suffix metadata. No initial/B_before measured states, future event status, outcome-derived summaries, run ID, block, seed or timestamps as model inputs. Replicates of a configuration always held out together. Fit configuration means with equal weights.",
+  "features": {
+    "P13_prefix": [
+      "A planned",
+      "A uses repair capture"
+    ],
+    "P13_suffix": [
+      "family F4",
+      "B planned",
+      "B uses repair capture",
+      "planned gap / 2; zero for no B"
+    ],
+    "P3_prefix": [
+      "requested inactivity / 10",
+      "planned displaced/yaw scenario D3"
+    ],
+    "P3_suffix": [
+      "N0 reset",
+      "N2 teacher-forced memory / applied previous command",
+      "N2s free shadow memory / own previous command",
+      "N3 restored exit memory and command"
+    ],
+    "P3_interpretation": "Treatment includes both memory maintenance during inactivity and reentry operation; the suffix vector represents this planned program, not a freely exchangeable post-prefix action."
+  },
+  "folds": {
+    "P13": [
+      "all AB",
+      "all B-only",
+      "all REPAIR",
+      "F2 x AB",
+      "F4 x AB",
+      "entire F2",
+      "entire F4",
+      "all B-short",
+      "all B-medium",
+      "all B-long"
+    ],
+    "P3": [
+      "entire D1",
+      "entire D2",
+      "entire D3",
+      "all long inactivity D2+D3",
+      "checkerboard parity 0",
+      "checkerboard parity 1"
+    ]
+  },
+  "targets": {
+    "P13": "whole-task FAILURE, including censor-triggered failures; no inference of safe height from censored height",
+    "P3": "second_C_to_N motor.step_at_change (normalized motor command); every trial task-success, no failure detection claim"
+  },
+  "methods": {
+    "state_split": "At most 1/2/3/4 prefix states. Greedy binary guards on prefix features only; require differing training outcomes for an exactly shared suffix and at least two repetitions per side. Each leaf has a quadratic suffix-only ridge response head. Split chosen by training squared-error reduction with ridge-regularized heads; number of states and ridge alpha selected by leave-one-training-configuration-out MSE. This is an offline response-equivalence abstraction, not an implementation or guarantee of full active automata learning.",
+    "pooled_suffix": "No-split ablation; quadratic suffix-only ridge; alpha selected by training-only configuration CV.",
+    "cheap_rank": "Same full admissible inputs; choose among linear/quadratic ridge with alpha 0.01/0.1/1/10, and CART depth 1/2/3/4, min leaf 1/2, by training-only configuration CV MSE. Tie uses listed order. Also publish the ridge and CART sub-baselines separately.",
+    "lookup": "Exact configuration lookup if observed, otherwise nearest training configuration in full normalized metadata using squared Euclidean distance. Average all equidistant neighbors. No label-based tuning."
+  },
+  "evaluation": {
+    "pools": "P13: held-out B-containing candidates within family and block. P3: held-out treatments within condition and repetition. These are recorded comparable pools, not same-state counterfactual outcomes.",
+    "selection": "Maximize raw regression score (P13) or predicted motor step (P3). Do not clip scores for ranking. Round to 10 decimals for ties, handled analytically with uniform random tie-breaking.",
+    "metrics": [
+      "expected first-choice failure hit or selected motor step",
+      "failure discoveries in first 2 tests",
+      "expected first failure rank when one exists",
+      "P3 first-choice regret and worst-case hit",
+      "pairwise accuracy",
+      "held-out Brier score or MSE",
+      "state_split vs baselines changed top-choice distributions and wins/ties/losses"
+    ],
+    "controls": "Report all-safe and saturated pools. Overlapping folds are correlated and are not independent trials. No significance claims. State map gain is measured by held-out prediction error against no-split, not in-sample fit or empirical lookup counts."
+  },
+  "validation": [
+    "configuration disjointness and complete replicate retention",
+    "allowed-field-only feature construction",
+    "deterministic refit",
+    "held-out outcome mutation does not change any prediction",
+    "tie metric unit checks",
+    "all predefined folds included"
+  ],
+  "interpretation": "Any gain supports only these implementations on these finite recorded pools. Absence of gain does not disprove every automata method; it removes the current evidence for an independent search contribution. No unrecorded continuation or active-query savings can be inferred.",
+  "revision": "Correct scoring bug after initial results: use raw regression scores for ranking; clip to [0,1] only for P13 map/Brier error. Prior outputs preserved under superseded-clipped-ranking. No fits, hyperparameters or folds changed."
+}

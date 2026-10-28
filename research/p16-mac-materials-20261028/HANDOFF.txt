@@ -1,0 +1,106 @@
+P16 Mac model-material handoff — 2026-10-28 (Asia/Shanghai)
+
+Repository: https://github.com/JacksonW1025/uav_handover
+Branch: codex/p16-mac-model-materials-20261028
+Directory: research/p16-mac-materials-20261028/
+Upstream base: d0f3924c762e7fbaf5d799ae582a5b59ebb578f0 (P15)
+Origin chat: 方法现状 — 01a18248-aef1-7f33-a5fb-c94194b61fb9
+Earlier model search chat: 查找 P14H 相关信息 — 01a17eae-1288-7d00-9ce1-e4926349025a
+Thor continuation chat: 执行 P12 双时钟实验 — 01a176d7-d896-70ef-9824-e449f8089008
+
+1. What is delivered
+
+The three requested directories are byte-preserving copies under output/:
+  model-search-20261028/
+  greybox-baseline-audit-20261028/
+  sequential-budget-audit-20261028/
+
+Transitive dependencies and insight evidence are also included:
+  offline-adjoint-20261028/ — frozen source modules, neural weights and P13 inputs.
+  heldout-composition-audit-20261028/ — StateSplit import and earlier P3 material.
+  interface-insight-review-20261028/ — 15-round synthesis and hypothesis.
+  research-gap-audit-20261028/ — raw exported P7 traces used by the synthesis.
+
+MANIFEST.json hashes every imported file and lists omissions. Only caches and
+two raw flight.ulg files outside this dependency chain are omitted. The source
+Mac files remain unchanged. Archived report/manifest text may contain historical
+Mac absolute paths; these are provenance strings. Keep the delivered output/
+directories as siblings so executable relative imports continue to resolve.
+Do not import run-on-import experiment scripts merely to inspect their API.
+
+2. Identified model source and parameters
+
+Recommended archived prediction entry:
+  output/greybox-baseline-audit-20261028/core.py
+  forecast(sanitized_input, model, variant='full') -> prediction, trace, seam
+  sanitize(row) keeps exactly id/family/arm/block/branch/gap_s/phase/initial.
+
+Frozen primary parameters:
+  output/model-search-20261028/h2_strict_singles.json : model
+  output/greybox-baseline-audit-20261028/models.json : equation_error
+These are numerically equivalent (max historical difference ~9.02e-17).
+The conventional output-error competitor is models.json : output_error.
+
+Identification implementation:
+  output/greybox-baseline-audit-20261028/fit_baselines.py : datasets(), fit_ee()
+  output/model-search-20261028/h2_strict_refit.py
+Training: 18 P11 development NORMAL/A/B trajectories; no AB or REPAIR trajectory.
+Training input hashes are in both parameter documents; all 18 arrays are included.
+
+Frozen neural controller weights (weights, not identified plant coefficients):
+  output/offline-adjoint-20261028/upstream/data/p11-20261025-formal/models/policy.npz
+Target/clock/history semantics:
+  output/offline-adjoint-20261028/upstream/tools/p11/state.py
+  output/offline-adjoint-20261028/upstream/tools/p11/observe.py
+  output/offline-adjoint-20261028/upstream/tools/p12/state.py
+  output/offline-adjoint-20261028/upstream/tools/p12/execution.py
+Some modules intentionally resolve through output/model-search-20261028/upstream/tools/.
+
+3. Important scope for P16 integration
+
+core.forecast is the reproducible P13 F2/F4 runner, with fixed event durations,
+profile lookup and timing assumptions. It is NOT a generic P16 launch adapter.
+h2_preflight.py defaults to an older P11 M2 object: explicitly pass the strict
+identified model above, or explicitly assign h2.M when reproducing that wrapper.
+Do not silently use its import-time default in P16.
+
+P16 must adapt a copy to its frozen candidate plan, initialization and clock
+origin, preserve source semantics, and regression-check old fixtures before new
+SITL. Do not set P16 moving initial target_v to zero to satisfy old restrictions.
+Do not read future measured B-entry states or actual event times before a query.
+Historical outcomes in these archives are evaluation/training material from
+earlier rounds; no new P16 labels are included.
+
+This package contains the existing predictive greybox and the research hypothesis.
+It does not contain an already validated boundary-reuse algorithm. Implement and
+freeze that addition separately. Keep its benefit separate from the greybox itself.
+
+4. Read-only delivery check (no simulation)
+
+Use an analysis Python environment with requirements-portable.txt; preserve the
+Thor ROS/Jazzy environment. From the repository root:
+
+  python research/p16-mac-materials-20261028/check_materials.py --integrity-only
+  python research/p16-mac-materials-20261028/check_materials.py --output /tmp/p16-material-check.json
+
+The second command checks all file hashes, refits 18 historical trajectories,
+compares two frozen forecasts, verifies future-label mutation independence,
+loads the full comparison dataset and reproduces one sequential query trajectory.
+It writes only the explicitly named new receipt. A PASS is material acceptance,
+not P16 flying acceptance or evidence of simulation savings.
+
+5. Existing results to preserve
+
+Ordinary EE and OE: 17/18 held-out AB task classifications correct; 13 complete
+cases have height MAE about 8.32 and 7.92 cm. Current proposal has no independent
+advantage over the ordinary hybrid greybox. Removing capture semantics gives
+8/18; removing physical/execution carry gives 10/18; removing neural carry gives
+17/18. Sequential design did not establish query savings over the strong short-
+duration rule. Keep the negative results and censoring in P16 background claims.
+
+6. Execution instructions
+
+Read DOT_P16_PROMPT.txt in full. Existing Thor P16 work is uncommitted preparation;
+import only this new materials path or cherry-pick the material-only commit after
+checking for collisions. Do not reset/overwrite config/p16, tools/p16, tests or
+the existing start ledger. Continue the existing experiment identity and budget.

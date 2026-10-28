@@ -1,0 +1,78 @@
+{
+  "status": "MECHANISM_SUPPORTED_METHOD_ADVANTAGE_UNESTABLISHED_AFTER_STRONG_BASELINE_AND_REGIME_STRESS_TEST",
+  "research_question": "Which event loops repeatedly erase task-relative error while the controller-visible dynamic state returns, producing persistent global loss; can such loops be identified, represented compactly, and broken by preserving a task anchor?",
+  "working_method": "Search for repeatable event loops with positive task-loss drift. Keep a finite dynamic return state and an explicit additive loss coordinate. Use source-level reset and clipping semantics to determine when increasing loss stops affecting the controller, then fit/check a local return map. Update a loop's recurrence, per-loop loss and feasible repetition count rather than just a single finite scenario label.",
+  "theory": {
+    "established_prior_art": [
+      {
+        "title": "Model Reduction Near Periodic Orbits of Hybrid Dynamical Systems",
+        "url": "https://arxiv.org/abs/1308.4158",
+        "overlap": "Poincare return maps and contraction-based reduction near hybrid periodic orbits are established."
+      },
+      {
+        "title": "Periodic orbit analysis of a system with continuous symmetry - a tutorial",
+        "url": "https://arxiv.org/abs/1411.3303",
+        "overlap": "Symmetry reduction and relative periodic orbit drift are established."
+      },
+      {
+        "title": "Finite-Step Invariant Sets for Hybrid Systems with Probabilistic Guarantees",
+        "url": "https://arxiv.org/abs/2604.05102",
+        "overlap": "Finite-step invariant sets around hybrid return maps are prior work; a local invariant set alone is not our novelty."
+      },
+      {
+        "title": "Symmetry Abstractions for Hybrid Systems and their Applications",
+        "url": "https://arxiv.org/abs/2006.09485",
+        "overlap": "Hybrid guard/reset symmetry abstraction, forward-simulation soundness, transformed reachable-set reuse and unbounded mode sequences are established; these are close to the proposed family-map lift."
+      },
+      {
+        "title": "Acceleration of Affine Hybrid Transformations",
+        "url": "https://orbi.uliege.be/handle/2268/173234",
+        "overlap": "Acceleration of repeated hybrid control cycles into their unbounded repeated effect is established for linear/affine classes."
+      }
+    ],
+    "specific_candidate_contribution": "Characterize a one-sided invariance created jointly by reference resets and observation clipping, despite a fixed external task reference. Use that conditional invariance to lift a closed dynamic loop with positive loss into a family of longer failing event sequences. This is a proposed contribution to investigate, not a verified literature-first claim.",
+    "exact_proposition_draft": "Let z increase downward and let T_d shift physical height and every internally captured height by d>=0 while preserving velocities, attitude, recurrent state, actuator state and clock phase. Assume (i) plant evolution is vertically translation-equivariant until the task boundary; (ii) capture resets the internal height to the measured current height; (iii) whenever the fixed external reference is active throughout a complete loop, vertical position error is in the same downward saturated branch; (iv) this branch remains valid under downward translation; (v) the complete augmented state after an admissible loop w is exactly T_delta of its start, delta>0, with matching event/clock phase. Then the nth repeated loop ends at T_(n*delta) of the start while the assumptions and input/workspace budget hold. A task-height threshold is crossed by ceil((remaining height budget)/delta) repetitions. Proof is induction using reset equivariance and one-sided clipping invariance. This is conditional; finite traces do not establish assumptions (iii) or (v) for all repeats.",
+    "approximate_extension_not_proved": "A useful noisy version needs return-state closure/contraction and drift margins, including scheduler branches. P14H's failed long-horizon tube is not evidence that these margins exist. Derive and check a local condition before claiming a reliable repetition horizon.",
+    "independent_role": "The theory changes the search object to a repeatable loss-producing loop and defines when a measured/predicted loop may update a whole repetition family. The fitted model estimates the return state and drift; ordinary dynamics fitting alone does not establish repeatability or conditional invariance.",
+    "missing_conditions_in_draft": [
+      "For moving trajectories, loop closure must be defined in a frame transported by the external trajectory, and the trajectory itself must repeat under the corresponding transport. Vertical translation alone cannot describe a moving P7 loop.",
+      "Absolute timestamps must be advanced consistently; all relative timer ages, scheduler phases and pending message states must return. The reduced CSV cannot establish these conditions.",
+      "The pointwise recorded saturation condition is only a candidate regime check. It neither proves recurrence nor positive future drift."
+    ]
+  },
+  "evidence": [
+    {
+      "file": "cycle_audit.json",
+      "finding": "All 108 captures in 27 P7 sequences reset vertical position error to zero; 27 captures already have more than 0.5m task loss and five exceed 1m. Ten sequences fail height while peak tilt remains below45deg."
+    },
+    {
+      "file": "cycle_audit.json",
+      "finding": "T0 D0.38/g0.5 has capture losses -0.003,0.534,0.860,1.200m; late cycle increments0.326 and0.340m. These are suggestive finite-prefix measurements, not a closed-loop certificate."
+    },
+    {
+      "file": "anchor_response.json",
+      "finding": "Ten P11 timeout captures with >0.1m downward task error all increase mean normalized motor command under a one-call intervention restoring the last valid external altitude; mean increase0.08106. This verifies direct controller sensitivity, not flight repair success."
+    }
+  ],
+  "counterevidence": [
+    "T0 D0.3/g0.5 A45 has nearly complete vertical clipping late, yet capture loss falls from0.592 to0.474m. Saturation and recapture are insufficient to infer positive long-run drift.",
+    "Across27 P7 sequences, repeating only the first cycle loss gives0.304m error at the fourth capture. Even repeating the second increment gives0.112m. An unconstrained linear-loss extrapolator is not established as adequate.",
+    "P7 exports omit complete attitude/omega, recurrent state, actuators and scheduler caches. Similar exported signals cannot certify complete state recurrence.",
+    "Fixed capture repair C already solved all9 evaluated P9 cases. A new repair must justify lower cost, greater repeat robustness or an uncovered mechanism; current command replay does not establish any of these.",
+    "No head-to-head superiority over the full-information ordinary grey-box baseline, periodic-template search, or a simple local drift predictor has been established for this candidate.",
+    "Prefix-only P7 regime stress test: only 3/27 second cycles have all sampled external vertical errors in the same downward saturated branch. Of those3,2 have positive next-cycle loss; a cheap previous-increment top3 has3/3. Mean next-cycle loss .156m vs .325m. This is a retrospective continuation stress probe with all prefixes already available, not original test-budget evidence or a full cycle-closure-method evaluation."
+  ],
+  "scope": {
+    "switching": "Potential applies when a closed mode-switch sequence repeatedly recaptures/rebases task anchors and forgets cumulative error. P3/P4 hover switching does not demonstrate such drift, and preserving a persistent absolute anchor may eliminate the condition. No switching advantage claimed.",
+    "cross_platform": "The structural test depends on reset, clipping and task-anchor semantics; drift magnitude, return-state closure and timing must be identified per platform. No second-platform data exist.",
+    "experiment_policy": "No new experiments, no SITL, no Thor or SSH. GitHub reads retrieved already archived evidence only."
+  },
+  "completion_audit": {
+    "new_problem_grounded_in_existing_data": "supported",
+    "concrete_model_and_theory_roles": "candidate_defined",
+    "novel_theoretical_contribution": "Not established. Closely related hybrid symmetry abstraction and cycle acceleration already exist; source-conditioned one-sided applicability and a useful approximate result remain open.",
+    "potential_beyond_strong_baselines": "Not established. Necessary-regime gating alone loses to a cheap prefix drift ordering; no implemented return-state closure algorithm has an independently evaluated advantage.",
+    "switching_and_cross_platform_value": "structural rationale with explicit conditions only",
+    "goal_complete": false
+  }
+}

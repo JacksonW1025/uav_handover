@@ -1,0 +1,107 @@
+[
+  {
+    "round": "P1",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P1_REPORT.md",
+    "observation": "48条接受记录；切入神经控制与切回经典控制的扰动不对称。激活时捕获当前位置，经典制动使用前方停车位置。",
+    "implication": "接入操作改变有效任务，目标语义值得作为测试单元。",
+    "limitation": "原生控制器制动本身解释大量扰动；不能全归因于切换。"
+  },
+  {
+    "round": "P2",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P2_REPORT.md",
+    "observation": "悬停下同时准备隐状态和实际动作历史显著减小接管跳变；运动状态下目标捕获仍主导。",
+    "implication": "每种操作需要独立的状态读写/继承清单。",
+    "limitation": "神经记忆在激活场景有效；未推出对断流边界的普遍优势。"
+  },
+  {
+    "round": "P3",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P3_REPORT.md",
+    "observation": "39条接受记录。返回悬停并重捕获后，世界平移/偏航可产生相同相对观测；未执行的影子动作反馈可恶化结果。",
+    "implication": "来源不同的历史可能在特定操作后共享有效输入。",
+    "limitation": "相同观测不足以证明完整状态或后续任务安全等价。"
+  },
+  {
+    "round": "P4",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P4_REPORT.md",
+    "observation": "独立种子/方向复核；速度匹配的参考捕获降低运动接管扰动。",
+    "implication": "源代码目标生成规则可能决定一整类场景的边界。",
+    "limitation": "任务等价条件需要单独成立；改变任务语义可以制造表面改善。"
+  },
+  {
+    "round": "P5",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P5_REPORT.md",
+    "observation": "35条探索飞行。激活与超过200ms的断流超时复用目标捕获代码；断流超时保留神经记忆。",
+    "implication": "共享捕获操作提供跨触发情境复用的候选接缝。",
+    "limitation": "完整状态重置不同；两种触发器不能直接合并。参考恢复和按轴限幅也影响边界。"
+  },
+  {
+    "round": "P6",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P6_REPORT.md",
+    "observation": "127次运行。11个A0单断流家族呈现单调安全/失败转变；重复扰动及方向变化可打破简单推广。",
+    "implication": "分支和状态条件确定后，部分局部边界可能便于搜索。",
+    "limitation": "不能对重复序列全局二分；边界附近种子差异可翻转结果。"
+  },
+  {
+    "round": "P7",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P7_REPORT.md",
+    "observation": "独立重算27条完整轨迹、108次捕获：捕获后局部垂直误差均为0，27次累计损高已超过0.5m，5次超过1m。",
+    "implication": "参考重置消除局部误差，同时保留物理下沉及任务损失；边界必须携带剩余裕量。",
+    "limitation": "只有3个闭合捕获间隔；简单重复上一增量已较强，漂移周期理论尚无优势证据。"
+  },
+  {
+    "round": "P8",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P8_REPORT.md",
+    "observation": "900次运行，30个campaign；重算得432次主失效、511次任务失效，79次任务失效无主失效。",
+    "implication": "倾角与损高需要分别覆盖，失败密集区不足以评估边界压缩。",
+    "limitation": "冻结预测文件无法匹配900条结果；ours的高失败数不能当作预测或安全跳测优势。"
+  },
+  {
+    "round": "P9",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P9_FINAL_REPORT.md",
+    "observation": "水平模型峰值MAE约1.802°、排序相关约0.924，但7个实际倾角失败漏判6个；一个边界中点误差0.50s。",
+    "implication": "平均预测和排序质量必须转换为边界附近的误差与漏判约束。",
+    "limitation": "无损高模型支撑安全跳测；局部边界不能代表全局。"
+  },
+  {
+    "round": "P10",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P10_A4_REPORT.md",
+    "observation": "无新增SITL。独立逐步误差球需约3.2405，原审计域为0.001；状态独立扰动导致证书失效。",
+    "implication": "保持状态相关性和源代码约束是复用条件的重要部分。",
+    "limitation": "现有保守界在实际域内无效；不能借局部重放精度宣称未来保证。"
+  },
+  {
+    "round": "P11",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P11_REPORT.md",
+    "observation": "69条有效正式运行；样本保持和调用/提交时钟显著影响重放。神经源码重放可达约1e-6。",
+    "implication": "缓存、消息年龄、读取和提交相位属于事件后的有效状态。",
+    "limitation": "已知输入重放精度与自主闭环预测不同；相同种子不保证相同前态。"
+  },
+  {
+    "round": "P12",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P12_CONT_REPORT.md",
+    "observation": "含P12/P12B/P12C；匹配前态的准备多次失败。当前损高、历史最大损高、下沉速度具有不同作用。",
+    "implication": "必须把物理恢复状态与任务监视器状态一起带过接口事件。",
+    "limitation": "少量状态量的必要性不意味着充分性；同状态受控因果比较尚不足。"
+  },
+  {
+    "round": "P13",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P13_REPORT.md",
+    "observation": "66条正式运行。F2单A、单B均安全；短间隔AB为3/3失败，中/长间隔均安全。F4更复杂，部分单事件已失败。",
+    "implication": "后续边界依赖进入事件时的恢复状态；按A/B名称分组会丢失重要条件。",
+    "limitation": "整体仅一个控制栈；残余速度、姿态、动作历史等相关，无法单独归因某一状态。"
+  },
+  {
+    "round": "P14",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P14_REPORT.md",
+    "observation": "含motion/R/G/H。源代码读取分支、几何、时钟逐步修正；P14H三种选择各4/4任务失败。",
+    "implication": "先识别合法时序分支，再考虑分支内的相近状态和边界复用。",
+    "limitation": "全失败候选池没有成功侧边界；现实域误差界很快变宽，局部导数跨分支失效。"
+  },
+  {
+    "round": "P15",
+    "source": "/Users/jacksonwang/Projects/flight-control-atlas/output/model-search-20261028/upstream/docs/THOR_P15_REPORT.md",
+    "observation": "32条搜索飞行：便宜方法和模型方法均4/8失败。完整模型后继状态保留原始时钟原点后，6/6续算一致；简化垂直修正4次未改选择。",
+    "implication": "时钟完整的事件后状态可作为复用接缝；局部恢复预测比长程极值稳定。",
+    "limitation": "模型计算复用尚未节省真实SITL；低维状态压缩、选点优势及总成本优势均未建立。"
+  }
+]

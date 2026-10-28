@@ -1,0 +1,62 @@
+{
+  "time": "2026-10-28T12:41:48.354471+00:00",
+  "scope": "synthetic pure-unit inputs, no flight or actual model adoption",
+  "old_source_sha256": "7b2ea54703ebcf3c57f805863ee76c2ab8ab679fa2795c2aa547c5002811bac0",
+  "old_TypeError": "Traceback (most recent call last):\n  File \"<stdin>\", line 8, in <module>\n  File \"/home/car/uav_handover/data/p16-20261028/source-before-review-v1/sequential.py\", line 55, in next_query\n    prediction=calibrated(pool,initial,history);selected,why=choose(pool,prediction,history,len(history));return dict(query=len(history)+1,selected=selected,reason=why,seen_ids=list(history),prediction=prediction,rules=dict(width_G_s=WIDTH,shrink=SHRINK,exploration_query_numbers=[4,7]),future_truth_used=False)\n                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/car/uav_handover/data/p16-20261028/source-before-review-v1/sequential.py\", line 51, in choose\n    return min(remaining,key=key),'near nominal taskthreshold / own local measured residual priority'\n           ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/car/uav_handover/data/p16-20261028/source-before-review-v1/sequential.py\", line 49, in key\n    rr=[abs(r.get('peak_tilt',0)/45-pred[ident].get('peak_tilt',0)/45),abs(r.get('peak_loss',0)-pred[ident].get('peak_loss',0))];local.append(math.exp(-.5*((c['G']-other['G'])/WIDTH)**2)*max(rr))\n                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~\nTypeError: unsupported operand type(s) for /: 'NoneType' and 'int'\n",
+  "new_source_sha256": "2f52a201397c45f6177b7d59d11aa3ae665042f0119173b448f19ea50696b9e5",
+  "current_result": {
+    "query": 2,
+    "selected": {
+      "id": "b",
+      "family": "F2",
+      "G": 0.75
+    },
+    "reason": "near nominal taskthreshold / own local measured residual priority",
+    "seen_ids": [
+      "a"
+    ],
+    "prediction": {
+      "a": {
+        "peak_tilt": null,
+        "peak_loss": null,
+        "tilt": "SUCCESS",
+        "height": "SUCCESS",
+        "task": "SUCCESS",
+        "model_complete": false,
+        "nominal_only": true,
+        "not_certified_safe": true,
+        "prefix_failed_before_B": false,
+        "own_error_evidence": {
+          "peak_tilt": null,
+          "peak_loss": null
+        },
+        "observed_peaks": {
+          "peak_tilt": 30.0,
+          "peak_loss": 0.1
+        },
+        "own_error_scope": "exact full measured window if complete, otherwise positive lowerbound residual only; None means no numeric evidence"
+      },
+      "b": {
+        "peak_tilt": 40.0,
+        "peak_loss": 0.2,
+        "tilt": "SUCCESS",
+        "height": "SUCCESS",
+        "task": "SUCCESS",
+        "model_complete": true,
+        "nominal_only": true,
+        "not_certified_safe": true,
+        "prefix_failed_before_B": null
+      }
+    },
+    "rules": {
+      "width_G_s": 0.35,
+      "shrink": 0.65,
+      "exploration_query_numbers": [
+        4,
+        7
+      ]
+    },
+    "future_truth_used": false
+  },
+  "new_START": 0
+}

@@ -1,0 +1,25 @@
+{
+  "status": "Frozen before sequential outcome computation; retrospective audit with prior familiarity with archived data.",
+  "primary_question": "How many additional one-flight observations are needed for a fixed never-queried combination map, and what comes from prior prediction, query selection, and updates?",
+  "direct_combination_protocol": {
+    "initial_history": "Same 18 P11 normal/single trajectories and 30 P13 normal/single outcome records. No AB outcome is initially visible. Existing grey-box parameters use P11 singles only.",
+    "nominal_initialization": "Use the already-observed P13 NORMAL initial state of the corresponding family/block for every candidate, not each untested flight's realized initial state.",
+    "outer_splits": "All 15 ways of holding out 2 of the 6 AB configurations. Those 2 configurations remain untouched targets at every budget. The other 4 configurations provide 12 queryable archived flights.",
+    "budget": "0 through 12 additional individual-flight reveals. Repeats are revealed one at a time in independently shuffled order. No future seed outcome may be selected.",
+    "repetitions": 120,
+    "learners": ["grey-box prior plus shared outcome-residual update", "cheap plan-feature ridge with native sequential refitting", "historical suffix lookup with native nearest-combination updates", "cheap prior plus the same residual updater", "lookup prior plus the same residual updater"],
+    "query_policies": ["maximum predicted task-failure score", "shared map-variance reduction based on known program coordinates", "uniform random remaining-flight reference"],
+    "decomposition": "Budget-zero and frozen-predictor curves isolate initial information; same-query map-directed/random controls isolate updating; policy crossing within each learner isolates selection.",
+    "primary_metrics": "Fixed-target flight-level task accuracy and configuration failure-frequency Brier error. No tested configurations enter the evaluation. Height MAE on fixed complete target records is a secondary continuous-map endpoint.",
+    "thresholds": {"task_accuracy": [0.8, 0.9], "configuration_brier": [0.1, 0.05, 0.02], "height_MAE_m": [0.15, 0.1]},
+    "threshold_reporting": "First crossing and persistent crossing are distinguished. Nonattainment within the exhausted pool is reported as such, not extrapolated into a fabricated test count.",
+    "update_kernel": "RBF on [direction/30deg, gap/1.45s], length .5, with prior variance1 and noise variance.25 for task. Height uses prior variance.0625 and noise variance.01. Calibration labels are available only after the selected test is revealed; censored height labels do not become exact observations.",
+    "limitation": "P13 full synchronized trajectories are not archived. Its sequential update is explicitly output-map calibration, not full dynamics re-identification. A separate P11 trajectory protocol tests shared-parameter updates."
+  },
+  "trajectory_identification_protocol": {
+    "initial_history": "6 P11 normal trajectories, with the same archived P13 single-event outcomes available to endpoint baselines.",
+    "queries": "Individual P11 A/B trajectories revealed sequentially; source model re-identifies shared dynamics from only observed full trajectories. Unqueried P13 AB is the fixed map target.",
+    "goal": "Separate the value of shared-parameter updates from the prior-map advantage; do not claim that a P13 outcome-only update reproduces this mechanism."
+  },
+  "prohibitions": ["No new experiment or SITL", "No Thor access", "No target-label hyperparameter tuning", "No shrinking evaluation denominator", "No labeling censored height prefixes safe", "No unqueried realized initial-state inputs"]
+}

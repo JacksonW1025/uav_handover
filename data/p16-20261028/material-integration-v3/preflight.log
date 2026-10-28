@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/car/uav_handover/tools/p16/preflight.py", line 19, in <module>
+    if __name__=='__main__':print(make(sys.argv[1]))
+                                  ^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/p16/preflight.py", line 14, in make
+    P=load_policy();checks={k:float(np.max(abs(np.asarray(v)-np.asarray(P[k])))) for k,v in core.reference.P.items() if k in P and isinstance(P[k],np.ndarray)};assert checks and max(checks.values())==0.,checks
+      ^^^^^^^^^^^^^
+  File "/home/car/uav_handover/research/p16-mac-materials-20261028/output/offline-adjoint-20261028/upstream/tools/p3_memory.py", line 26, in load_policy
+    data=path.read_bytes();tar=tarfile.open(fileobj=io.BytesIO(data))
+         ^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1021, in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/car/uav_handover/research/p16-mac-materials-20261028/output/offline-adjoint-20261028/upstream/uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/blob/policy.tar'

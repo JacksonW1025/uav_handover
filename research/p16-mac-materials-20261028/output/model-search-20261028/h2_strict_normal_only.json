@@ -1,0 +1,2916 @@
+{
+  "protocol": {
+    "scope": "Strict new event-combination transfer. Refit only archived P11 training groups; exclude every multi-event condition including repaired combinations and anchors. Test all P13 with pre-stream data. No outcome-dependent model choice.",
+    "variants": {
+      "singles": [
+        "NORMAL",
+        "A",
+        "B"
+      ],
+      "normal_only": [
+        "NORMAL"
+      ]
+    },
+    "reference_checks": "Family reference tables identical between sampled blocks/gaps/repair. No physical COM inputs. Clock and source weights fixed from earlier engineering validation.",
+    "limitations": "Method structure designed with familiarity with all stages; this is retrospective executed holdout evidence, not prospective validation. Frozen neural controller source is available by assumption.",
+    "baseline_scope": "Give baselines the same P11 single-event trajectory outcomes and P13 single-event history. Continuous labels and censor flags separated."
+  },
+  "training": [
+    {
+      "id": "F1-r1-NORMAL",
+      "sha256": "c5c8d523e4ec02681e614ab4eeb6c9f48e8fc4d27ca42882ae4842f987ed31ff"
+    },
+    {
+      "id": "F1-r2-NORMAL",
+      "sha256": "7ef56f1c48b33aaad913075b14cfa40b204996aea0c9fc2211e26c9c0a851cdb"
+    },
+    {
+      "id": "F2-r1-NORMAL",
+      "sha256": "c856d87f504062408ee0f69c3ac96f21e075dde7dabb1a321cdc9daa11297d4d"
+    },
+    {
+      "id": "F2-r2-NORMAL",
+      "sha256": "49c22e4b3b89ce23a5bd913484a895fcceece845bf54b65d3e4079c2735b83d5"
+    },
+    {
+      "id": "F3-r1-NORMAL",
+      "sha256": "ed7ea17dc0acba08da2bbada2b6a02865f25ac3e039ceb7668ee37c9343cf7a2"
+    },
+    {
+      "id": "F3-r2-NORMAL",
+      "sha256": "704af044fec5919f46487b6772971cec617860098a74ae3e71b96e4195a2d794"
+    }
+  ],
+  "model": {
+    "kind": "M2",
+    "thrust": 4.144985054638147,
+    "drag": [
+      0.12161754594196943,
+      0.1375693201379853,
+      2.547705968362685e-24
+    ],
+    "torque": [
+      51.473586810105594,
+      34.54949325447045,
+      3.4456497923881018
+    ],
+    "angular_drag": [
+      1.2805628570852255e-30,
+      1.986115255149337e-34,
+      0.5934134930081814
+    ],
+    "execution_state": "4 asymmetric rotor states tau_up.0125/down.025",
+    "fit": {
+      "active_rows": 52432,
+      "acceleration_scalar_rows": 78603,
+      "acceleration_rmse": 0.024484420608255727,
+      "condition_number": 174.0063886431727,
+      "angular": [
+        {
+          "rmse": 0.464286319929132,
+          "condition_number": 8.820146655839654,
+          "success": true
+        },
+        {
+          "rmse": 0.18328190764928576,
+          "condition_number": 6.416895559313508,
+          "success": true
+        },
+        {
+          "rmse": 0.08525651083815435,
+          "condition_number": 2.1995728004627635,
+          "success": true
+        }
+      ],
+      "success": true,
+      "interpretation": "effective empirical coefficients, not identified exact physical mass/inertia or causal omission attribution"
+    }
+  },
+  "summary": {
+    "n": 66,
+    "complete_n": 57,
+    "height_MAE": 0.19505638693196076,
+    "tilt_MAE": 1.388231979347351,
+    "height_FN": 0,
+    "height_FP": 11,
+    "domain_exits": 0,
+    "cpu_wall_s": 56.64275462459773
+  },
+  "results": [
+    {
+      "id": "p13-F2-b1-A",
+      "family": "F2",
+      "arm": "A",
+      "block": 1,
+      "prediction": 0.569420127436898,
+      "predicted_failure": false,
+      "actual": 0.48514413833618164,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.006497564259916544,
+      "initial_tilt": 0.10541731183199017,
+      "predicted_tilt": 38.562548784338034,
+      "actual_tilt": 36.807332849115795,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006031042,
+          "stale": false
+        },
+        {
+          "t": 13.450031041999999,
+          "stale": true
+        },
+        {
+          "t": 13.622031042,
+          "stale": false
+        },
+        {
+          "t": 25.346031042,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658031042,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9836049596782503
+    },
+    {
+      "id": "p13-F2-b1-AB-long",
+      "family": "F2",
+      "arm": "AB-long",
+      "block": 1,
+      "prediction": 0.5808449638421544,
+      "predicted_failure": false,
+      "actual": 0.5321657657623291,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.020883165299892426,
+      "initial_tilt": 0.520592311104889,
+      "predicted_tilt": 38.7119842366946,
+      "actual_tilt": 39.418215141632196,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060007285,
+          "stale": false
+        },
+        {
+          "t": 13.4500007285,
+          "stale": true
+        },
+        {
+          "t": 13.6220007285,
+          "stale": false
+        },
+        {
+          "t": 15.8020007285,
+          "stale": true
+        },
+        {
+          "t": 15.9820007285,
+          "stale": false
+        },
+        {
+          "t": 25.3460007285,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658000728500003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9801552337146147
+    },
+    {
+      "id": "p13-F2-b1-AB-medium",
+      "family": "F2",
+      "arm": "AB-medium",
+      "block": 1,
+      "prediction": 0.5426609093542916,
+      "predicted_failure": false,
+      "actual": 0.5255937576293945,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.004634757060557604,
+      "initial_tilt": 0.25772949046538596,
+      "predicted_tilt": 38.38119485395843,
+      "actual_tilt": 38.14265896613917,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006049247000000001,
+          "stale": false
+        },
+        {
+          "t": 13.450049246999999,
+          "stale": true
+        },
+        {
+          "t": 13.622049247,
+          "stale": false
+        },
+        {
+          "t": 15.002049247,
+          "stale": true
+        },
+        {
+          "t": 15.182049247,
+          "stale": false
+        },
+        {
+          "t": 25.346049247,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658049247,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980153290571242
+    },
+    {
+      "id": "p13-F2-b1-AB-short",
+      "family": "F2",
+      "arm": "AB-short",
+      "block": 1,
+      "prediction": 1.0186791990119712,
+      "predicted_failure": true,
+      "actual": 0.5344424247741699,
+      "actual_censored": true,
+      "actual_height_status": "UNKNOWN",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0012680354993790388,
+      "initial_tilt": 0.2192051040356971,
+      "predicted_tilt": 39.736966456611,
+      "actual_tilt": 50.17372638083154,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059952,
+          "stale": false
+        },
+        {
+          "t": 13.4499952,
+          "stale": true
+        },
+        {
+          "t": 13.6219952,
+          "stale": false
+        },
+        {
+          "t": 14.3619952,
+          "stale": true
+        },
+        {
+          "t": 14.5259952,
+          "stale": false
+        },
+        {
+          "t": 25.3539952,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657995200000002,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980155455149631
+    },
+    {
+      "id": "p13-F2-b1-B-long",
+      "family": "F2",
+      "arm": "B-long",
+      "block": 1,
+      "prediction": 0.568620967497711,
+      "predicted_failure": false,
+      "actual": 0.47885990142822266,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.00683226203545928,
+      "initial_tilt": 0.24568546699839666,
+      "predicted_tilt": 39.0460426440929,
+      "actual_tilt": 37.35789538489294,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005914847,
+          "stale": false
+        },
+        {
+          "t": 15.809914847,
+          "stale": true
+        },
+        {
+          "t": 15.981914846999999,
+          "stale": false
+        },
+        {
+          "t": 25.345914847,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657914847,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9836049596678387
+    },
+    {
+      "id": "p13-F2-b1-B-medium",
+      "family": "F2",
+      "arm": "B-medium",
+      "block": 1,
+      "prediction": 0.5431907567598397,
+      "predicted_failure": false,
+      "actual": 0.519719123840332,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.002547317184507847,
+      "initial_tilt": 0.21155292488797078,
+      "predicted_tilt": 38.81955172868238,
+      "actual_tilt": 37.51102335679696,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005916808,
+          "stale": false
+        },
+        {
+          "t": 15.009916808,
+          "stale": true
+        },
+        {
+          "t": 15.181916808,
+          "stale": false
+        },
+        {
+          "t": 25.345916808000002,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657916808000003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.98015859477747
+    },
+    {
+      "id": "p13-F2-b1-B-short",
+      "family": "F2",
+      "arm": "B-short",
+      "block": 1,
+      "prediction": 0.4837454039474336,
+      "predicted_failure": false,
+      "actual": 0.49929141998291016,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.006897185929119587,
+      "initial_tilt": 0.41838560710749034,
+      "predicted_tilt": 36.93309154981922,
+      "actual_tilt": 37.41780685703743,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059996855,
+          "stale": false
+        },
+        {
+          "t": 14.3699996855,
+          "stale": true
+        },
+        {
+          "t": 14.5259996855,
+          "stale": false
+        },
+        {
+          "t": 25.3539996855,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657999685500002,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9836049596638454
+    },
+    {
+      "id": "p13-F2-b1-NORMAL",
+      "family": "F2",
+      "arm": "NORMAL",
+      "block": 1,
+      "prediction": 0.019946880348747698,
+      "predicted_failure": false,
+      "actual": 0.02924966812133789,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.005710599943995476,
+      "initial_tilt": 0.27564912083251597,
+      "predicted_tilt": 17.990001114098828,
+      "actual_tilt": 17.33233132415876,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059698595,
+          "stale": false
+        },
+        {
+          "t": 25.345969859500002,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657969859500003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980156470066483
+    },
+    {
+      "id": "p13-F2-b1-REPAIR-long",
+      "family": "F2",
+      "arm": "REPAIR-long",
+      "block": 1,
+      "prediction": 0.020042273455353588,
+      "predicted_failure": false,
+      "actual": 0.03313398361206055,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.009932814165949821,
+      "initial_tilt": 0.19476496969565038,
+      "predicted_tilt": 18.03962334216001,
+      "actual_tilt": 17.549466171579212,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059979790000000005,
+          "stale": false
+        },
+        {
+          "t": 13.449997978999999,
+          "stale": true
+        },
+        {
+          "t": 13.621997979,
+          "stale": false
+        },
+        {
+          "t": 15.801997979,
+          "stale": true
+        },
+        {
+          "t": 15.981997978999999,
+          "stale": false
+        },
+        {
+          "t": 25.345997979,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657997979,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980155343836488
+    },
+    {
+      "id": "p13-F2-b1-REPAIR-medium",
+      "family": "F2",
+      "arm": "REPAIR-medium",
+      "block": 1,
+      "prediction": 0.025134025124022408,
+      "predicted_failure": false,
+      "actual": 0.020528793334960938,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0008218575967475772,
+      "initial_tilt": 0.2683799450782911,
+      "predicted_tilt": 18.56515431669914,
+      "actual_tilt": 17.595473316530544,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005991508,
+          "stale": false
+        },
+        {
+          "t": 13.449991508,
+          "stale": true
+        },
+        {
+          "t": 13.621991508,
+          "stale": false
+        },
+        {
+          "t": 15.001991508000001,
+          "stale": true
+        },
+        {
+          "t": 15.181991508000001,
+          "stale": false
+        },
+        {
+          "t": 25.345991508,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657991508000002,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983604959698475
+    },
+    {
+      "id": "p13-F2-b1-REPAIR-short",
+      "family": "F2",
+      "arm": "REPAIR-short",
+      "block": 1,
+      "prediction": 0.030078840166967602,
+      "predicted_failure": false,
+      "actual": 0.04196310043334961,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.0037522106431424618,
+      "initial_tilt": 0.24907379520277412,
+      "predicted_tilt": 17.98209344406856,
+      "actual_tilt": 17.23579835814605,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005889933,
+          "stale": false
+        },
+        {
+          "t": 13.449889933,
+          "stale": true
+        },
+        {
+          "t": 13.621889933,
+          "stale": false
+        },
+        {
+          "t": 14.361889933,
+          "stale": true
+        },
+        {
+          "t": 14.525889933,
+          "stale": false
+        },
+        {
+          "t": 25.353889932999998,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657889933,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9801596711648943
+    },
+    {
+      "id": "p13-F2-b2-A",
+      "family": "F2",
+      "arm": "A",
+      "block": 2,
+      "prediction": 0.5426607698704013,
+      "predicted_failure": false,
+      "actual": 0.4839050769805908,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0023152704816311598,
+      "initial_tilt": 0.3464593820426889,
+      "predicted_tilt": 38.381194855276796,
+      "actual_tilt": 36.642839373372915,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060527305,
+          "stale": false
+        },
+        {
+          "t": 13.4500527305,
+          "stale": true
+        },
+        {
+          "t": 13.6220527305,
+          "stale": false
+        },
+        {
+          "t": 25.346052730500002,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658052730500003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9801531510040253
+    },
+    {
+      "id": "p13-F2-b2-AB-long",
+      "family": "F2",
+      "arm": "AB-long",
+      "block": 2,
+      "prediction": 0.5808431752218741,
+      "predicted_failure": false,
+      "actual": 0.4940958023071289,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.014272861182689667,
+      "initial_tilt": 0.13220123452245863,
+      "predicted_tilt": 38.71198423683784,
+      "actual_tilt": 37.78722603494986,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006045389,
+          "stale": false
+        },
+        {
+          "t": 13.450045389,
+          "stale": true
+        },
+        {
+          "t": 13.622045389,
+          "stale": false
+        },
+        {
+          "t": 15.802045389,
+          "stale": true
+        },
+        {
+          "t": 15.982045389,
+          "stale": false
+        },
+        {
+          "t": 25.346045389,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658045389,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980153445071769
+    },
+    {
+      "id": "p13-F2-b2-AB-medium",
+      "family": "F2",
+      "arm": "AB-medium",
+      "block": 2,
+      "prediction": 0.569420127443141,
+      "predicted_failure": false,
+      "actual": 0.5052852630615234,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.00031990426941774786,
+      "initial_tilt": 0.049579422541414765,
+      "predicted_tilt": 38.56254878412769,
+      "actual_tilt": 37.23167277367658,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005938385500000001,
+          "stale": false
+        },
+        {
+          "t": 13.4499383855,
+          "stale": true
+        },
+        {
+          "t": 13.6219383855,
+          "stale": false
+        },
+        {
+          "t": 15.0019383855,
+          "stale": true
+        },
+        {
+          "t": 15.1819383855,
+          "stale": false
+        },
+        {
+          "t": 25.345938385500002,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657938385500003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9836049596876597
+    },
+    {
+      "id": "p13-F2-b2-AB-short",
+      "family": "F2",
+      "arm": "AB-short",
+      "block": 2,
+      "prediction": 0.9374632023170864,
+      "predicted_failure": false,
+      "actual": 0.5096168518066406,
+      "actual_censored": true,
+      "actual_height_status": "UNKNOWN",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.010679012164473534,
+      "initial_tilt": 0.06301422035205502,
+      "predicted_tilt": 38.56254878511885,
+      "actual_tilt": 51.88458895913069,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060289035,
+          "stale": false
+        },
+        {
+          "t": 13.4500289035,
+          "stale": true
+        },
+        {
+          "t": 13.6220289035,
+          "stale": false
+        },
+        {
+          "t": 14.3620289035,
+          "stale": true
+        },
+        {
+          "t": 14.5260289035,
+          "stale": false
+        },
+        {
+          "t": 25.354028903499998,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580289035,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9836049596534724
+    },
+    {
+      "id": "p13-F2-b2-B-long",
+      "family": "F2",
+      "arm": "B-long",
+      "block": 2,
+      "prediction": 0.5432187649597542,
+      "predicted_failure": false,
+      "actual": 0.5078036785125732,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.009047663770616055,
+      "initial_tilt": 0.11847012831781177,
+      "predicted_tilt": 38.81842675820089,
+      "actual_tilt": 38.08725676520664,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059748335,
+          "stale": false
+        },
+        {
+          "t": 15.8099748335,
+          "stale": true
+        },
+        {
+          "t": 15.981974833499999,
+          "stale": false
+        },
+        {
+          "t": 25.3459748335,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657974833500003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9801562708305376
+    },
+    {
+      "id": "p13-F2-b2-B-medium",
+      "family": "F2",
+      "arm": "B-medium",
+      "block": 2,
+      "prediction": 0.5687331325704021,
+      "predicted_failure": false,
+      "actual": 0.48212385177612305,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.005774736404418945,
+      "initial_tilt": 0.1429862117562489,
+      "predicted_tilt": 39.051275382794024,
+      "actual_tilt": 37.14580823226678,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006006034,
+          "stale": false
+        },
+        {
+          "t": 15.010006034,
+          "stale": true
+        },
+        {
+          "t": 15.182006034,
+          "stale": false
+        },
+        {
+          "t": 25.346006034000002,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658006034000003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983604959644709
+    },
+    {
+      "id": "p13-F2-b2-B-short",
+      "family": "F2",
+      "arm": "B-short",
+      "block": 2,
+      "prediction": 0.4837454039437783,
+      "predicted_failure": false,
+      "actual": 0.5100224018096924,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.019625147804617882,
+      "initial_tilt": 0.38967858909046293,
+      "predicted_tilt": 36.93309154974181,
+      "actual_tilt": 37.662074869066736,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060550510000000005,
+          "stale": false
+        },
+        {
+          "t": 14.370055051,
+          "stale": true
+        },
+        {
+          "t": 14.526055051,
+          "stale": false
+        },
+        {
+          "t": 25.354055051,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658055051,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983604959661714
+    },
+    {
+      "id": "p13-F2-b2-NORMAL",
+      "family": "F2",
+      "arm": "NORMAL",
+      "block": 2,
+      "prediction": 0.025113826885771573,
+      "predicted_failure": false,
+      "actual": 0.026079416275024414,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.015596577897667885,
+      "initial_tilt": 0.03985902323745418,
+      "predicted_tilt": 18.556532987507328,
+      "actual_tilt": 16.557361225227993,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060148655,
+          "stale": false
+        },
+        {
+          "t": 25.3460148655,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580148655,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9836049596569225
+    },
+    {
+      "id": "p13-F2-b2-REPAIR-long",
+      "family": "F2",
+      "arm": "REPAIR-long",
+      "block": 2,
+      "prediction": 0.025356138913435355,
+      "predicted_failure": false,
+      "actual": 0.019260168075561523,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.013935920782387257,
+      "initial_tilt": 0.12148607244415259,
+      "predicted_tilt": 18.642431244821157,
+      "actual_tilt": 16.78186836065708,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060974665,
+          "stale": false
+        },
+        {
+          "t": 13.450097466499999,
+          "stale": true
+        },
+        {
+          "t": 13.6220974665,
+          "stale": false
+        },
+        {
+          "t": 15.8020974665,
+          "stale": true
+        },
+        {
+          "t": 15.982097466499999,
+          "stale": false
+        },
+        {
+          "t": 25.3460974665,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658097466500003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983604959666411
+    },
+    {
+      "id": "p13-F2-b2-REPAIR-medium",
+      "family": "F2",
+      "arm": "REPAIR-medium",
+      "block": 2,
+      "prediction": 0.025134025082336198,
+      "predicted_failure": false,
+      "actual": 0.022693395614624023,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.0018743864493444562,
+      "initial_tilt": 0.5232567944994627,
+      "predicted_tilt": 18.56515431669872,
+      "actual_tilt": 18.389646947185007,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.00590403,
+          "stale": false
+        },
+        {
+          "t": 13.449904029999999,
+          "stale": true
+        },
+        {
+          "t": 13.62190403,
+          "stale": false
+        },
+        {
+          "t": 15.00190403,
+          "stale": true
+        },
+        {
+          "t": 15.18190403,
+          "stale": false
+        },
+        {
+          "t": 25.34590403,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.65790403,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983604959656779
+    },
+    {
+      "id": "p13-F2-b2-REPAIR-short",
+      "family": "F2",
+      "arm": "REPAIR-short",
+      "block": 2,
+      "prediction": 0.030074602696330555,
+      "predicted_failure": false,
+      "actual": 0.033792734146118164,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.014802100136876106,
+      "initial_tilt": 0.40975586494318095,
+      "predicted_tilt": 17.982093444068806,
+      "actual_tilt": 17.42112360967111,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059957365,
+          "stale": false
+        },
+        {
+          "t": 13.4499957365,
+          "stale": true
+        },
+        {
+          "t": 13.6219957365,
+          "stale": false
+        },
+        {
+          "t": 14.3619957365,
+          "stale": true
+        },
+        {
+          "t": 14.5259957365,
+          "stale": false
+        },
+        {
+          "t": 25.3539957365,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657995736500002,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980155433694732
+    },
+    {
+      "id": "p13-F2-b3-A",
+      "family": "F2",
+      "arm": "A",
+      "block": 3,
+      "prediction": 0.5694201274390394,
+      "predicted_failure": false,
+      "actual": 0.5444531440734863,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.0005102469585835934,
+      "initial_tilt": 0.16990439524006493,
+      "predicted_tilt": 38.56254878388945,
+      "actual_tilt": 36.97996240823911,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006029136500000001,
+          "stale": false
+        },
+        {
+          "t": 13.4500291365,
+          "stale": true
+        },
+        {
+          "t": 13.6220291365,
+          "stale": false
+        },
+        {
+          "t": 25.3460291365,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580291365,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983604959696814
+    },
+    {
+      "id": "p13-F2-b3-AB-long",
+      "family": "F2",
+      "arm": "AB-long",
+      "block": 3,
+      "prediction": 0.5963769148448854,
+      "predicted_failure": false,
+      "actual": 0.4702725410461426,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.005203619133681059,
+      "initial_tilt": 0.04714918911610878,
+      "predicted_tilt": 39.024965388755575,
+      "actual_tilt": 37.24913940330865,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005965055,
+          "stale": false
+        },
+        {
+          "t": 13.449965055,
+          "stale": true
+        },
+        {
+          "t": 13.621965055,
+          "stale": false
+        },
+        {
+          "t": 15.801965055,
+          "stale": true
+        },
+        {
+          "t": 15.981965055,
+          "stale": false
+        },
+        {
+          "t": 25.345965055,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657965055000002,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983604959656098
+    },
+    {
+      "id": "p13-F2-b3-AB-medium",
+      "family": "F2",
+      "arm": "AB-medium",
+      "block": 3,
+      "prediction": 0.5694201274635584,
+      "predicted_failure": false,
+      "actual": 0.5545222759246826,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.003321297001093626,
+      "initial_tilt": 0.13354282672932075,
+      "predicted_tilt": 38.56254878479236,
+      "actual_tilt": 38.70525661835241,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.00599268,
+          "stale": false
+        },
+        {
+          "t": 13.44999268,
+          "stale": true
+        },
+        {
+          "t": 13.62199268,
+          "stale": false
+        },
+        {
+          "t": 15.00199268,
+          "stale": true
+        },
+        {
+          "t": 15.18199268,
+          "stale": false
+        },
+        {
+          "t": 25.345992680000002,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657992680000003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983604959662934
+    },
+    {
+      "id": "p13-F2-b3-AB-short",
+      "family": "F2",
+      "arm": "AB-short",
+      "block": 3,
+      "prediction": 1.0186770350315681,
+      "predicted_failure": true,
+      "actual": 0.5222151279449463,
+      "actual_censored": true,
+      "actual_height_status": "UNKNOWN",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.001747943926602602,
+      "initial_tilt": 0.5833734500121239,
+      "predicted_tilt": 39.73696645470342,
+      "actual_tilt": 50.84943573835036,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060492295,
+          "stale": false
+        },
+        {
+          "t": 13.4500492295,
+          "stale": true
+        },
+        {
+          "t": 13.6220492295,
+          "stale": false
+        },
+        {
+          "t": 14.3620492295,
+          "stale": true
+        },
+        {
+          "t": 14.5260492295,
+          "stale": false
+        },
+        {
+          "t": 25.3540492295,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580492295,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980153291213124
+    },
+    {
+      "id": "p13-F2-b3-B-long",
+      "family": "F2",
+      "arm": "B-long",
+      "block": 3,
+      "prediction": 0.5432192362022996,
+      "predicted_failure": false,
+      "actual": 0.4872934818267822,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.015805035829544067,
+      "initial_tilt": 0.19153739017065113,
+      "predicted_tilt": 38.81842675816126,
+      "actual_tilt": 37.36837877644217,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059630665,
+          "stale": false
+        },
+        {
+          "t": 15.8099630665,
+          "stale": true
+        },
+        {
+          "t": 15.981963066499999,
+          "stale": false
+        },
+        {
+          "t": 25.3459630665,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657963066500002,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980156742075155
+    },
+    {
+      "id": "p13-F2-b3-B-medium",
+      "family": "F2",
+      "arm": "B-medium",
+      "block": 3,
+      "prediction": 0.5687331325587328,
+      "predicted_failure": false,
+      "actual": 0.4792900085449219,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.009486119262874126,
+      "initial_tilt": 0.22273706871989377,
+      "predicted_tilt": 39.051275382732285,
+      "actual_tilt": 36.923993540870924,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006018573,
+          "stale": false
+        },
+        {
+          "t": 15.010018573,
+          "stale": true
+        },
+        {
+          "t": 15.182018573,
+          "stale": false
+        },
+        {
+          "t": 25.346018573000002,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658018573000003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9836049596358567
+    },
+    {
+      "id": "p13-F2-b3-B-short",
+      "family": "F2",
+      "arm": "B-short",
+      "block": 3,
+      "prediction": 0.48374540393967136,
+      "predicted_failure": false,
+      "actual": 0.458909273147583,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.004113917704671621,
+      "initial_tilt": 0.37042528495505034,
+      "predicted_tilt": 36.93309154994892,
+      "actual_tilt": 36.4439721162957,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060303635,
+          "stale": false
+        },
+        {
+          "t": 14.3700303635,
+          "stale": true
+        },
+        {
+          "t": 14.5260303635,
+          "stale": false
+        },
+        {
+          "t": 25.354030363499998,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580303635,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9836049596467635
+    },
+    {
+      "id": "p13-F2-b3-NORMAL",
+      "family": "F2",
+      "arm": "NORMAL",
+      "block": 3,
+      "prediction": 0.01994501910910884,
+      "predicted_failure": false,
+      "actual": 0.029794692993164062,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0031293313950300217,
+      "initial_tilt": 0.5642249630203136,
+      "predicted_tilt": 17.990001114098806,
+      "actual_tilt": 17.341343631453615,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060163315,
+          "stale": false
+        },
+        {
+          "t": 25.3460163315,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580163315,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980154608826835
+    },
+    {
+      "id": "p13-F2-b3-REPAIR-long",
+      "family": "F2",
+      "arm": "REPAIR-long",
+      "block": 3,
+      "prediction": 0.020043940349025124,
+      "predicted_failure": false,
+      "actual": 0.0316004753112793,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.009559893049299717,
+      "initial_tilt": 0.19402884863285128,
+      "predicted_tilt": 18.03962334216036,
+      "actual_tilt": 17.2963936550738,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059563595,
+          "stale": false
+        },
+        {
+          "t": 13.4499563595,
+          "stale": true
+        },
+        {
+          "t": 13.6219563595,
+          "stale": false
+        },
+        {
+          "t": 15.8019563595,
+          "stale": true
+        },
+        {
+          "t": 15.9819563595,
+          "stale": false
+        },
+        {
+          "t": 25.3459563595,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6579563595,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980157010730164
+    },
+    {
+      "id": "p13-F2-b3-REPAIR-medium",
+      "family": "F2",
+      "arm": "REPAIR-medium",
+      "block": 3,
+      "prediction": 0.025134025080632227,
+      "predicted_failure": false,
+      "actual": 0.03046417236328125,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.017752481624484062,
+      "initial_tilt": 0.09123348026584854,
+      "predicted_tilt": 18.565154316698802,
+      "actual_tilt": 16.961044006480023,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060253915,
+          "stale": false
+        },
+        {
+          "t": 13.450025391499999,
+          "stale": true
+        },
+        {
+          "t": 13.6220253915,
+          "stale": false
+        },
+        {
+          "t": 15.0020253915,
+          "stale": true
+        },
+        {
+          "t": 15.1820253915,
+          "stale": false
+        },
+        {
+          "t": 25.3460253915,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580253915,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9836049596550636
+    },
+    {
+      "id": "p13-F2-b3-REPAIR-short",
+      "family": "F2",
+      "arm": "REPAIR-short",
+      "block": 3,
+      "prediction": 0.030073881626395682,
+      "predicted_failure": false,
+      "actual": 0.043211936950683594,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.014279257506132126,
+      "initial_tilt": 0.3322742170036947,
+      "predicted_tilt": 17.98209344406889,
+      "actual_tilt": 17.287570821384854,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060137395,
+          "stale": false
+        },
+        {
+          "t": 13.4500137395,
+          "stale": true
+        },
+        {
+          "t": 13.6220137395,
+          "stale": false
+        },
+        {
+          "t": 14.3620137395,
+          "stale": true
+        },
+        {
+          "t": 14.5260137395,
+          "stale": false
+        },
+        {
+          "t": 25.3540137395,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658013739500003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9801547126275123
+    },
+    {
+      "id": "p13-F4-b1-A",
+      "family": "F4",
+      "arm": "A",
+      "block": 1,
+      "prediction": 1.4151753692378468,
+      "predicted_failure": true,
+      "actual": 0.04728841781616211,
+      "actual_censored": true,
+      "actual_height_status": "UNKNOWN",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.006558359134942293,
+      "initial_tilt": 0.2866821626271057,
+      "predicted_tilt": 44.714016699119185,
+      "actual_tilt": 46.70189635601813,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060228135,
+          "stale": false
+        },
+        {
+          "t": 13.4500228135,
+          "stale": true
+        },
+        {
+          "t": 13.622022813500001,
+          "stale": false
+        },
+        {
+          "t": 25.3460228135,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580228135,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983530240556028
+    },
+    {
+      "id": "p13-F4-b1-AB-long",
+      "family": "F4",
+      "arm": "AB-long",
+      "block": 1,
+      "prediction": 1.5699211479295647,
+      "predicted_failure": true,
+      "actual": 0.8718092441558838,
+      "actual_censored": true,
+      "actual_height_status": "UNKNOWN",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.004274165257811546,
+      "initial_tilt": 0.14042397761008127,
+      "predicted_tilt": 45.30874896628862,
+      "actual_tilt": 49.47719778555706,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060255225,
+          "stale": false
+        },
+        {
+          "t": 13.450025522499999,
+          "stale": true
+        },
+        {
+          "t": 13.6220255225,
+          "stale": false
+        },
+        {
+          "t": 15.8020255225,
+          "stale": true
+        },
+        {
+          "t": 15.982025522499999,
+          "stale": false
+        },
+        {
+          "t": 25.3460255225,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580255225,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980203916494496
+    },
+    {
+      "id": "p13-F4-b1-AB-medium",
+      "family": "F4",
+      "arm": "AB-medium",
+      "block": 1,
+      "prediction": 1.796286868198867,
+      "predicted_failure": true,
+      "actual": 1.0237672328948975,
+      "actual_censored": false,
+      "actual_height_status": "FAILURE",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.00708892522379756,
+      "initial_tilt": 0.47788457243288746,
+      "predicted_tilt": 44.66989592940194,
+      "actual_tilt": 43.88735578765779,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0061078140000000005,
+          "stale": false
+        },
+        {
+          "t": 13.450107813999999,
+          "stale": true
+        },
+        {
+          "t": 13.622107814,
+          "stale": false
+        },
+        {
+          "t": 15.002107814,
+          "stale": true
+        },
+        {
+          "t": 15.182107814,
+          "stale": false
+        },
+        {
+          "t": 25.346107814,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658107814,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9801994016830147
+    },
+    {
+      "id": "p13-F4-b1-AB-short",
+      "family": "F4",
+      "arm": "AB-short",
+      "block": 1,
+      "prediction": 2.1239417663191213,
+      "predicted_failure": true,
+      "actual": 1.3496487140655518,
+      "actual_censored": false,
+      "actual_height_status": "FAILURE",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.022633487358689308,
+      "initial_tilt": 0.24123319831345566,
+      "predicted_tilt": 44.71401670017447,
+      "actual_tilt": 45.592113877081566,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060239355,
+          "stale": false
+        },
+        {
+          "t": 13.450023935499999,
+          "stale": true
+        },
+        {
+          "t": 13.6220239355,
+          "stale": false
+        },
+        {
+          "t": 14.3620239355,
+          "stale": true
+        },
+        {
+          "t": 14.5260239355,
+          "stale": false
+        },
+        {
+          "t": 25.3540239355,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580239355,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983530240527873
+    },
+    {
+      "id": "p13-F4-b1-B-long",
+      "family": "F4",
+      "arm": "B-long",
+      "block": 1,
+      "prediction": 1.3825265777586018,
+      "predicted_failure": true,
+      "actual": 0.9888548851013184,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.0004880994383711368,
+      "initial_tilt": 0.09824744990010707,
+      "predicted_tilt": 43.99958287900634,
+      "actual_tilt": 45.72094285979089,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006017489500000001,
+          "stale": false
+        },
+        {
+          "t": 15.8100174895,
+          "stale": true
+        },
+        {
+          "t": 15.982017489499999,
+          "stale": false
+        },
+        {
+          "t": 25.3460174895,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580174895,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983530240533696
+    },
+    {
+      "id": "p13-F4-b1-B-medium",
+      "family": "F4",
+      "arm": "B-medium",
+      "block": 1,
+      "prediction": 1.3836499781398122,
+      "predicted_failure": true,
+      "actual": 0.7826797962188721,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.03283563256263733,
+      "initial_tilt": 0.36979348089339925,
+      "predicted_tilt": 44.01518059492138,
+      "actual_tilt": 43.755753045567474,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060099755000000005,
+          "stale": false
+        },
+        {
+          "t": 15.0100099755,
+          "stale": true
+        },
+        {
+          "t": 15.1820099755,
+          "stale": false
+        },
+        {
+          "t": 25.3460099755,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580099755,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302404708224
+    },
+    {
+      "id": "p13-F4-b1-B-short",
+      "family": "F4",
+      "arm": "B-short",
+      "block": 1,
+      "prediction": 1.166941907511743,
+      "predicted_failure": true,
+      "actual": 0.8616664409637451,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.018096450716257095,
+      "initial_tilt": 0.3405250600311362,
+      "predicted_tilt": 41.1939591156955,
+      "actual_tilt": 45.0058543606854,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059864335,
+          "stale": false
+        },
+        {
+          "t": 14.3699864335,
+          "stale": true
+        },
+        {
+          "t": 14.5259864335,
+          "stale": false
+        },
+        {
+          "t": 25.3539864335,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657986433500003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983530240537091
+    },
+    {
+      "id": "p13-F4-b1-NORMAL",
+      "family": "F4",
+      "arm": "NORMAL",
+      "block": 1,
+      "prediction": 0.017891968810925807,
+      "predicted_failure": false,
+      "actual": 0.020293712615966797,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0012357642408460379,
+      "initial_tilt": 0.13574416606370165,
+      "predicted_tilt": 17.681369262861818,
+      "actual_tilt": 16.45328789616498,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060065915,
+          "stale": false
+        },
+        {
+          "t": 25.3460065915,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580065915,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980204955128651
+    },
+    {
+      "id": "p13-F4-b1-REPAIR-long",
+      "family": "F4",
+      "arm": "REPAIR-long",
+      "block": 1,
+      "prediction": 0.02206317728707541,
+      "predicted_failure": false,
+      "actual": 0.025162458419799805,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.009236879646778107,
+      "initial_tilt": 0.09559806475893305,
+      "predicted_tilt": 18.250748387224007,
+      "actual_tilt": 16.965550309846805,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060325925,
+          "stale": false
+        },
+        {
+          "t": 13.4500325925,
+          "stale": true
+        },
+        {
+          "t": 13.6220325925,
+          "stale": false
+        },
+        {
+          "t": 15.8020325925,
+          "stale": true
+        },
+        {
+          "t": 15.9820325925,
+          "stale": false
+        },
+        {
+          "t": 25.346032592500002,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658032592500003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405651265
+    },
+    {
+      "id": "p13-F4-b1-REPAIR-medium",
+      "family": "F4",
+      "arm": "REPAIR-medium",
+      "block": 1,
+      "prediction": 0.020073673030105876,
+      "predicted_failure": false,
+      "actual": 0.026259183883666992,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.008000685833394527,
+      "initial_tilt": 0.3120593632158999,
+      "predicted_tilt": 17.678981087730197,
+      "actual_tilt": 16.79961053870159,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059515060000000005,
+          "stale": false
+        },
+        {
+          "t": 13.449951506,
+          "stale": true
+        },
+        {
+          "t": 13.621951506,
+          "stale": false
+        },
+        {
+          "t": 15.001951506000001,
+          "stale": true
+        },
+        {
+          "t": 15.181951506,
+          "stale": false
+        },
+        {
+          "t": 25.345951506,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657951506,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9802079772948664
+    },
+    {
+      "id": "p13-F4-b1-REPAIR-short",
+      "family": "F4",
+      "arm": "REPAIR-short",
+      "block": 1,
+      "prediction": 0.03678363545993735,
+      "predicted_failure": false,
+      "actual": 0.04161715507507324,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.010554583743214607,
+      "initial_tilt": 0.230038261914057,
+      "predicted_tilt": 17.67151769865895,
+      "actual_tilt": 16.790757887734298,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059927255000000006,
+          "stale": false
+        },
+        {
+          "t": 13.4499927255,
+          "stale": true
+        },
+        {
+          "t": 13.6219927255,
+          "stale": false
+        },
+        {
+          "t": 14.3619927255,
+          "stale": true
+        },
+        {
+          "t": 14.5259927255,
+          "stale": false
+        },
+        {
+          "t": 25.3539927255,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6579927255,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980205715885009
+    },
+    {
+      "id": "p13-F4-b2-A",
+      "family": "F4",
+      "arm": "A",
+      "block": 2,
+      "prediction": 1.3306363410080677,
+      "predicted_failure": true,
+      "actual": 0.06875014305114746,
+      "actual_censored": true,
+      "actual_height_status": "UNKNOWN",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.009901920333504677,
+      "initial_tilt": 0.26709788471135304,
+      "predicted_tilt": 44.669895930729744,
+      "actual_tilt": 45.05565831570048,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059463455,
+          "stale": false
+        },
+        {
+          "t": 13.449946345499999,
+          "stale": true
+        },
+        {
+          "t": 13.6219463455,
+          "stale": false
+        },
+        {
+          "t": 25.3459463455,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6579463455,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9802082603732813
+    },
+    {
+      "id": "p13-F4-b2-AB-long",
+      "family": "F4",
+      "arm": "AB-long",
+      "block": 2,
+      "prediction": 1.569907900932049,
+      "predicted_failure": true,
+      "actual": 0.94919753074646,
+      "actual_censored": true,
+      "actual_height_status": "UNKNOWN",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.016204554587602615,
+      "initial_tilt": 0.30385284148748715,
+      "predicted_tilt": 45.30874896718124,
+      "actual_tilt": 50.61110946504381,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0062669760000000005,
+          "stale": false
+        },
+        {
+          "t": 13.450266976,
+          "stale": true
+        },
+        {
+          "t": 13.622266976,
+          "stale": false
+        },
+        {
+          "t": 15.802266976,
+          "stale": true
+        },
+        {
+          "t": 15.982266976,
+          "stale": false
+        },
+        {
+          "t": 25.346266976,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658266976,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980190669468671
+    },
+    {
+      "id": "p13-F4-b2-AB-medium",
+      "family": "F4",
+      "arm": "AB-medium",
+      "block": 2,
+      "prediction": 2.0846480401965937,
+      "predicted_failure": true,
+      "actual": 0.8057420253753662,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0075212824158370495,
+      "initial_tilt": 0.08315458531720943,
+      "predicted_tilt": 46.927718231356494,
+      "actual_tilt": 43.505195651692375,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006027491,
+          "stale": false
+        },
+        {
+          "t": 13.450027491,
+          "stale": true
+        },
+        {
+          "t": 13.622027491,
+          "stale": false
+        },
+        {
+          "t": 15.002027491000002,
+          "stale": true
+        },
+        {
+          "t": 15.182027491000001,
+          "stale": false
+        },
+        {
+          "t": 25.346027491,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658027491000002,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405136406
+    },
+    {
+      "id": "p13-F4-b2-AB-short",
+      "family": "F4",
+      "arm": "AB-short",
+      "block": 2,
+      "prediction": 2.0532142578295085,
+      "predicted_failure": true,
+      "actual": 1.3133394718170166,
+      "actual_censored": false,
+      "actual_height_status": "FAILURE",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.009774697944521904,
+      "initial_tilt": 0.33126305243929854,
+      "predicted_tilt": 44.66989592747377,
+      "actual_tilt": 43.75280949356899,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060261735,
+          "stale": false
+        },
+        {
+          "t": 13.4500261735,
+          "stale": true
+        },
+        {
+          "t": 13.6220261735,
+          "stale": false
+        },
+        {
+          "t": 14.3620261735,
+          "stale": true
+        },
+        {
+          "t": 14.5260261735,
+          "stale": false
+        },
+        {
+          "t": 25.3540261735,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580261735,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.98020388080689
+    },
+    {
+      "id": "p13-F4-b2-B-long",
+      "family": "F4",
+      "arm": "B-long",
+      "block": 2,
+      "prediction": 1.382526577790093,
+      "predicted_failure": true,
+      "actual": 0.04608774185180664,
+      "actual_censored": true,
+      "actual_height_status": "UNKNOWN",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0039675054140388966,
+      "initial_tilt": 0.46963041094890934,
+      "predicted_tilt": 43.99958287903052,
+      "actual_tilt": 45.316095039977135,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005998522500000001,
+          "stale": false
+        },
+        {
+          "t": 15.8099985225,
+          "stale": true
+        },
+        {
+          "t": 15.9819985225,
+          "stale": false
+        },
+        {
+          "t": 25.3459985225,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6579985225,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405583093
+    },
+    {
+      "id": "p13-F4-b2-B-medium",
+      "family": "F4",
+      "arm": "B-medium",
+      "block": 2,
+      "prediction": 1.3836499782350675,
+      "predicted_failure": true,
+      "actual": 0.7888572216033936,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.009321297518908978,
+      "initial_tilt": 0.34748897464157535,
+      "predicted_tilt": 44.01518059528623,
+      "actual_tilt": 43.92280386686177,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060133955,
+          "stale": false
+        },
+        {
+          "t": 15.0100133955,
+          "stale": true
+        },
+        {
+          "t": 15.1820133955,
+          "stale": false
+        },
+        {
+          "t": 25.3460133955,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658013395500003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405357536
+    },
+    {
+      "id": "p13-F4-b2-B-short",
+      "family": "F4",
+      "arm": "B-short",
+      "block": 2,
+      "prediction": 1.1008855552473749,
+      "predicted_failure": true,
+      "actual": 0.9667706489562988,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.0042432257905602455,
+      "initial_tilt": 0.37625386530562677,
+      "predicted_tilt": 41.16084405484845,
+      "actual_tilt": 45.456851235204056,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.00598775,
+          "stale": false
+        },
+        {
+          "t": 14.36998775,
+          "stale": true
+        },
+        {
+          "t": 14.52598775,
+          "stale": false
+        },
+        {
+          "t": 25.353987749999998,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.65798775,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980205988838899
+    },
+    {
+      "id": "p13-F4-b2-NORMAL",
+      "family": "F4",
+      "arm": "NORMAL",
+      "block": 2,
+      "prediction": 0.022290951830389538,
+      "predicted_failure": false,
+      "actual": 0.025020360946655273,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.004473571199923754,
+      "initial_tilt": 0.08741783681807966,
+      "predicted_tilt": 18.274756414908726,
+      "actual_tilt": 16.11861073883246,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005971958,
+          "stale": false
+        },
+        {
+          "t": 25.345971958,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657971958,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405684443
+    },
+    {
+      "id": "p13-F4-b2-REPAIR-long",
+      "family": "F4",
+      "arm": "REPAIR-long",
+      "block": 2,
+      "prediction": 0.022063177269912693,
+      "predicted_failure": false,
+      "actual": 0.0224606990814209,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0011290154652670026,
+      "initial_tilt": 0.29527652526291953,
+      "predicted_tilt": 18.250748387223823,
+      "actual_tilt": 16.163907879910415,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005986580500000001,
+          "stale": false
+        },
+        {
+          "t": 13.4499865805,
+          "stale": true
+        },
+        {
+          "t": 13.6219865805,
+          "stale": false
+        },
+        {
+          "t": 15.8019865805,
+          "stale": true
+        },
+        {
+          "t": 15.9819865805,
+          "stale": false
+        },
+        {
+          "t": 25.3459865805,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6579865805,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983530240547963
+    },
+    {
+      "id": "p13-F4-b2-REPAIR-medium",
+      "family": "F4",
+      "arm": "REPAIR-medium",
+      "block": 2,
+      "prediction": 0.020069748496401196,
+      "predicted_failure": false,
+      "actual": 0.02350616455078125,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.013667321763932705,
+      "initial_tilt": 0.3123138835993522,
+      "predicted_tilt": 17.678981087730172,
+      "actual_tilt": 16.264280377355416,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060230385,
+          "stale": false
+        },
+        {
+          "t": 13.4500230385,
+          "stale": true
+        },
+        {
+          "t": 13.6220230385,
+          "stale": false
+        },
+        {
+          "t": 15.0020230385,
+          "stale": true
+        },
+        {
+          "t": 15.1820230385,
+          "stale": false
+        },
+        {
+          "t": 25.3460230385,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580230385,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.980204052761047
+    },
+    {
+      "id": "p13-F4-b2-REPAIR-short",
+      "family": "F4",
+      "arm": "REPAIR-short",
+      "block": 2,
+      "prediction": 0.03832316466565944,
+      "predicted_failure": false,
+      "actual": 0.04263663291931152,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.0051600332371890545,
+      "initial_tilt": 0.15045318818022713,
+      "predicted_tilt": 18.261886023987458,
+      "actual_tilt": 16.8228164426117,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060157225,
+          "stale": false
+        },
+        {
+          "t": 13.4500157225,
+          "stale": true
+        },
+        {
+          "t": 13.6220157225,
+          "stale": false
+        },
+        {
+          "t": 14.3620157225,
+          "stale": true
+        },
+        {
+          "t": 14.5260157225,
+          "stale": false
+        },
+        {
+          "t": 25.354015722499998,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580157225,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405711417
+    },
+    {
+      "id": "p13-F4-b3-A",
+      "family": "F4",
+      "arm": "A",
+      "block": 3,
+      "prediction": 1.4151753693301883,
+      "predicted_failure": true,
+      "actual": 0.0687563419342041,
+      "actual_censored": true,
+      "actual_height_status": "UNKNOWN",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.017670607194304466,
+      "initial_tilt": 0.30621954306912746,
+      "predicted_tilt": 44.71401669948647,
+      "actual_tilt": 45.849037290718385,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060496515,
+          "stale": false
+        },
+        {
+          "t": 13.450049651499999,
+          "stale": true
+        },
+        {
+          "t": 13.6220496515,
+          "stale": false
+        },
+        {
+          "t": 25.3460496515,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580496515,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405549076
+    },
+    {
+      "id": "p13-F4-b3-AB-long",
+      "family": "F4",
+      "arm": "AB-long",
+      "block": 3,
+      "prediction": 1.872568584488335,
+      "predicted_failure": true,
+      "actual": 0.8159043788909912,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0007271422655321658,
+      "initial_tilt": 0.29039679036827293,
+      "predicted_tilt": 47.48918318118095,
+      "actual_tilt": 45.884102063638515,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006008374,
+          "stale": false
+        },
+        {
+          "t": 13.450008374,
+          "stale": true
+        },
+        {
+          "t": 13.622008374,
+          "stale": false
+        },
+        {
+          "t": 15.802008374,
+          "stale": true
+        },
+        {
+          "t": 15.982008374,
+          "stale": false
+        },
+        {
+          "t": 25.346008374,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658008374,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405616204
+    },
+    {
+      "id": "p13-F4-b3-AB-medium",
+      "family": "F4",
+      "arm": "AB-medium",
+      "block": 3,
+      "prediction": 2.0846480403012277,
+      "predicted_failure": true,
+      "actual": 0.867720365524292,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -2.3800339477020316e-06,
+      "initial_tilt": 0.24061767321574712,
+      "predicted_tilt": 46.92771823293797,
+      "actual_tilt": 44.22641720461466,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006047314000000001,
+          "stale": false
+        },
+        {
+          "t": 13.450047313999999,
+          "stale": true
+        },
+        {
+          "t": 13.622047314,
+          "stale": false
+        },
+        {
+          "t": 15.002047314,
+          "stale": true
+        },
+        {
+          "t": 15.182047314,
+          "stale": false
+        },
+        {
+          "t": 25.346047314,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658047314,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983530240553773
+    },
+    {
+      "id": "p13-F4-b3-AB-short",
+      "family": "F4",
+      "arm": "AB-short",
+      "block": 3,
+      "prediction": 2.1239417664388505,
+      "predicted_failure": true,
+      "actual": 1.2749024629592896,
+      "actual_censored": false,
+      "actual_height_status": "FAILURE",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.0071881921030581,
+      "initial_tilt": 0.15722539345415357,
+      "predicted_tilt": 44.714016698930216,
+      "actual_tilt": 43.369130734233124,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059277065,
+          "stale": false
+        },
+        {
+          "t": 13.449927706499999,
+          "stale": true
+        },
+        {
+          "t": 13.6219277065,
+          "stale": false
+        },
+        {
+          "t": 14.3619277065,
+          "stale": true
+        },
+        {
+          "t": 14.5259277065,
+          "stale": false
+        },
+        {
+          "t": 25.3539277065,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6579277065,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405612105
+    },
+    {
+      "id": "p13-F4-b3-B-long",
+      "family": "F4",
+      "arm": "B-long",
+      "block": 3,
+      "prediction": 1.382526577797219,
+      "predicted_failure": true,
+      "actual": 0.7331187725067139,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0073068938218057156,
+      "initial_tilt": 0.44595287842668113,
+      "predicted_tilt": 43.99958287900607,
+      "actual_tilt": 42.20740556764245,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.006013502,
+          "stale": false
+        },
+        {
+          "t": 15.810013502,
+          "stale": true
+        },
+        {
+          "t": 15.982013502,
+          "stale": false
+        },
+        {
+          "t": 25.346013502,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.658013502000003,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983530240563307
+    },
+    {
+      "id": "p13-F4-b3-B-medium",
+      "family": "F4",
+      "arm": "B-medium",
+      "block": 3,
+      "prediction": 1.301376956133822,
+      "predicted_failure": true,
+      "actual": 0.863990306854248,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.00521020358428359,
+      "initial_tilt": 0.22635000761810647,
+      "predicted_tilt": 43.96552669571342,
+      "actual_tilt": 44.48748934170101,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060765395,
+          "stale": false
+        },
+        {
+          "t": 15.0100765395,
+          "stale": true
+        },
+        {
+          "t": 15.1820765395,
+          "stale": false
+        },
+        {
+          "t": 25.3460765395,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580765395,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9802011175052154
+    },
+    {
+      "id": "p13-F4-b3-B-short",
+      "family": "F4",
+      "arm": "B-short",
+      "block": 3,
+      "prediction": 1.1008822089297219,
+      "predicted_failure": true,
+      "actual": 0.887991189956665,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0043708099983632565,
+      "initial_tilt": 0.12781628103825748,
+      "predicted_tilt": 41.160844054897424,
+      "actual_tilt": 44.682647802858874,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0060487435,
+          "stale": false
+        },
+        {
+          "t": 14.3700487435,
+          "stale": true
+        },
+        {
+          "t": 14.5260487435,
+          "stale": false
+        },
+        {
+          "t": 25.354048743499998,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6580487435,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9802026425193713
+    },
+    {
+      "id": "p13-F4-b3-NORMAL",
+      "family": "F4",
+      "arm": "NORMAL",
+      "block": 3,
+      "prediction": 0.022290951796454905,
+      "predicted_failure": false,
+      "actual": 0.0257415771484375,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.016810152679681778,
+      "initial_tilt": 0.25592587639002123,
+      "predicted_tilt": 18.274756414908847,
+      "actual_tilt": 16.705359158584688,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005939377500000001,
+          "stale": false
+        },
+        {
+          "t": 25.3459393775,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.6579393775,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405345074
+    },
+    {
+      "id": "p13-F4-b3-REPAIR-long",
+      "family": "F4",
+      "arm": "REPAIR-long",
+      "block": 3,
+      "prediction": 0.020573524542118804,
+      "predicted_failure": false,
+      "actual": 0.024686098098754883,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.01923903077840805,
+      "initial_tilt": 0.17457906496182865,
+      "predicted_tilt": 17.680107926165277,
+      "actual_tilt": 16.216398931598732,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.0059818255,
+          "stale": false
+        },
+        {
+          "t": 13.4499818255,
+          "stale": true
+        },
+        {
+          "t": 13.6219818255,
+          "stale": false
+        },
+        {
+          "t": 15.8019818255,
+          "stale": true
+        },
+        {
+          "t": 15.9819818255,
+          "stale": false
+        },
+        {
+          "t": 25.3459818255,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657981825500002,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9802063138817028
+    },
+    {
+      "id": "p13-F4-b3-REPAIR-medium",
+      "family": "F4",
+      "arm": "REPAIR-medium",
+      "block": 3,
+      "prediction": 0.022235639469981194,
+      "predicted_failure": false,
+      "actual": 0.022039175033569336,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": 0.0057976823300123215,
+      "initial_tilt": 0.23596709802007984,
+      "predicted_tilt": 18.263293161174786,
+      "actual_tilt": 15.88007247153437,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.005989836,
+          "stale": false
+        },
+        {
+          "t": 13.449989836,
+          "stale": true
+        },
+        {
+          "t": 13.621989836000001,
+          "stale": false
+        },
+        {
+          "t": 15.001989836000002,
+          "stale": true
+        },
+        {
+          "t": 15.181989836000001,
+          "stale": false
+        },
+        {
+          "t": 25.345989836,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657989836000002,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.9835302405529185
+    },
+    {
+      "id": "p13-F4-b3-REPAIR-short",
+      "family": "F4",
+      "arm": "REPAIR-short",
+      "block": 3,
+      "prediction": 0.03832316462966823,
+      "predicted_failure": false,
+      "actual": 0.03689408302307129,
+      "actual_censored": false,
+      "actual_height_status": "SUCCESS",
+      "initial_D": 0.0,
+      "initial_L": 0.0,
+      "initial_W": -0.005250454414635897,
+      "initial_tilt": 0.2810391329460273,
+      "predicted_tilt": 18.261886023987298,
+      "actual_tilt": 15.846769527755361,
+      "stop": null,
+      "branches": [
+        {
+          "t": 0.00592929,
+          "stale": false
+        },
+        {
+          "t": 13.44992929,
+          "stale": true
+        },
+        {
+          "t": 13.62192929,
+          "stale": false
+        },
+        {
+          "t": 14.36192929,
+          "stale": true
+        },
+        {
+          "t": 14.52592929,
+          "stale": false
+        },
+        {
+          "t": 25.35392929,
+          "stale": true
+        }
+      ],
+      "simulated_until": 30.657929290000002,
+      "predicted_height_baseline_profile_s": 13.255,
+      "predicted_height_baseline_LP_z": -2.983530240536474
+    }
+  ],
+  "accounting_revision": "Score height from predicted LP z at original common first-event time13.255, matching the archived task metric. Raw traces unchanged; column7 is LP z. Earlier pre-stream-origin scores preserved separately."
+}

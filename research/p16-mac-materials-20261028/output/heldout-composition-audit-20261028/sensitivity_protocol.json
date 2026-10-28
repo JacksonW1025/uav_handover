@@ -1,0 +1,7 @@
+{
+  "status": "Specified after the primary results were inspected. Diagnostic sensitivity, not an independent confirmatory comparison.",
+  "reason": "Primary training-only CV selected one state in most folds. Check whether this model-selection preference suppresses a useful split.",
+  "variants": ["Require the greedy learner to attempt up to 2 states; choose only alpha by training-configuration CV", "Require the greedy learner to attempt up to 4 states; choose only alpha by training-configuration CV"],
+  "rules": "Same feature whitelist, witnesses, folds and metrics as primary audit; no new data. If no qualifying train-only shared-suffix witness exists, keep one state. Publish both variants on every fold; do not replace primary results.",
+  "implementation_clarification": "The protocol phrase penalized training-fit gain refers to squared prediction-error reduction using ridge-regularized heads. Split gain itself does not add a coefficient-penalty term. audit.py is the exact implementation."
+}

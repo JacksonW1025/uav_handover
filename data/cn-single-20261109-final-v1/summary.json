@@ -1,0 +1,202 @@
+{
+  "source_run": "data/cn-single-20261109-repair-flight",
+  "flown_commit": "3d9fa486833d6255f4a1e3c1bbc5d403edf79572",
+  "ulog_sha256": "a080ca54c4178950d3f1acc359c91542adbac269db1dd0b31980c6f9a8e913d0",
+  "native_timeline": {
+    "native_nav_entry_us": 66448000,
+    "first_neural_publication_us": 66460000,
+    "first_neural_owner_evidence_us": 66460000,
+    "mode_to_neural_publication_us": 12000,
+    "first_active_observation_us": 66448000,
+    "first_active_valid_external_read_us": 66724000
+  },
+  "first_motor_application": {
+    "0": {
+      "sim_us": 66464000,
+      "sample_us": 66460000,
+      "partial_tail_bytes": 0
+    },
+    "1": {
+      "sim_us": 66464000,
+      "sample_us": 66460000,
+      "partial_tail_bytes": 0
+    },
+    "2": {
+      "sim_us": 66464000,
+      "sample_us": 66460000,
+      "partial_tail_bytes": 0
+    },
+    "3": {
+      "sim_us": 66464000,
+      "sample_us": 66460000,
+      "partial_tail_bytes": 0
+    }
+  },
+  "activation_reference_delay": {
+    "mode_to_external_read_ms": 276.0,
+    "mode_cycle_to_runner_confirmation_host_ms": 273.154482,
+    "first_publish_end_to_valid_read_host_ms": 2.458723,
+    "first_sent_position_velocity_exact_float32_match": true,
+    "note": "same-host CLOCK_MONOTONIC fields; no DDS UTC conversion used"
+  },
+  "stale_edges": [
+    {
+      "native_us": 66448000,
+      "stale": true,
+      "last_valid_read_us": 0
+    },
+    {
+      "native_us": 66724000,
+      "stale": false,
+      "last_valid_read_us": 66724000
+    },
+    {
+      "native_us": 73924000,
+      "stale": true,
+      "last_valid_read_us": 73720000
+    },
+    {
+      "native_us": 74048000,
+      "stale": false,
+      "last_valid_read_us": 74048000
+    }
+  ],
+  "gap": {
+    "send_interval_ms": 327.13045,
+    "last_valid_native_us": 73720000,
+    "stale_capture_native_us": 73924000,
+    "resume_native_us": 74048000,
+    "consumed_interval_ms": 328.0,
+    "stale_duration_ms": 124.0
+  },
+  "native_executor": {
+    "samples": 2289,
+    "period_us_unique": [
+      8000
+    ],
+    "mean_duration_us": 2.6068152031454783,
+    "p99_duration_us": 19.0,
+    "max_duration_us": 40,
+    "scope": "executor observe+control; not isolated neural-network forward benchmark"
+  },
+  "metrics": {
+    "duration_s": 18.312,
+    "max_tilt_deg": 39.30189514160156,
+    "entry_altitude_m": 3.0684642791748047,
+    "min_altitude_m": 2.5609583854675293,
+    "max_altitude_m": 3.3682801723480225,
+    "max_altitude_loss_m": 0.5075058937072754,
+    "max_radius_m": 3.182847261428833,
+    "max_horizontal_speed_m_s": 1.5998233556747437,
+    "motor_all_finite": true,
+    "motor_min": 0.0,
+    "motor_max": 1.0,
+    "max_motor_sample_step": 0.7109142541885376,
+    "observations_finite": true,
+    "task_failure": false,
+    "motor_continuous_saturation_s": 0.112,
+    "max_angular_rate_component_rad_s": 4.039740562438965
+  },
+  "tracking": {
+    "rmse": 0.09478627890348434,
+    "max": 0.517430305480957,
+    "samples": 2289,
+    "reference": "exact controller-consumed P11 target, not send-side trajectory"
+  },
+  "primary": {
+    "status": "FAILURE",
+    "reasons": [
+      "no 2s joint recovery within10s"
+    ],
+    "unknown": [],
+    "interpretation": "original frozen thresholds; moving reference can intentionally fail the stationary-style joint recovery test"
+  },
+  "task": {
+    "status": "SUCCESS",
+    "criteria": "tilt>45deg OR altitude loss>1m during subject neural interval"
+  },
+  "completion": {
+    "exactly_one_subject_C_to_N": true,
+    "reference_completed": true,
+    "landing_requested": true,
+    "disarmed_observed": true,
+    "failures": [],
+    "px4_exit_codes": [
+      0
+    ]
+  },
+  "phases": {
+    "entry_before_external": {
+      "start_s": 0,
+      "end_s": 0.276,
+      "samples": 35,
+      "max_tilt_deg": 38.16802215576172,
+      "min_altitude_m": 2.9771714210510254,
+      "max_target_error_m": 0.3794371485710144,
+      "target_error_rmse_m": 0.23566526174545288
+    },
+    "first_second": {
+      "start_s": 0,
+      "end_s": 1,
+      "samples": 125,
+      "max_tilt_deg": 39.29499435424805,
+      "min_altitude_m": 2.5609583854675293,
+      "max_target_error_m": 0.517430305480957,
+      "target_error_rmse_m": 0.3171301782131195
+    },
+    "post_entry_before_gap": {
+      "start_s": 1,
+      "end_s": 7.272,
+      "samples": 784,
+      "max_tilt_deg": 24.912588119506836,
+      "min_altitude_m": 2.57943058013916,
+      "max_target_error_m": 0.26461470127105713,
+      "target_error_rmse_m": 0.08174972981214523
+    },
+    "gap_and_resume": {
+      "start_s": 7.272,
+      "end_s": 8.5,
+      "samples": 154,
+      "max_tilt_deg": 14.829354286193848,
+      "min_altitude_m": 3.0446624755859375,
+      "max_target_error_m": 0.13170015811920166,
+      "target_error_rmse_m": 0.07969380170106888
+    },
+    "final_hold": {
+      "start_s": 14.276,
+      "end_s": 18.312,
+      "samples": 504,
+      "max_tilt_deg": 1.668825626373291,
+      "min_altitude_m": 3.0736958980560303,
+      "max_target_error_m": 0.04141794517636299,
+      "target_error_rmse_m": 0.030080923810601234
+    }
+  },
+  "interpretation_limits": [
+    "single case and seed, no causal ablation or reliability inference",
+    "LP is estimator state; Gazebo trace establishes command consumption, not real flight",
+    "pre-reference delay includes coarse runner acknowledgment/state polling; not all DDS transport latency",
+    "existing uninitialized relaxed-position arming requirements retained, not fixed for this run"
+  ],
+  "phase_definition_note": "Post-hoc descriptive windows, not pre-registered outcome criteria; P11 native125Hz sampling for phase summaries differs from full-attitude250Hz global peak.",
+  "arming_reply_before_entry": {
+    "timestamp": 66436000,
+    "registration_id": 0,
+    "can_arm_and_run": 1,
+    "num_events": 0,
+    "health_component_index": 0,
+    "mode_req_local_position_relaxed": -1,
+    "mode_req_global_position_relaxed": 0
+  },
+  "health_report_before_entry": {
+    "timestamp": 56416000,
+    "can_arm_mode_flags": 16726712,
+    "can_run_mode_flags": 16726712,
+    "health_is_present_flags": 939662602,
+    "health_warning_flags": 0,
+    "health_error_flags": 0,
+    "arming_check_warning_flags": 0,
+    "arming_check_error_flags": 1048704
+  },
+  "failsafe_any_neural": false
+}

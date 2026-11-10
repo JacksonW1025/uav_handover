@@ -1,0 +1,113 @@
+{"event": "created", "monotonic_ns": 480564012690177, "wall_time_ns": 1794272445178554306, "thresholds": {"seed": 20261109, "instance": 21, "ros_domain_id": 71, "agent_port": 18888, "startup_timeout_s": 90, "takeoff_timeout_s": 45, "landing_timeout_s": 60, "hover_s": 10, "neural_s": 5, "repetitions": 1, "altitude_m": 3, "hover_max_error_m": 1.0, "hover_max_tilt_deg": 15, "safety_radius_m": 10, "safety_altitude_m": 8, "safety_tilt_deg": 45, "safety_angular_rate_rad_s": 8, "inference_p99_us": 2500, "settling_band_m": 0.2, "settling_dwell_s": 2.0, "joint_recovery": {"position_reference": "active_trajectory_setpoint", "position_reference_ned_m": [0, 0, -3], "velocity_reference_ned_m_s": [0, 0, 0], "angular_velocity_reference_frd_rad_s": [0, 0, 0], "position_threshold_m": 0.2, "velocity_threshold_m_s": 0.1, "angular_velocity_threshold_rad_s": 0.1, "dwell_s": 2.0, "max_observation_gap_s": 0.02}, "p0_strict": true, "p1": {"conditions": {"single": {"speed_m_s": 1.2}}}, "p11": {"observe": true, "ulog_storage": "hardlink_after_shutdown"}, "cn_single": {"subject": "one AUTO_MISSION to dynamically registered RAPTOR switch", "seed": 20261109, "classic_prefix": "AUTO_TAKEOFF 3m, AUTO_LOITER 10s, actual MAVLink mission", "mission_ned_m": [[3, 0, -3], [3, 3, -3.4], [-2, 3, -3], [-2, -2, -3], [0, 0, -3]], "trigger": "mission index1, horizontal speed>=0.6m/s, distance to waypoint>0.75m for0.2s", "external_reference": "post-confirmation 50Hz C2 quintic brake and 3D loop; yaw30deg pulse; hold14-18s", "gap_profile_s": [7, 7.32], "task_failure_criterion": {"tilt_deg": 45, "altitude_loss_m": 1}, "safety_limits_unchanged": true, "memory": "RINI0 original reset; RTGT0 RREC0 NCO0; no state injection", "recovery": "non-subject NtoC AUTO_LOITER4s then LAND/disarm", "startup_budget": 1, "flight_failures_are_results": true, "mode_or_arming_forcing": false, "frozen_primary_criteria": {"safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort", "no_joint_recovery_s": 10.0, "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)", "motor_saturation_continuous_s": 0.5, "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]", "ground_altitude_m": 0.2, "ground": "altitude <= 0.2 m inside [trigger, window end]"}, "primary_window_note": "Measured from actual first neural publication to subject end; original 10s joint recovery criterion is reported even though a moving reference may intentionally violate it. It is not silently replaced by tracking error.", "persistent_mavlink": true, "repair_note": "Same seed and scientific scenario; one explicit infrastructure repair after prior attempt ended before Mission and before any subject entry. Original failure remains evidence, not an independent switch sample."}, "p1_condition": "single", "p1_speed_m_s": 1.2, "p4_independence": {"sim_seed": 20261109, "initial_yaw_deg": 0.0}}}
+{"event": "process_started", "monotonic_ns": 480564021741079, "wall_time_ns": 1794272445187603754, "name": "agent", "pid": 330218, "command": ["taskset", "-c", "6-7", "/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent", "udp4", "-p", "18888", "-v", "4"]}
+{"event": "process_started", "monotonic_ns": 480564022816334, "wall_time_ns": 1794272445188679065, "name": "gazebo", "pid": 330219, "command": ["taskset", "-c", "12-13", "gz", "sim", "-r", "-s", "-v", "3", "--seed", "20261109", "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf"]}
+{"event": "process_started", "monotonic_ns": 480564023328888, "wall_time_ns": 1794272445189190943, "name": "gz-stats", "pid": 330220, "command": ["gz", "topic", "-e", "-t", "/world/default/stats"]}
+{"event": "process_started", "monotonic_ns": 480564024613142, "wall_time_ns": 1794272445190475892, "name": "tegrastats", "pid": 330221, "command": ["/usr/bin/tegrastats", "--interval", "1000"]}
+{"event": "process_started", "monotonic_ns": 480564259128042, "wall_time_ns": 1794272445424990902, "name": "px4", "pid": 330257, "command": ["taskset", "-c", "8-11", "/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4", "-d", "-i", "21", "-w", "/home/car/uav_handover/data/cn-single-20261109-repair-flight/rootfs", "/home/car/uav_handover/data/cn-single-20261109-repair-flight/rootfs/etc"]}
+{"event": "command_ack", "monotonic_ns": 480575778189329, "wall_time_ns": 1794272456944052801, "command": 211, "result": 0, "timestamp": 1794272452097344}
+{"event": "ready", "monotonic_ns": 480575778282941, "wall_time_ns": 1794272456944144996, "condition": "PX4 DDS telemetry"}
+{"event": "sensor_readiness", "monotonic_ns": 480577934479430, "wall_time_ns": 1794272459100342143, "ready": true, "reasons": [], "continuous_host_s": 2.0036686210078187, "native_publication_stamps": {"sensor_baro": 1794272459081347, "vehicle_air_data": 1794272459021347, "vehicle_local_position": 1794272459073347}, "raw_pressure_pa": 101322.171875, "raw_device_id": 6619404, "selected_pressure_pa": 101321.109375, "selected_device_id": 6619404}
+{"event": "mavlink_identity", "monotonic_ns": 480578851666769, "wall_time_ns": 1794272460017529797, "system_id": 22, "autopilot": 12, "udp_port": 18591}
+{"event": "cn_mavlink_retained", "monotonic_ns": 480578851764083, "wall_time_ns": 1794272460017626092, "local_endpoint": ["0.0.0.0", 46624]}
+{"event": "process_started", "monotonic_ns": 480578855769179, "wall_time_ns": 1794272460021635299, "name": "agent-reconnected", "pid": 330818, "command": ["taskset", "-c", "6-7", "/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent", "udp4", "-p", "18888", "-v", "4"]}
+{"event": "command_ack", "monotonic_ns": 480588838300574, "wall_time_ns": 1794272470004163250, "command": 211, "result": 0, "timestamp": 1794272452097270}
+{"event": "ready", "monotonic_ns": 480588879359313, "wall_time_ns": 1794272470045221535, "condition": "DDS Client reconnection with fresh telemetry"}
+{"event": "command_requested", "monotonic_ns": 480588879426221, "wall_time_ns": 1794272470045288248, "command": 176, "params": {"param1": 1, "param2": 4, "param3": 3}}
+{"event": "command_ack", "monotonic_ns": 480588883881297, "wall_time_ns": 1794272470049743973, "command": 176, "result": 0, "timestamp": 1794272470049274}
+{"event": "ready", "monotonic_ns": 480588979797928, "wall_time_ns": 1794272470145660520, "condition": "command acknowledgement"}
+{"event": "command_requested", "monotonic_ns": 480589983058954, "wall_time_ns": 1794272471148921092, "command": 100001, "params": {"param1": 14}}
+{"event": "command_ack", "monotonic_ns": 480589987780974, "wall_time_ns": 1794272471153643205, "command": 100001, "result": 0, "timestamp": 1794272471153275}
+{"event": "ready", "monotonic_ns": 480590083358725, "wall_time_ns": 1794272471249221262, "condition": "command acknowledgement"}
+{"event": "ready", "monotonic_ns": 480590183574592, "wall_time_ns": 1794272471349436674, "condition": "nav_state=14"}
+{"event": "mode_confirmed", "monotonic_ns": 480590183601239, "wall_time_ns": 1794272471349463192, "mode": 14, "px4_timestamp": 1794272471165275}
+{"event": "command_requested", "monotonic_ns": 480590454073308, "wall_time_ns": 1794272471619935816, "command": 100001, "params": {"param1": 4}}
+{"event": "command_ack", "monotonic_ns": 480590467818989, "wall_time_ns": 1794272471633681498, "command": 100001, "result": 0, "timestamp": 1794272471633275}
+{"event": "ready", "monotonic_ns": 480590554347131, "wall_time_ns": 1794272471720209834, "condition": "command acknowledgement"}
+{"event": "ready", "monotonic_ns": 480590654548876, "wall_time_ns": 1794272471820411505, "condition": "nav_state=4"}
+{"event": "mode_confirmed", "monotonic_ns": 480590654589783, "wall_time_ns": 1794272471820451866, "mode": 4, "px4_timestamp": 1794272471645275}
+{"event": "state_operation", "monotonic_ns": 480590687813301, "wall_time_ns": 1794272471853675957, "target": "raptor", "operation": "read", "response": {"request_id": 24324000, "applied_us": 24328000, "target": 1, "operation": 1, "result": 1, "dimension": 26, "active": false, "holding": false, "values": [-0.213030159, -0.237558603, -0.373484135, -0.661144495, -0.385084927, -0.410032481, -0.382006466, -0.177690908, -0.82905823, 0.973306596, 0.0124961995, -0.522595167, 0.619438648, 0.880480409, -0.54670912, 0.662892938, -0.778187335, -0.746789694, -0.609945953, -0.611818492, -0.0129316151, 0.029048739, -0.0253337007, -0.00051179406, -0.00051179406, 0.699488044]}}
+{"event": "ready", "monotonic_ns": 480590804948975, "wall_time_ns": 1794272471970811687, "condition": "valid local position"}
+{"event": "state_capture_started", "monotonic_ns": 480594805150550, "wall_time_ns": 1794272475971013457, "label": "disarmed_read_only"}
+{"event": "state_operation", "monotonic_ns": 480594820300514, "wall_time_ns": 1794272475986162893, "target": "raptor", "operation": "read", "response": {"request_id": 28456000, "applied_us": 28460000, "target": 1, "operation": 1, "result": 0, "dimension": 26, "active": false, "holding": false, "values": [-0.21439752, -0.240353554, -0.371123075, -0.662689865, -0.395854712, -0.390762806, -0.384334743, -0.170789212, -0.830939651, 0.972406209, -0.0318874642, -0.522119761, 0.619200289, 0.873353958, -0.546174288, 0.654208541, -0.777132094, -0.74881953, -0.61354059, -0.608749509, -0.0688314438, 0.0107106706, -0.0281994492, 0.00103315455, 0.00103403174, 0.698848307]}}
+{"event": "state_operation", "monotonic_ns": 480594835033572, "wall_time_ns": 1794272476000896358, "target": "rate", "operation": "read", "response": {"request_id": 28472000, "applied_us": 28476000, "target": 2, "operation": 1, "result": 0, "dimension": 3, "active": false, "holding": false, "values": [0, 0, 0]}}
+{"event": "state_operation", "monotonic_ns": 480594849317233, "wall_time_ns": 1794272476015179473, "target": "velocity", "operation": "read", "response": {"request_id": 28488000, "applied_us": 28488000, "target": 3, "operation": 1, "result": 0, "dimension": 3, "active": false, "holding": false, "values": [0, 0, 0]}}
+{"event": "state_capture_finished", "monotonic_ns": 480594849343326, "wall_time_ns": 1794272476015205316, "label": "disarmed_read_only"}
+{"event": "command_requested", "monotonic_ns": 480594929197704, "wall_time_ns": 1794272476095059824, "command": 400, "params": {"param1": 1}}
+{"event": "command_ack", "monotonic_ns": 480594934257890, "wall_time_ns": 1794272476100120287, "command": 400, "result": 0, "timestamp": 1794272476097277}
+{"event": "ready", "monotonic_ns": 480595029613156, "wall_time_ns": 1794272476195475868, "condition": "command acknowledgement"}
+{"event": "command_requested", "monotonic_ns": 480595029689637, "wall_time_ns": 1794272476195551664, "command": 22, "params": {"param4": null, "param5": null, "param6": null, "param7": null}}
+{"event": "command_ack", "monotonic_ns": 480595039539203, "wall_time_ns": 1794272476205401295, "command": 22, "result": 0, "timestamp": 1794272476205277}
+{"event": "ready", "monotonic_ns": 480595129966087, "wall_time_ns": 1794272476295828346, "condition": "command acknowledgement"}
+{"event": "ready", "monotonic_ns": 480603343196389, "wall_time_ns": 1794272484509059222, "condition": "takeoff altitude"}
+{"event": "command_requested", "monotonic_ns": 480603343268713, "wall_time_ns": 1794272484509130740, "command": 100001, "params": {"param1": 4}}
+{"event": "command_ack", "monotonic_ns": 480603355758417, "wall_time_ns": 1794272484521620676, "command": 100001, "result": 0, "timestamp": 1794272484521280}
+{"event": "ready", "monotonic_ns": 480603443547971, "wall_time_ns": 1794272484609410934, "condition": "command acknowledgement"}
+{"event": "ready", "monotonic_ns": 480603543722637, "wall_time_ns": 1794272484709585081, "condition": "nav_state=4"}
+{"event": "mode_confirmed", "monotonic_ns": 480603543774980, "wall_time_ns": 1794272484709636988, "mode": 4, "px4_timestamp": 1794272484521280}
+{"event": "hover_started", "monotonic_ns": 480603554128127, "wall_time_ns": 1794272484719990543, "label": "classic_before", "duration_s": 10, "px4_start_us": 37196000}
+{"event": "hover_ended", "monotonic_ns": 480613604702044, "wall_time_ns": 1794272494770564877, "label": "classic_before", "px4_end_us": 47248000}
+{"event": "cn_mavlink_reused", "monotonic_ns": 480613607860867, "wall_time_ns": 1794272494773723496, "local_endpoint": ["0.0.0.0", 46624], "drained": 238}
+{"event": "cn_mavlink_identity_verified", "monotonic_ns": 480613853891036, "wall_time_ns": 1794272495019753582, "system_id": 22, "component_id": 1}
+{"event": "cn_mission_upload_started", "monotonic_ns": 480613853967953, "wall_time_ns": 1794272495019829971, "ned": [[3.0, 0.0, -3.0], [3.0, 3.0, -3.4], [-2.0, 3.0, -3.0], [-2.0, -2.0, -3.0], [0.0, 0.0, -3.0]], "global_int_msl": [[473979983, 85461635, 3.1950228959321976], [473979983, 85462034, 3.5950228959321975], [473979533, 85462034, 3.1950228959321976], [473979533, 85461369, 3.1950228959321976], [473979713, 85461635, 3.1950228959321976]]}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480614078123511, "wall_time_ns": 1794272495243985890, "sequence": 0, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480614902601808, "wall_time_ns": 1794272496068464067, "sequence": 1, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480615880687603, "wall_time_ns": 1794272497046549834, "sequence": 1, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480617672416227, "wall_time_ns": 1794272498838278707, "sequence": 2, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480617865697152, "wall_time_ns": 1794272499031559549, "sequence": 2, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480619301461530, "wall_time_ns": 1794272500467323909, "sequence": 2, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480620542955608, "wall_time_ns": 1794272501708818145, "sequence": 3, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480620807619861, "wall_time_ns": 1794272501973482268, "sequence": 3, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480622242472689, "wall_time_ns": 1794272503408335124, "sequence": 3, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480622680433887, "wall_time_ns": 1794272503846296109, "sequence": 4, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_item_sent", "monotonic_ns": 480624177764418, "wall_time_ns": 1794272505343626899, "sequence": 4, "request_type": "MISSION_REQUEST_INT"}
+{"event": "cn_mission_ack", "monotonic_ns": 480624677271911, "wall_time_ns": 1794272505843134198, "result": 0, "sent": [0, 1, 2, 3, 4]}
+{"event": "command_requested", "monotonic_ns": 480624687995178, "wall_time_ns": 1794272505853857186, "command": 100001, "params": {"param1": 3}}
+{"event": "command_ack", "monotonic_ns": 480624703559474, "wall_time_ns": 1794272505869421825, "command": 100001, "result": 0, "timestamp": 1794272505869288}
+{"event": "ready", "monotonic_ns": 480624788285038, "wall_time_ns": 1794272505954147333, "condition": "command acknowledgement"}
+{"event": "ready", "monotonic_ns": 480624888462639, "wall_time_ns": 1794272506054324944, "condition": "nav_state=3"}
+{"event": "mode_confirmed", "monotonic_ns": 480624888499269, "wall_time_ns": 1794272506054361231, "mode": 3, "px4_timestamp": 1794272505881288}
+{"event": "cn_mission_progress", "monotonic_ns": 480624908875149, "wall_time_ns": 1794272506074737315, "type": "MISSION_CURRENT", "sequence": 0}
+{"event": "cn_mission_progress", "monotonic_ns": 480625459083061, "wall_time_ns": 1794272506624945477, "type": "MISSION_CURRENT", "sequence": 0}
+{"event": "cn_mission_progress", "monotonic_ns": 480626473411058, "wall_time_ns": 1794272507639273252, "type": "MISSION_CURRENT", "sequence": 0}
+{"event": "cn_mission_progress", "monotonic_ns": 480627487567108, "wall_time_ns": 1794272508653429478, "type": "MISSION_CURRENT", "sequence": 0}
+{"event": "cn_mission_progress", "monotonic_ns": 480628501965833, "wall_time_ns": 1794272509667828277, "type": "MISSION_CURRENT", "sequence": 0}
+{"event": "cn_mission_progress", "monotonic_ns": 480629497706853, "wall_time_ns": 1794272510663568964, "type": "MISSION_CURRENT", "sequence": 0}
+{"event": "cn_mission_progress", "monotonic_ns": 480630513151888, "wall_time_ns": 1794272511679014174, "type": "MISSION_CURRENT", "sequence": 0}
+{"event": "cn_mission_progress", "monotonic_ns": 480631528319662, "wall_time_ns": 1794272512694181939, "type": "MISSION_CURRENT", "sequence": 0}
+{"event": "cn_mission_progress", "monotonic_ns": 480632543684528, "wall_time_ns": 1794272513709546981, "type": "MISSION_CURRENT", "sequence": 1}
+{"event": "cn_mission_progress", "monotonic_ns": 480632543761008, "wall_time_ns": 1794272513709622989, "type": "MISSION_ITEM_REACHED", "sequence": 0}
+{"event": "cn_mission_progress", "monotonic_ns": 480632564033046, "wall_time_ns": 1794272513729895453, "type": "MISSION_CURRENT", "sequence": 1}
+{"event": "cn_mission_progress", "monotonic_ns": 480632564098843, "wall_time_ns": 1794272513729960861, "type": "MISSION_ITEM_REACHED", "sequence": 0}
+{"event": "cn_path_budget", "monotonic_ns": 480632765561909, "wall_time_ns": 1794272513931424454, "max_reference_radius_m": 3.1487777563439545, "min_reference_altitude_m": 2.794500541687012, "max_reference_altitude_m": 3.3945005416870115, "reserve_m": 1.0, "inside": true}
+{"event": "cn_trigger_state", "monotonic_ns": 480632765622761, "wall_time_ns": 1794272513931484751, "origin": [3.1483798027038574, -0.0500597320497036, -3.0945005416870117], "velocity": [-1.3776134252548218, 0.11894767731428146, 0.5126913189888], "yaw": -0.33267974853515625, "mission_current": 1}
+{"event": "handover_requested", "monotonic_ns": 480632775884038, "wall_time_ns": 1794272513941746278, "end_bound_px4_us": 66416000, "from_controller": "C", "to_controller": "N", "iteration": 0, "subject": true}
+{"event": "command_requested", "monotonic_ns": 480632775936657, "wall_time_ns": 1794272513941798629, "command": 100001, "params": {"param1": 23}}
+{"event": "command_ack", "monotonic_ns": 480632791642897, "wall_time_ns": 1794272513957505073, "command": 100001, "result": 0, "timestamp": 1794272513957290}
+{"event": "ready", "monotonic_ns": 480632876285144, "wall_time_ns": 1794272514042147514, "condition": "command acknowledgement"}
+{"event": "ready", "monotonic_ns": 480633076638919, "wall_time_ns": 1794272514242501631, "condition": "nav_state=23"}
+{"event": "mode_confirmed", "monotonic_ns": 480633076678956, "wall_time_ns": 1794272514242540955, "mode": 23, "px4_timestamp": 1794272513981290}
+{"event": "cn_first_external_publish", "monotonic_ns": 480633077039889, "wall_time_ns": 1794272514242902037, "before_ns": 480633076881788, "after_ns": 480633076989075, "profile_s": 0.00012649002019315958}
+{"event": "ready", "monotonic_ns": 480633177224574, "wall_time_ns": 1794272514343087000, "condition": "RAPTOR active"}
+{"event": "cn_gap_started", "monotonic_ns": 480640079810276, "wall_time_ns": 1794272521245672766, "profile_s": 7.003115191007964, "last_publish_s": 6.995892457023729}
+{"event": "cn_gap_ended", "monotonic_ns": 480640399620354, "wall_time_ns": 1794272521565483446, "profile_s": 7.322926796041429}
+{"event": "cn_reference_finished", "monotonic_ns": 480651081153087, "wall_time_ns": 1794272532247015652, "published": 875, "profile_s": 18.004460381984245}
+{"event": "handover_requested", "monotonic_ns": 480651092449111, "wall_time_ns": 1794272532258311444, "end_bound_px4_us": 84732000, "from_controller": "N", "to_controller": "C", "iteration": 0, "subject": false, "purpose": "landing recovery"}
+{"event": "command_requested", "monotonic_ns": 480651092500917, "wall_time_ns": 1794272532258362889, "command": 100001, "params": {"param1": 4}}
+{"event": "command_ack", "monotonic_ns": 480651103760487, "wall_time_ns": 1794272532269622681, "command": 100001, "result": 0, "timestamp": 1794272532269295}
+{"event": "ready", "monotonic_ns": 480651192726334, "wall_time_ns": 1794272532358588777, "condition": "command acknowledgement"}
+{"event": "ready", "monotonic_ns": 480651292913111, "wall_time_ns": 1794272532458775425, "condition": "nav_state=4"}
+{"event": "mode_confirmed", "monotonic_ns": 480651292946982, "wall_time_ns": 1794272532458808990, "mode": 4, "px4_timestamp": 1794272532281295}
+{"event": "p1_phase_started", "monotonic_ns": 480651302852946, "wall_time_ns": 1794272532468715047, "label": "landing_recovery", "duration_s": 4.0, "px4_start_us": 84944000}
+{"event": "p1_phase_ended", "monotonic_ns": 480655489008692, "wall_time_ns": 1794272536654871562, "label": "landing_recovery", "px4_end_us": 89132000}
+{"event": "landing_requested", "monotonic_ns": 480655497798623, "wall_time_ns": 1794272536663660891, "end_bound_px4_us": 89140000}
+{"event": "command_requested", "monotonic_ns": 480655497844864, "wall_time_ns": 1794272536663706854, "command": 21, "params": {}}
+{"event": "command_ack", "monotonic_ns": 480655507870402, "wall_time_ns": 1794272536673732975, "command": 21, "result": 0, "timestamp": 1794272536673296}
+{"event": "ready", "monotonic_ns": 480655598137305, "wall_time_ns": 1794272536763999879, "condition": "command acknowledgement"}
+{"event": "ready", "monotonic_ns": 480661606715651, "wall_time_ns": 1794272542772578622, "condition": "landing"}
+{"event": "ready", "monotonic_ns": 480663609639018, "wall_time_ns": 1794272544775502008, "condition": "disarmed"}
+{"event": "process_stopped", "monotonic_ns": 480663661741803, "wall_time_ns": 1794272544827604701, "name": "agent-reconnected", "pid": 330818, "exit_code": -2}
+{"event": "process_stopped", "monotonic_ns": 480663661789544, "wall_time_ns": 1794272544827651691, "name": "px4", "pid": 330257, "exit_code": 0}
+{"event": "process_stopped", "monotonic_ns": 480663662883558, "wall_time_ns": 1794272544828745539, "name": "tegrastats", "pid": 330221, "exit_code": -2}
+{"event": "process_stopped", "monotonic_ns": 480663664391988, "wall_time_ns": 1794272544830254330, "name": "gz-stats", "pid": 330220, "exit_code": 0}
+{"event": "process_stopped", "monotonic_ns": 480663727801973, "wall_time_ns": 1794272544893664324, "name": "gazebo", "pid": 330219, "exit_code": 0}
+{"event": "process_stopped", "monotonic_ns": 480663727840703, "wall_time_ns": 1794272544893702647, "name": "agent", "pid": 330218, "exit_code": -2}

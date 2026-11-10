@@ -39,9 +39,20 @@ def require_neural(latest, mode):
         raise RuntimeError("unexpected neural authority or mode loss")
 
 
-def claim(old):
-    if any(x["event"]=="START_INTENT" for x in old):
-        raise RuntimeError("one-case budget already spent; no implicit retry")
+def claim(old,repair=False):
+    starts=[x for x in old if x['event']=='START_INTENT']
+    if not starts:
+        if repair:raise RuntimeError('no prior failed attempt to repair')
+        return
+    if not repair:raise RuntimeError('one-case budget already spent; no implicit retry')
+    if len(starts)!=1 or not any(x['event']=='END' for x in old):
+        raise RuntimeError('repair requires exactly one terminated previous attempt')
+    original=ROOT/'data/cn-single-20261109-flight'
+    measured=json.loads((original/'cn-measurement.json').read_text())
+    if (measured['subject_requests'] or measured.get('actual_neural_entries')!=0
+            or measured['flight_execution'].get('reason')!="RuntimeError('owned SITL mission connection not verified')"):
+        raise RuntimeError('repair is scoped only to the proven pre-subject MAVLink failure')
+
 
 
 def close_experiment(e):
@@ -75,14 +86,38 @@ class Experiment(base.Experiment):
                 f.write(''.join(n+' 0 0\n' for n in EXTRA_TOPICS))
         return super().spawn(name, argv, cwd)
 
+    def pump(self,seconds=.1):
+        mav=getattr(self,'cn_mavlink',None)
+        if mav is not None and time.monotonic()-getattr(self,'cn_heartbeat',0.)>=1.:
+            from pymavlink import mavutil
+            mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS,mavutil.mavlink.MAV_AUTOPILOT_INVALID,0,0,0)
+            self.cn_heartbeat=time.monotonic()
+        return super().pump(seconds)
+
+    def cleanup(self):
+        mav=getattr(self,'cn_mavlink',None)
+        try:return super().cleanup()
+        finally:
+            if mav is not None:mav.close();self.cn_mavlink=None
+
     def mav_open(self):
         from pymavlink import mavutil
-        mav = mavutil.mavlink_connection(f'udpout:127.0.0.1:{18570+self.instance}', source_system=245, source_component=191)
-        mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
-        hb = mav.recv_match(type='HEARTBEAT', blocking=True, timeout=5)
-        if hb is None or hb.get_srcSystem()!=self.instance+1 or hb.autopilot!=mavutil.mavlink.MAV_AUTOPILOT_PX4:
-            mav.close(); raise RuntimeError('owned SITL mission connection not verified')
-        return mav
+        mav=getattr(self,'cn_mavlink',None)
+        if mav is None:raise RuntimeError('verified persistent MAVLink connection unavailable')
+        # Discard buffered telemetry, then demand a new heartbeat from this peer.
+        drained=0;end=time.monotonic()+1.
+        while time.monotonic()<end:
+            if mav.recv_match(blocking=False) is None:break
+            drained+=1
+        self.event('cn_mavlink_reused',local_endpoint=list(mav.port.getsockname()),drained=drained)
+        mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS,mavutil.mavlink.MAV_AUTOPILOT_INVALID,0,0,0)
+        deadline=time.monotonic()+5
+        while time.monotonic()<deadline:
+            self.pump(.01);hb=mav.recv_match(type='HEARTBEAT',blocking=False)
+            if hb is not None and hb.get_srcSystem()==self.instance+1 and hb.autopilot==mavutil.mavlink.MAV_AUTOPILOT_PX4:
+                self.event('cn_mavlink_identity_verified',system_id=hb.get_srcSystem(),component_id=hb.get_srcComponent())
+                return mav
+        raise RuntimeError('owned SITL persistent mission heartbeat not verified')
 
     def upload_mission(self, mav):
         from pymavlink import mavutil
@@ -140,7 +175,7 @@ class Experiment(base.Experiment):
                 else: dwell=None
             else: raise TimeoutError('predeclared moving Mission second-leg trigger')
         finally:
-            mav.close()
+            mav.close();self.cn_mavlink=None
         l = self.latest['vehicle_local_position']
         origin=[float(l.x),float(l.y),float(l.z)]; velocity=[float(l.vx),float(l.vy),float(l.vz)]; yaw=float(l.heading)
         b=budget(origin,velocity,yaw); self.event('cn_path_budget',**b)
@@ -181,24 +216,26 @@ class Experiment(base.Experiment):
         self.checks['cn_case']='COMPLETE'
 
 
-def run():
-    EVIDENCE.mkdir(exist_ok=True)
+def run(repair=False):
+    evidence=ROOT/'data/cn-single-20261109-repair' if repair else EVIDENCE
+    config=ROOT/'config/cn_single/repair.json' if repair else CONFIG
+    evidence.mkdir(exist_ok=True)
     with (EVIDENCE/'attempts.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         ledger=EVIDENCE/'attempts.jsonl'
         old=[json.loads(x) for x in ledger.read_text().splitlines()] if ledger.exists() else []
-        claim(old)
+        claim(old,repair)
         try:host=host_gate()
         except Exception as exc:
             append(ledger,dict(event='BLOCKED_BEFORE_START',time_ns=time.time_ns(),reason=str(exc),counts_as_start=False))
             raise
-        base.write(EVIDENCE/'host-before.json',host)
-        candidate=identity();base.write(EVIDENCE/'candidate-before.json',candidate)
-        out=ROOT/'data/cn-single-20261109-flight'
+        base.write(evidence/'host-before.json',host)
+        candidate=identity();base.write(evidence/'candidate-before.json',candidate)
+        out=ROOT/('data/cn-single-20261109-repair-flight' if repair else 'data/cn-single-20261109-flight')
         if out.exists():raise RuntimeError('flight output exists; inspect rather than overwrite')
-        args=SimpleNamespace(kind='p1_c_to_n',config=CONFIG,condition='single',treatment=None,output=out,
+        args=SimpleNamespace(kind='p1_c_to_n',config=config,condition='single',treatment=None,output=out,
                              startup_only=False,capture_raw_sensors=False,hover_s=None,sim_seed=SEED,initial_yaw_deg=0.)
-        append(ledger,dict(event='START_INTENT',time_ns=time.time_ns(),seed=SEED,budget=1,output=str(out)))
+        append(ledger,dict(event='START_INTENT',time_ns=time.time_ns(),seed=SEED,budget=1,attempt=2 if repair else 1,infrastructure_repair=repair,output=str(out)))
         st=time.monotonic();cpu=resource.getrusage(resource.RUSAGE_CHILDREN);selfcpu=time.process_time()
         e=None;status='FAIL';reason=None
         try:
@@ -212,11 +249,11 @@ def run():
             if e:
                 base.write(out/'validation.json',dict(status=status,execution_status=status,reason=reason,cleanup_error=cleanup_error,checks=e.checks))
             try:
-                after=identity();base.write(EVIDENCE/'candidate-after.json',after);unchanged=after==candidate
+                after=identity();base.write(evidence/'candidate-after.json',after);unchanged=after==candidate
             except BaseException as exc:
                 unchanged=False;reason=(reason or '')+'; identity audit: '+repr(exc)
             end=resource.getrusage(resource.RUSAGE_CHILDREN)
-            base.write(EVIDENCE/'execution.json',dict(execution_status=status,reason=reason,cleanup_error=cleanup_error,wall_s=time.monotonic()-st,
+            base.write(evidence/'execution.json',dict(execution_status=status,reason=reason,cleanup_error=cleanup_error,wall_s=time.monotonic()-st,
                  cpu_s=time.process_time()-selfcpu+end.ru_utime+end.ru_stime-cpu.ru_utime-cpu.ru_stime,candidate_unchanged=unchanged))
             append(ledger,dict(event='PHYSICAL_END' if not cleanup_error else 'PHYSICAL_UNCERTAIN',time_ns=time.time_ns(),status=status,reason=reason,cleanup_error=cleanup_error))
         # Analysis remains separate from execution and all outcomes, including aborts,
@@ -231,7 +268,7 @@ def run():
                     analysis[name]=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT).returncode
         c1=resource.getrusage(resource.RUSAGE_CHILDREN)
         analysis.update(wall_s=time.monotonic()-analysis_start,cpu_s=c1.ru_utime+c1.ru_stime-c0.ru_utime-c0.ru_stime)
-        base.write(EVIDENCE/'analysis-execution.json',analysis)
+        base.write(evidence/'analysis-execution.json',analysis)
         complete=bool(status=='PASS' and unchanged and analysis.get('single_case')==0 and analysis.get('output_chain')==0)
         if complete:
             measured=json.loads((out/'cn-measurement.json').read_text());chain=json.loads((out/'output-chain.json').read_text())
@@ -242,7 +279,7 @@ def run():
                       and all(completion[k] for k in ['exactly_one_subject_C_to_N','reference_completed','landing_requested','disarmed_observed'])
                       and not completion['failures'] and completion['px4_exit_codes']==[0]
                       and measured.get('actual_neural_entries')==1 and measured.get('actual_neural_owner_entries')==1)
-        base.write(EVIDENCE/'result.json',dict(status='COMPLETE' if complete else 'INCOMPLETE',execution_status=status,analysis=analysis,candidate_unchanged=unchanged,
+        base.write(evidence/'result.json',dict(status='COMPLETE' if complete else 'INCOMPLETE',execution_status=status,analysis=analysis,candidate_unchanged=unchanged,
                                               flight_outcomes_path=str(out/'cn-measurement.json'),note='completion is evidence/workflow completion, not a safe-flight claim'))
         append(ledger,dict(event='END',time_ns=time.time_ns(),status='COMPLETE' if complete else 'INCOMPLETE'))
         return 0 if complete else 1
@@ -250,5 +287,5 @@ def run():
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--execute',action='store_true',required=True)
-    p.parse_args();raise SystemExit(run())
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--execute',action='store_true',required=True);p.add_argument('--repair-mavlink',action='store_true')
+    args=p.parse_args();raise SystemExit(run(args.repair_mavlink))

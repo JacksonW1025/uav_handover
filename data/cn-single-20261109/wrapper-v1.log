@@ -1,0 +1,68 @@
+created {'thresholds': {'seed': 20261109, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 1, 'altitude_m': 3, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500, 'settling_band_m': 0.2, 'settling_dwell_s': 2.0, 'joint_recovery': {'position_reference': 'active_trajectory_setpoint', 'position_reference_ned_m': [0, 0, -3], 'velocity_reference_ned_m_s': [0, 0, 0], 'angular_velocity_reference_frd_rad_s': [0, 0, 0], 'position_threshold_m': 0.2, 'velocity_threshold_m_s': 0.1, 'angular_velocity_threshold_rad_s': 0.1, 'dwell_s': 2.0, 'max_observation_gap_s': 0.02}, 'p0_strict': True, 'p1': {'conditions': {'single': {'speed_m_s': 1.2}}}, 'p11': {'observe': True, 'ulog_storage': 'hardlink_after_shutdown'}, 'cn_single': {'subject': 'one AUTO_MISSION to dynamically registered RAPTOR switch', 'seed': 20261109, 'classic_prefix': 'AUTO_TAKEOFF 3m, AUTO_LOITER 10s, actual MAVLink mission', 'mission_ned_m': [[3, 0, -3], [3, 3, -3.4], [-2, 3, -3], [-2, -2, -3], [0, 0, -3]], 'trigger': 'mission index1, horizontal speed>=0.6m/s, distance to waypoint>0.75m for0.2s', 'external_reference': 'post-confirmation 50Hz C2 quintic brake and 3D loop; yaw30deg pulse; hold14-18s', 'gap_profile_s': [7, 7.32], 'task_failure_criterion': {'tilt_deg': 45, 'altitude_loss_m': 1}, 'safety_limits_unchanged': True, 'memory': 'RINI0 original reset; RTGT0 RREC0 NCO0; no state injection', 'recovery': 'non-subject NtoC AUTO_LOITER4s then LAND/disarm', 'startup_budget': 1, 'flight_failures_are_results': True, 'mode_or_arming_forcing': False, 'frozen_primary_criteria': {'safety_envelope': 'any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort', 'no_joint_recovery_s': 10.0, 'no_joint_recovery': 'joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)', 'motor_saturation_continuous_s': 0.5, 'motor_saturation': 'any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]', 'ground_altitude_m': 0.2, 'ground': 'altitude <= 0.2 m inside [trigger, window end]'}, 'primary_window_note': 'Measured from actual first neural publication to subject end; original 10s joint recovery criterion is reported even though a moving reference may intentionally violate it. It is not silently replaced by tracking error.'}, 'p1_condition': 'single', 'p1_speed_m_s': 1.2, 'p4_independence': {'sim_seed': 20261109, 'initial_yaw_deg': 0.0}}}
+process_started {'name': 'agent', 'pid': 328506, 'command': ['taskset', '-c', '6-7', '/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 328507, 'command': ['taskset', '-c', '12-13', 'gz', 'sim', '-r', '-s', '-v', '3', '--seed', '20261109', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'gz-stats', 'pid': 328508, 'command': ['gz', 'topic', '-e', '-t', '/world/default/stats']}
+process_started {'name': 'tegrastats', 'pid': 328509, 'command': ['/usr/bin/tegrastats', '--interval', '1000']}
+process_started {'name': 'px4', 'pid': 328546, 'command': ['taskset', '-c', '8-11', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/cn-single-20261109-flight/rootfs', '/home/car/uav_handover/data/cn-single-20261109-flight/rootfs/etc']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1794272068363248}
+ready {'condition': 'PX4 DDS telemetry'}
+sensor_readiness {'ready': True, 'reasons': [], 'continuous_host_s': 2.0033788979635574, 'native_publication_stamps': {'sensor_baro': 1794272075359251, 'vehicle_air_data': 1794272075299251, 'vehicle_local_position': 1794272075359251}, 'raw_pressure_pa': 101321.8515625, 'raw_device_id': 6619404, 'selected_pressure_pa': 101319.625, 'selected_device_id': 6619404}
+mavlink_identity {'system_id': 22, 'autopilot': 12, 'udp_port': 18591}
+process_started {'name': 'agent-reconnected', 'pid': 329053, 'command': ['taskset', '-c', '6-7', '/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1794272068363033}
+ready {'condition': 'DDS Client reconnection with fresh telemetry'}
+command_requested {'command': 176, 'params': {'param1': 1, 'param2': 4, 'param3': 3}}
+command_ack {'command': 176, 'result': 0, 'timestamp': 1794272086315039}
+ready {'condition': 'command acknowledgement'}
+command_requested {'command': 100001, 'params': {'param1': 14}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1794272087419040}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=14'}
+mode_confirmed {'mode': 14, 'px4_timestamp': 1794272087431040}
+command_requested {'command': 100001, 'params': {'param1': 4}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1794272087887040}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=4'}
+mode_confirmed {'mode': 4, 'px4_timestamp': 1794272087899040}
+state_operation {'target': 'raptor', 'operation': 'read', 'response': {'request_id': 24328000, 'applied_us': 24332000, 'target': 1, 'operation': 1, 'result': 1, 'dimension': 26, 'active': False, 'holding': False, 'values': [-0.222191393, -0.230536163, -0.37393865, -0.671298623, -0.391236693, -0.396877199, -0.372645289, -0.17251797, -0.827706695, 0.97208041, -0.00129995635, -0.527285755, 0.61563164, 0.875166237, -0.548256397, 0.651128054, -0.772034645, -0.747032404, -0.623315871, -0.626037836, 0.0104784137, 0.00308328937, -0.0325549468, 0.00103251438, 0, 0.698848009]}}
+ready {'condition': 'valid local position'}
+state_capture_started {'label': 'disarmed_read_only'}
+state_operation {'target': 'raptor', 'operation': 'read', 'response': {'request_id': 28460000, 'applied_us': 28464000, 'target': 1, 'operation': 1, 'result': 0, 'dimension': 26, 'active': False, 'holding': False, 'values': [-0.209106758, -0.244730622, -0.371717036, -0.649489462, -0.391908705, -0.398600429, -0.376486331, -0.172927052, -0.829497635, 0.972154379, -0.0194537584, -0.525226712, 0.618368328, 0.874491572, -0.544560134, 0.651338398, -0.777347922, -0.749063671, -0.60543853, -0.595414519, 0.0175120011, 0.0223229043, 0.00640746159, -0.000511951046, -1.44277601e-06, 0.699488342]}}
+state_operation {'target': 'rate', 'operation': 'read', 'response': {'request_id': 28472000, 'applied_us': 28476000, 'target': 2, 'operation': 1, 'result': 0, 'dimension': 3, 'active': False, 'holding': False, 'values': [0, 0, 0]}}
+state_operation {'target': 'velocity', 'operation': 'read', 'response': {'request_id': 28488000, 'applied_us': 28492000, 'target': 3, 'operation': 1, 'result': 0, 'dimension': 3, 'active': False, 'holding': False, 'values': [0, 0, 0]}}
+state_capture_finished {'label': 'disarmed_read_only'}
+command_requested {'command': 400, 'params': {'param1': 1}}
+command_ack {'command': 400, 'result': 0, 'timestamp': 1794272092351038}
+ready {'condition': 'command acknowledgement'}
+command_requested {'command': 22, 'params': {'param4': None, 'param5': None, 'param6': None, 'param7': None}}
+command_ack {'command': 22, 'result': 0, 'timestamp': 1794272092459038}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'takeoff altitude'}
+command_requested {'command': 100001, 'params': {'param1': 4}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1794272100967040}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=4'}
+mode_confirmed {'mode': 4, 'px4_timestamp': 1794272100967040}
+hover_started {'label': 'classic_before', 'duration_s': 10, 'px4_start_us': 37388000}
+hover_ended {'label': 'classic_before', 'px4_end_us': 47436000}
+Traceback (most recent call last):
+  File "/home/car/uav_handover/tools/cn_single/runner.py", line 205, in run
+    e=Experiment(args);e.metadata['scenario']='cn_single_mission_3d_gap';e.execute();status='PASS'
+                                                                         ^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/run_experiment.py", line 1113, in execute
+    if self.args.kind.startswith(('p1_','p2_')):self.p1_flight(mode)
+                                                ^^^^^^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/cn_single/runner.py", line 121, in p1_flight
+    mav = self.mav_open()
+          ^^^^^^^^^^^^^^^
+  File "/home/car/uav_handover/tools/cn_single/runner.py", line 84, in mav_open
+    mav.close(); raise RuntimeError('owned SITL mission connection not verified')
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: owned SITL mission connection not verified
+failure {'reason': "RuntimeError('owned SITL mission connection not verified')"}
+process_stopped {'name': 'agent-reconnected', 'pid': 329053, 'exit_code': -2}
+process_stopped {'name': 'px4', 'pid': 328546, 'exit_code': 0}
+process_stopped {'name': 'tegrastats', 'pid': 328509, 'exit_code': -2}
+process_stopped {'name': 'gz-stats', 'pid': 328508, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 328507, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 328506, 'exit_code': -2}

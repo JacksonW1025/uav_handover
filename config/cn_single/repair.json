@@ -1,0 +1,117 @@
+{
+  "seed": 20261109,
+  "instance": 21,
+  "ros_domain_id": 71,
+  "agent_port": 18888,
+  "startup_timeout_s": 90,
+  "takeoff_timeout_s": 45,
+  "landing_timeout_s": 60,
+  "hover_s": 10,
+  "neural_s": 5,
+  "repetitions": 1,
+  "altitude_m": 3,
+  "hover_max_error_m": 1.0,
+  "hover_max_tilt_deg": 15,
+  "safety_radius_m": 10,
+  "safety_altitude_m": 8,
+  "safety_tilt_deg": 45,
+  "safety_angular_rate_rad_s": 8,
+  "inference_p99_us": 2500,
+  "settling_band_m": 0.2,
+  "settling_dwell_s": 2.0,
+  "joint_recovery": {
+    "position_reference": "active_trajectory_setpoint",
+    "position_reference_ned_m": [
+      0,
+      0,
+      -3
+    ],
+    "velocity_reference_ned_m_s": [
+      0,
+      0,
+      0
+    ],
+    "angular_velocity_reference_frd_rad_s": [
+      0,
+      0,
+      0
+    ],
+    "position_threshold_m": 0.2,
+    "velocity_threshold_m_s": 0.1,
+    "angular_velocity_threshold_rad_s": 0.1,
+    "dwell_s": 2.0,
+    "max_observation_gap_s": 0.02
+  },
+  "p0_strict": true,
+  "p1": {
+    "conditions": {
+      "single": {
+        "speed_m_s": 1.2
+      }
+    }
+  },
+  "p11": {
+    "observe": true,
+    "ulog_storage": "hardlink_after_shutdown"
+  },
+  "cn_single": {
+    "subject": "one AUTO_MISSION to dynamically registered RAPTOR switch",
+    "seed": 20261109,
+    "classic_prefix": "AUTO_TAKEOFF 3m, AUTO_LOITER 10s, actual MAVLink mission",
+    "mission_ned_m": [
+      [
+        3,
+        0,
+        -3
+      ],
+      [
+        3,
+        3,
+        -3.4
+      ],
+      [
+        -2,
+        3,
+        -3
+      ],
+      [
+        -2,
+        -2,
+        -3
+      ],
+      [
+        0,
+        0,
+        -3
+      ]
+    ],
+    "trigger": "mission index1, horizontal speed>=0.6m/s, distance to waypoint>0.75m for0.2s",
+    "external_reference": "post-confirmation 50Hz C2 quintic brake and 3D loop; yaw30deg pulse; hold14-18s",
+    "gap_profile_s": [
+      7,
+      7.32
+    ],
+    "task_failure_criterion": {
+      "tilt_deg": 45,
+      "altitude_loss_m": 1
+    },
+    "safety_limits_unchanged": true,
+    "memory": "RINI0 original reset; RTGT0 RREC0 NCO0; no state injection",
+    "recovery": "non-subject NtoC AUTO_LOITER4s then LAND/disarm",
+    "startup_budget": 1,
+    "flight_failures_are_results": true,
+    "mode_or_arming_forcing": false,
+    "frozen_primary_criteria": {
+      "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+      "no_joint_recovery_s": 10.0,
+      "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+      "motor_saturation_continuous_s": 0.5,
+      "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+      "ground_altitude_m": 0.2,
+      "ground": "altitude <= 0.2 m inside [trigger, window end]"
+    },
+    "primary_window_note": "Measured from actual first neural publication to subject end; original 10s joint recovery criterion is reported even though a moving reference may intentionally violate it. It is not silently replaced by tracking error.",
+    "persistent_mavlink": true,
+    "repair_note": "Same seed and scientific scenario; one explicit infrastructure repair after prior attempt ended before Mission and before any subject entry. Original failure remains evidence, not an independent switch sample."
+  }
+}

@@ -119,3 +119,44 @@ from cn_single.analyze import classify_task
 @pytest.mark.parametrize('tilt,loss,finite,status',[(40,.3,True,'SUCCESS'),(46,.3,True,'FAILURE'),(40,1.1,True,'FAILURE'),(float('nan'),.3,True,'UNKNOWN'),(40,.3,False,'UNKNOWN')])
 def test_missing_or_nonfinite_task_evidence_is_never_success(tilt,loss,finite,status):
     assert classify_task({'max_tilt_deg':tilt,'max_altitude_loss_m':loss,'observations_finite':finite})==status
+
+def test_repair_needs_exactly_one_terminated_presubject_attempt(tmp_path,monkeypatch):
+    import cn_single.runner as r
+    monkeypatch.setattr(r,'ROOT',tmp_path)
+    out=tmp_path/'data/cn-single-20261109-flight';out.mkdir(parents=True)
+    m={'subject_requests':[],'actual_neural_entries':0,'flight_execution':{'reason':"RuntimeError('owned SITL mission connection not verified')"}}
+    (out/'cn-measurement.json').write_text(json.dumps(m))
+    with pytest.raises(RuntimeError):r.claim([],True)
+    with pytest.raises(RuntimeError):r.claim([{'event':'START_INTENT'}],True)
+    r.claim([{'event':'START_INTENT'},{'event':'END'}],True)
+    with pytest.raises(RuntimeError):r.claim([{'event':'START_INTENT'},{'event':'END'},{'event':'START_INTENT'}],True)
+    m['actual_neural_entries']=1;(out/'cn-measurement.json').write_text(json.dumps(m))
+    with pytest.raises(RuntimeError):r.claim([{'event':'START_INTENT'},{'event':'END'}],True)
+
+
+def test_reuses_verified_udp_peer_for_mission():
+    # Real loopback sockets and MAVLink encoding, but no PX4/Gazebo or flight.
+    import socket,threading,time
+    from pymavlink import mavutil
+    server=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);server.bind(('127.0.0.1',0));server.settimeout(.1)
+    stop=threading.Event();peers=[]
+    encoder=mavutil.mavlink.MAVLink(None,srcSystem=22,srcComponent=1)
+    packet=encoder.heartbeat_encode(mavutil.mavlink.MAV_TYPE_QUADROTOR,mavutil.mavlink.MAV_AUTOPILOT_PX4,0,0,0).pack(encoder)
+    def service():
+        first=None
+        while not stop.is_set():
+            try:_,peer=server.recvfrom(4096)
+            except socket.timeout:continue
+            if first is None:first=peer
+            peers.append(peer);server.sendto(packet,first)
+    worker=threading.Thread(target=service,daemon=True);worker.start()
+    link=mavutil.mavlink_connection('udpout:127.0.0.1:'+str(server.getsockname()[1]),source_system=245,source_component=191)
+    try:
+        link.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS,mavutil.mavlink.MAV_AUTOPILOT_INVALID,0,0,0)
+        assert link.recv_match(type='HEARTBEAT',blocking=True,timeout=2).get_srcSystem()==22
+        first_port=link.port.getsockname()[1]
+        e=_upload_experiment();e.cn_mavlink=link;e.pump=lambda seconds=.01:time.sleep(.001)
+        assert e.mav_open() is link
+        assert link.port.getsockname()[1]==first_port
+        assert len(peers)>=2 and len(set(peers))==1
+    finally:link.close();stop.set();worker.join(1);server.close()

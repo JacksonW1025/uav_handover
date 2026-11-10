@@ -1058,7 +1058,14 @@ class Experiment:
                 raise RuntimeError('owned SITL MAVLink heartbeat identity not confirmed')
             self.event('mavlink_identity',system_id=heartbeat.get_srcSystem(),autopilot=heartbeat.autopilot,udp_port=18570+self.instance)
             self.checks['mavlink']='PASS'
-        finally:mav.close()
+        finally:
+            # Single Mission case: PX4 binds its UDP reply peer once. Keep the
+            # verified socket for the later mission protocol instead of changing
+            # the ephemeral source port. All existing experiments still close it.
+            if self.cfg.get('cn_single',{}).get('persistent_mavlink') and self.checks.get('mavlink')=='PASS':
+                self.cn_mavlink=mav
+                self.event('cn_mavlink_retained',local_endpoint=list(mav.port.getsockname()))
+            else:mav.close()
         old_stamp=int(self.latest['vehicle_odometry'].timestamp)
         agent=next(p for name,p in self.procs if name=='agent')
         self.expected_stopped.add('agent');agent.send_signal(signal.SIGINT);agent.wait(timeout=5)

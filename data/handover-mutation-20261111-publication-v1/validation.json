@@ -1,0 +1,68 @@
+{
+  "utc": "2026-11-11T08:23:55.899786+00:00",
+  "status": "PASS_WITH_ONE_UNRELATED_RAW_DATA_SKIP",
+  "offline_regression": {
+    "command": "python -m pytest -q -rs -p no:cacheprovider tests/test_readiness.py tests/test_recovery.py tests/test_executor_acceptance.py tests/test_output_chain.py tests/test_p0_closure.py tests/test_p1.py tests/test_p2.py tests/test_p3.py tests/test_p4.py tests/test_p4c.py tests/test_p5.py tests/test_p6.py tests/test_p7.py tests/test_p8.py tests/test_cn_reference*.py tests/test_handover_explore_design.py tests/test_handover_mutation*.py",
+    "environment": "source /home/car/uav_handover/tools/lab-env.sh raptor; PYTHONDONTWRITEBYTECODE=1; OPENBLAS_NUM_THREADS=1",
+    "working_directory": "isolated publication worktree",
+    "passed": 250,
+    "failed": 0,
+    "skipped": 1,
+    "skip_reason": "tests/test_p6.py:84: raw P5 run not present in isolated publication worktree",
+    "log": "offline-tests.log",
+    "initial_attempt": {
+      "passed": 248,
+      "failed": 2,
+      "skipped": 1,
+      "reason": "Two legacy P3 policy-replay tests could not find ignored uav_lab policy.tar in fresh worktree. Resolved by temporary symlink to existing unchanged Lab; no policy copied or edited.",
+      "log": "offline-tests-initial.log"
+    },
+    "policy_sha256": "5327c83dc57f094ca1977a2533ebce318645be010e16b9354c96c337cd5c278b"
+  },
+  "python_ast": {
+    "files": 30,
+    "status": "PASS"
+  },
+  "shell_syntax": {
+    "files": [
+      "tools/handover_mutation/experiment",
+      "tools/handover_100/experiment",
+      "tools/cn_reference/experiment"
+    ],
+    "status": "PASS"
+  },
+  "delivery_manifest": {
+    "files": 65,
+    "size_and_sha256": "ALL_MATCH"
+  },
+  "raw_source_index": {
+    "files": 183,
+    "bytes": 1424096495,
+    "size_and_sha256": "ALL_MATCH",
+    "raw_bytes_published": false
+  },
+  "secret_pattern_review": {
+    "source_and_new_test_files": 284,
+    "detected_credential_patterns": 0,
+    "scope": "Private keys, GitHub tokens, OpenAI-style keys, AWS access-key IDs, credential-bearing HTTP URLs; no claim of exhaustive secret detection."
+  },
+  "not_run": [
+    "New SITL or hardware flights",
+    "PX4 rebuild and source injection idempotence (no PX4/research source change)",
+    "Remote CI (checked separately after push)"
+  ],
+  "original_checkout": {
+    "branch": "research/cn-reference-handoff-quickcheck-20261110",
+    "head": "003cd249a0b1baa3ad78a25c18473657af39aa70",
+    "tracked_changes": false,
+    "unrelated_untracked_work_preserved": true
+  },
+  "staged_review": {
+    "files": 290,
+    "bytes": 27940244,
+    "no_raw_binary_archive_symlink_or_runtime_files": true,
+    "largest_file_bytes": 6027641,
+    "code_config_whitespace_check": "PASS",
+    "archived_evidence_whitespace": "Preserved exact original CSV CRLF, archived diff context, Markdown terminal blank lines and captured initial pytest traceback whitespace. Full default git diff --check reports these archival-only warnings; frozen source bytes were not normalized."
+  }
+}

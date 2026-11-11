@@ -1,0 +1,65 @@
+...................................F.F.............................s.... [ 28%]
+........................................................................ [ 57%]
+........................................................................ [ 86%]
+...................................                                      [100%]
+=================================== FAILURES ===================================
+______________ test_policy_replica_reproduces_checkpoint_example _______________
+
+    def test_policy_replica_reproduces_checkpoint_example():
+>       P=p3_memory.load_policy();assert p3_memory.example_check(P)<1e-5
+
+tests/test_p3.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tools/p3_memory.py:26: in load_policy
+    data=path.read_bytes();tar=tarfile.open(fileobj=io.BytesIO(data))
+/usr/lib/python3.12/pathlib.py:1021: in read_bytes
+    with self.open(mode='rb') as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/car/uav_handover-mutation-publish-20261111/uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/blob/policy.tar')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/car/uav_handover-mutation-publish-20261111/uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/blob/policy.tar'
+
+/usr/lib/python3.12/pathlib.py:1015: FileNotFoundError
+___________ test_persistence_counts_steps_until_distance_stays_below ___________
+
+    def test_persistence_counts_steps_until_distance_stays_below():
+>       P=p3_memory.load_policy();rng=np.random.default_rng(0);xs=rng.normal(0,.3,(120,22));h=np.zeros(16);seq=[]
+
+tests/test_p3.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tools/p3_memory.py:26: in load_policy
+    data=path.read_bytes();tar=tarfile.open(fileobj=io.BytesIO(data))
+/usr/lib/python3.12/pathlib.py:1021: in read_bytes
+    with self.open(mode='rb') as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/car/uav_handover-mutation-publish-20261111/uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/blob/policy.tar')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/car/uav_handover-mutation-publish-20261111/uav_lab/.local/checkouts/px4-raptor/src/modules/mc_raptor/blob/policy.tar'
+
+/usr/lib/python3.12/pathlib.py:1015: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_p3.py::test_policy_replica_reproduces_checkpoint_example - ...
+FAILED tests/test_p3.py::test_persistence_counts_steps_until_distance_stays_below
+2 failed, 248 passed, 1 skipped in 6.12s

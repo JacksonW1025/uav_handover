@@ -1,0 +1,191 @@
+{
+  "seed": 20261110,
+  "instance": 21,
+  "ros_domain_id": 71,
+  "agent_port": 18888,
+  "startup_timeout_s": 90,
+  "takeoff_timeout_s": 45,
+  "landing_timeout_s": 60,
+  "hover_s": 10,
+  "neural_s": 5,
+  "repetitions": 1,
+  "altitude_m": 3.0,
+  "hover_max_error_m": 1.0,
+  "hover_max_tilt_deg": 15,
+  "safety_radius_m": 10,
+  "safety_altitude_m": 8,
+  "safety_tilt_deg": 45,
+  "safety_angular_rate_rad_s": 8,
+  "inference_p99_us": 2500,
+  "settling_band_m": 0.2,
+  "settling_dwell_s": 2.0,
+  "joint_recovery": {
+    "position_reference": "active_trajectory_setpoint",
+    "position_reference_ned_m": [
+      0,
+      0,
+      -3
+    ],
+    "velocity_reference_ned_m_s": [
+      0,
+      0,
+      0
+    ],
+    "angular_velocity_reference_frd_rad_s": [
+      0,
+      0,
+      0
+    ],
+    "position_threshold_m": 0.2,
+    "velocity_threshold_m_s": 0.1,
+    "angular_velocity_threshold_rad_s": 0.1,
+    "dwell_s": 2.0,
+    "max_observation_gap_s": 0.02
+  },
+  "p0_strict": true,
+  "p1": {
+    "conditions": {
+      "single": {
+        "speed_m_s": 1.2
+      }
+    }
+  },
+  "p11": {
+    "observe": true,
+    "ulog_storage": "hardlink_after_shutdown"
+  },
+  "cn_single": {
+    "subject": "100-condition exploratory handover; declared history/physical/target changes, no hidden injection",
+    "seed": 20261110,
+    "classic_prefix": "AUTO_TAKEOFF 3.0m, AUTO_LOITER10s, then offboard",
+    "trigger": "profile-time switches",
+    "external_reference": "native_capture_after_classic_stream_end",
+    "gap_profile_s": null,
+    "task_failure_criterion": {
+      "tilt_deg": 45,
+      "altitude_loss_m": 1
+    },
+    "safety_limits_unchanged": true,
+    "memory": "{'MC_RAPTOR_RINI': 0, 'MC_RAPTOR_RTGT': 0, 'MC_RAPTOR_RTDEC': 2.0, 'MC_RAPTOR_RREC': 0.0, 'MC_RAPTOR_NCO': 0}",
+    "recovery": "non-subject NtoC AUTO_LOITER4s then LAND/disarm",
+    "startup_budget": null,
+    "flight_failures_are_results": true,
+    "mode_or_arming_forcing": false,
+    "frozen_primary_criteria": {
+      "safety_envelope": "any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort",
+      "no_joint_recovery_s": 10.0,
+      "no_joint_recovery": "joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)",
+      "motor_saturation_continuous_s": 0.5,
+      "motor_saturation": "any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]",
+      "ground_altitude_m": 0.2,
+      "ground": "altitude <= 0.2 m inside [trigger, window end]"
+    },
+    "primary_window_note": "Measured from actual first neural publication to subject end; original 10s joint recovery criterion is reported even though a moving reference may intentionally violate it. It is not silently replaced by tracking error.",
+    "persistent_mavlink": true
+  },
+  "explore": {
+    "case": "001_reproduce_zero_2p0",
+    "family": "process",
+    "label": "reproduce_zero_2p0",
+    "rationale": "复现069同seed/同参考/同保护，确认当前候选仍出现零速捕获风险；不把同seed重复当独立安全样本。",
+    "source": "offboard",
+    "seed": 20261110,
+    "duration_s": 20.0,
+    "knots": [
+      [
+        0.0,
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      [
+        2.0,
+        [
+          2.0,
+          0.0,
+          0.0
+        ],
+        [
+          2.0,
+          0.0,
+          0.0
+        ]
+      ],
+      [
+        4.0,
+        [
+          6.0,
+          0.0,
+          0.0
+        ],
+        [
+          2.0,
+          0.0,
+          0.0
+        ]
+      ],
+      [
+        6.0,
+        [
+          8.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      [
+        18.0,
+        [
+          8.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    ],
+    "switches": [
+      [
+        3.0,
+        "N"
+      ]
+    ],
+    "reference_kind": "native_capture_after_classic_stream_end",
+    "planned_gaps": true,
+    "initial_yaw_deg": 0.0,
+    "altitude_m": 3.0,
+    "state_parameters": {
+      "MC_RAPTOR_RINI": 0,
+      "MC_RAPTOR_RTGT": 0,
+      "MC_RAPTOR_RTDEC": 2.0,
+      "MC_RAPTOR_RREC": 0.0,
+      "MC_RAPTOR_NCO": 0
+    },
+    "policy_scope": "unchanged x500 RAPTOR policy; no retraining or adaptation",
+    "single_seed_limit": true,
+    "handover_reference": "native",
+    "native_quiet_before_request_s": 0.26,
+    "mutation_parent": "069_capture_2.0_rtgt0-a1",
+    "round": 1
+  },
+  "p1_condition": "single",
+  "p1_speed_m_s": 1.2,
+  "p4_independence": {
+    "sim_seed": 20261110,
+    "initial_yaw_deg": 0.0
+  }
+}

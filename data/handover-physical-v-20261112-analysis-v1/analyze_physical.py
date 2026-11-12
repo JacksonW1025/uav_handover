@@ -1,0 +1,24 @@
+import json,sys
+from pathlib import Path
+import numpy as np
+from pyulog import ULog
+import matplotlib;matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+R=Path('/home/car/uav_handover');A=Path(__file__).parent;B=R/'data/handover-physical-v-20261112';sys.path.insert(0,str(R/'data/handover-advanced-20261112-offline-v1'));import directional_analysis as d
+load=lambda p:json.loads(p.read_text());rows=[]
+for plan in sorted(B.glob('round-*-plan.json')):
+ s=next(iter(load(plan)['cases'].values()));n=s['case'];z=load(A/(n+'-a1')/'score.json');au=load(A/(n+'-a1')/'audit.json');f=load(A/(n+'-selection-feature.json'));u=ULog(str(Path(z['run'])/'flight.ulg'),message_name_filter_list=['research_p11','vehicle_attitude']);ds={x.name:x.data for x in u.data_list if x.multi_id==0};p=ds['research_p11'];t=p['timestamp'].astype(np.int64);owner=z['start_native_us'];i=int(np.flatnonzero((t>=z['request_lower_us'])&(t<=owner)&(p['activation']==1)&(p['active']==1))[0]);act=int(t[i]);fresh=np.flatnonzero((t<act)&(p['subscription_updated']==1)&(p['external_valid']==1));last=int(t[fresh[-1]]) if len(fresh) else None;j=np.flatnonzero((t>=act)&(t<=z['end_native_us'])&(p['subscription_updated']==1)&(p['external_valid']==1));ix=(t>=owner)&(t<=min(owner+160000,z['end_native_us']))&(p['native_step']==1)&(p['active']==1);ts=(t[ix]-owner)/1e6;v=d.vec(p,'velocity')[ix];target=d.vec(p,'network_target_velocity')[ix];theta=d.tilt(d.vec(p,'attitude',4)[ix]);w=d.vec(p,'angular_velocity')[ix];components=np.column_stack([(np.linalg.norm(v-target,axis=1)/2)**2,(theta/(np.pi/4))**2,.25*(np.linalg.norm(w,axis=1)/2)**2]);V=components.sum(axis=1);res=V-V[0]*np.exp(-.5*(ts-ts[0]));idx=int(np.argmax(res));q=np.array(au['start_state']['quaternion']);qw,qx,qy,qz=q/np.linalg.norm(q);euler=np.degrees([np.arctan2(2*(qw*qx+qy*qz),1-2*(qx*qx+qy*qy)),np.arcsin(np.clip(2*(qw*qy-qz*qx),-1,1)),np.arctan2(2*(qw*qz+qx*qy),1-2*(qy*qy+qz*qz))]);at=ds['vehicle_attitude'];tt=(at['timestamp'].astype(np.int64)-owner)/1e6;sel=(tt>=0)&(tt<=2)&(at['timestamp']<=z['end_native_us']);full=(t>=act)&(t<=z['end_native_us'])&(p['active']==1)&(p['native_step']==1)
+ r={'case':n,'spec':s,'selection':{k:f[k] for k in ['V_growth','speed_error_entry_m_s','tilt_entry_deg','omega_entry_rad_s']},'entry_state':au['start_state'],'euler_roll_pitch_yaw_deg':euler.tolist(),'process':{'request_to_activation_ms':(act-z['request_lower_us'])/1000,'activation_to_owner_ms':(owner-act)/1000,'activation_since_last_valid_read_ms':(act-last)/1000 if last is not None else None,'post_activation_valid_reads':len(j),'activation_gru_norm':float(np.linalg.norm(d.vec(p,'gru_before',16)[i])),'activation_previous_action_norm':float(np.linalg.norm(d.vec(p,'previous_action_before',4)[i])),'activation_target_velocity':d.vec(p,'network_target_velocity')[i].tolist(),'target_speed_max_whole_window':float(np.max(np.linalg.norm(d.vec(p,'network_target_velocity')[full],axis=1))),'activation_us':act,'owner_us':owner},'V_components_initial':components[0].tolist(),'V_components_at_max_residual':components[idx].tolist(),'V_residual_peak_s':float(ts[idx]),'V_component_residual_at_peak':(components[idx]-components[0]*np.exp(-.5*(ts[idx]-ts[0]))).tolist(),'early_trace':{'t':ts.tolist(),'components':components.tolist(),'V':V.tolist(),'residual':res.tolist()},'physical':z['physical'],'result':z['physical_task'],'duration_s':z['observed_duration_s'],'completion':au['completion'],'history':f['feature']['history'],'tilt_trace':{'t':tt[sel].tolist(),'tilt':np.degrees(d.tilt(d.vec(at,'q',4)[sel])).tolist()}}
+ rows.append(r);print(n,r['entry_state']['velocity'],r['entry_state']['angular_rate'],r['euler_roll_pitch_yaw_deg'],r['process'],r['V_component_residual_at_peak'],flush=True)
+d.dump(A/'physical-comparison.json',{'selection':load(A/'prospective-selection.json'),'rows':rows})
+fig,axes=plt.subplots(2,2,figsize=(11,8),layout='constrained')
+for ax,r in zip(axes.flat,rows[:4]):
+ tr=r['early_trace'];co=np.array(tr['components']);
+ for k,label in enumerate(['Velocity error','Tilt','Angular rate']):ax.plot(tr['t'],co[:,k],label=label)
+ ax.plot(tr['t'],tr['residual'],'k--',label='V decay residual');ax.set(title=r['case'],xlabel='Seconds from motor ownership',ylabel='Normalized quadratic contribution');ax.grid(alpha=.2);ax.legend(fontsize=8)
+fig.savefig(A/'physical-V-components.png',dpi=150);plt.close(fig)
+fig,axes=plt.subplots(1,2,figsize=(12,4.5),layout='constrained')
+for ax,inds,title in [(axes[0],[1,4],'V / tilt-selected branch'),(axes[1],[3,5],'Speed-selected branch')]:
+ for i in inds:r=rows[i];ax.plot(r['tilt_trace']['t'],r['tilt_trace']['tilt'],label=f"{r['case']}: {r['physical']['peak_tilt_deg']:.2f} deg")
+ ax.axhline(45,color='red',ls=':');ax.set(title=title,xlabel='Seconds from motor ownership',ylabel='Tilt (deg)');ax.grid(alpha=.2);ax.legend(fontsize=8)
+fig.savefig(A/'physical-parent-child-tilt.png',dpi=150)

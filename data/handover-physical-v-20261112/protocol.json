@@ -1,0 +1,17 @@
+{
+  "created_ns": 1794483178466914071,
+  "goal": "Does empirical physical V provide different prospective guidance than entry speed error on coupled 3D turning/yawing states? No preset winner.",
+  "seed": 20261110,
+  "max_launches": 6,
+  "history_fixed": "RINI0; RTGT0/RREC0/NCO0; fixed policy",
+  "process_fixed": "end reference at selected phase; wait .08s; normal N request/ACK; no reference resumed",
+  "physical": "3D S-shaped turn with climb/descent reversal plus 120deg yaw sweep; four entry phases",
+  "selectors": {
+    "V": "mean of positive residual maxima V(t)-V(t0)*exp(-.5*(t-t0)) in first100/120/160ms",
+    "simple": "norm of actual velocity minus actual network target velocity at first owner-window native sample"
+  },
+  "child_operator": "compress all translation knot times and switch phase by .92, divide knot velocities by .92; yaw reference remains original120deg/4s, so yaw phase also changes relative to translation. Same operator for both selectors.",
+  "shared_choice": "if both choose same parent, launch one shared child and report no selection distinction",
+  "interpretation": "early rollout feedback, not pre-switch certificate; matched configuration does not guarantee identical actual state; no single-factor causal claims",
+  "safety": "unchanged existing protections; evidence/infrastructure failures retained; no retries"
+}

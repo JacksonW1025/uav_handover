@@ -1,6 +1,8 @@
 # Thor 实验 Quickstart
 
-全部飞行操作限本机 headless SITL。项目目录 `/home/car/uav_handover`，本机 Lab 为 `uav_lab/`，每轮新数据存入 `data/`。完整验收见 [最终报告](THOR_ENVIRONMENT_FINAL_REPORT.md)。
+> 本文保留2026-10-09平台接口与操作说明，历史验收不是本分支新增验证。不要在当前共享Lab上直接运行本版本prepare/apply脚本；须使用匹配该版本的独立Lab。
+
+全部飞行操作限本机 headless SITL。项目目录 `/home/car/uav_handover`，本机 Lab 为 `uav_lab/`，每轮新数据存入 `data/`。完整验收见 [最终报告](https://github.com/JacksonW1025/uav_handover/blob/8d0c4166fb8a6f9adb9dbba9f5758f13c6d8446e/docs/THOR_ENVIRONMENT_FINAL_REPORT.md)。
 
 ## 日常入口
 

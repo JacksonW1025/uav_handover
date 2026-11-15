@@ -1,6 +1,6 @@
 # RAPTOR ↔ PX4 ↔ Gazebo 映射与边界
 
-依据本机固定提交源码、SDF 和本轮新 ULog。未更改策略权重、推力补偿或机体动力学参数。
+依据2026-10-09平台验收时的固定源码、SDF和ULog；本次分支整理没有新增飞行。未更改策略权重、推力补偿或机体动力学参数。
 
 ## 观测与参考
 
@@ -27,4 +27,4 @@ PX4 位置/速度为 NED，机体姿态/角速度为 FRD。`mc_raptor.cpp::obser
 
 Gazebo 物理步长 4 ms，IMU 250 Hz。原 RAPTOR 通过 `IMU_GYRO_RATEMAX/100` 的整数值设置 native 同步：250/100=2，因此 GRU 推进约 125 Hz；中间输出约 250 Hz，训练 native=100 Hz。训练/部署频率差异是已有实现行为，不能将本轮结果外推为时序完全一致。测量由 `research_timing` 给出墙钟推理耗时与 PX4 控制时间戳，原始数据保存在新 ULog。
 
-`research_actuator` 在实际发布 `actuator_motors` 后记录发布者及同一执行器时间戳；神经悬停窗口验证 owner=1，经典窗口验证 owner=2，避免仅凭模式应答推断接管。自带策略样例校验与实际神经悬停分别验收，结果见 `data/final-*/metrics.json` 与 [验收矩阵](../data/environment-20261009/acceptance.json)。
+`research_actuator` 在实际发布 `actuator_motors` 后记录发布者及同一执行器时间戳；神经悬停窗口验证 owner=1，经典窗口验证 owner=2，避免仅凭模式应答推断接管。自带策略样例校验与实际神经悬停分别验收，结果见 `data/final-*/metrics.json` 与 [验收矩阵](https://github.com/JacksonW1025/uav_handover/blob/8d0c4166fb8a6f9adb9dbba9f5758f13c6d8446e/data/environment-20261009/acceptance.json)。

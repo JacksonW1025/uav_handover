@@ -1,0 +1,30 @@
+{
+  "purpose": "observe full PX4/RAPTOR ownership-to-actual-Gazebo delivery at benign fixed hover",
+  "launch_limit": 2,
+  "cases": [
+    "001_normal",
+    "002_delay40"
+  ],
+  "one_seed": 20261110,
+  "unchanged": [
+    "PX4 binary",
+    "neural weights",
+    "RINI0",
+    "RTGT0",
+    "safety checks",
+    "takeoff/landing",
+    "continuous 50Hz hover reference"
+  ],
+  "only_difference": "relay prearmed interval hold_us=0 or40000",
+  "trigger": "read-only native bound, trigger file -> relay ack -> normal mode command; marker alignment assessed afterward from real ownership",
+  "deadline": "first(sim_clock reaches start+40000us,host monotonic reaches start+100000000ns); permanent pass-through afterward",
+  "acceptance": "source sample and content linked to first N publisher then bridge and each motor; distinguish held classical vs held neural and scheduling; no assumed effect",
+  "no_retry_if_misaligned": true,
+  "private_sources": {
+    "runner.py": "5bdc8213b337d6b75db777e656df746e47150c8de41af258e6e917c6be324c3b",
+    "plan.json": "f50db14ec174633359fb70d544ccc9b5318f360694158aaa8491802bed20b335",
+    "relay": "a01fca775785f383631316e88df926bfad92b716df19bffad150c49857e2aa41",
+    "experiment.sh": "790b7c0bae3cb8924d977b6eeabb7e7ae968e6987f7a24f95fa982ac7466783b",
+    "relay.cpp": "1b57824dc91680b622e429c32d1dda0b23207ddbb4be03cfe8d1c6a75583d580"
+  }
+}

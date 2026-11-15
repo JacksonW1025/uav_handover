@@ -1,0 +1,21 @@
+--- original/mc_raptor.cpp
++++ private/mc_raptor.cpp
+@@ -710,7 +710,18 @@
+         float entry_classic[4]{};
+         const bool entry_classic_valid=handover_research::needs_classic_action(entry_mode) && research_classic_action(entry_classic);
+ #endif
++        // T1 isolated SITL-only intervention: retain a previously validated
++        // same shared reference across reset; never fabricate reception time.
++        const bool t1_reference_ready = !use_internal_reference &&
++            timestamp_last_trajectory_setpoint_set &&
++            current_time >= timestamp_last_trajectory_setpoint &&
++            current_time - timestamp_last_trajectory_setpoint <= 12000;
++        const auto t1_reference_received = timestamp_last_trajectory_setpoint;
+         this->reset();
++        if (t1_reference_ready) {
++            timestamp_last_trajectory_setpoint_set = true;
++            timestamp_last_trajectory_setpoint = t1_reference_received;
++        }
+ #ifdef __PX4_POSIX
+         if(preserve==1 && enabled)research_set(memory,false);
+         PX4_INFO("Research mode-entry memory: %s",preserve==1 && enabled?"preserved; timing rebased":"reset");

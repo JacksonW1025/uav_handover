@@ -1,0 +1,16 @@
+{
+  "source": "ResearchMulticopterMotorModel.cc",
+  "source_sha256": "c09c440ee50be15e85072d663c89c376308c029c98883e9877e0f1c25809bdf0",
+  "callback_body_verbatim": "\n  std::lock_guard<std::mutex> lock(this->recvdActuatorsMsgMutex);\n  this->recvdActuatorsMsg = _msg;\n  ++this->researchReceived;\n  this->researchArrivalNs = ResearchMonotonicNs();\n",
+  "consume_block_verbatim": "    std::lock_guard<std::mutex> lock(this->recvdActuatorsMsgMutex);\n    if (this->recvdActuatorsMsg.has_value())\n    {\n      msg = *this->recvdActuatorsMsg;\n      this->recvdActuatorsMsg.reset();\n    }\n    traceReceived = this->researchReceived;\n    traceArrivalNs = this->researchArrivalNs;\n    this->researchReceived = 0;",
+  "test_type": "synthetic source-extracted callback/slot component; actual gz-msgs protobuf, no transport, no simulator, no flight",
+  "injection": "deliberate callback delivery scheduling; normal vs 8ms additional simulated callback delay; burst is explicit coalescing demonstration",
+  "not_measured": [
+    "real scheduler distribution",
+    "default PX4 failure",
+    "physical thrust",
+    "closed-loop effect"
+  ],
+  "source_extracted_sha256": "58fefcc8ef7f6a4d68e65b1632f99cdc13fed78d60352bced970053efd218453",
+  "publication_note": "Path-only redaction; original file hash retained in as-run-sha256.json"
+}

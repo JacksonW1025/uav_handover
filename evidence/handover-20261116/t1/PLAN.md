@@ -1,0 +1,1 @@
+T1 same-build 3-arm extension. Classic C2, moving handover N, prestabilized PRE (3s N hover before same profile). All three use existing private entryready binary, altitude4m seed20261110 q1.15 RINI4 original protections. PRE phase2.875 marker without mode request. Independent ledger; max3 process starts, one per arm, no automatic retries. Old artifacts immutable.

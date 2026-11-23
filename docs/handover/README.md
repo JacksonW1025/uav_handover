@@ -12,3 +12,7 @@
 T1 的 35° 是紧弯实验的倾角预算。T1 和 T3 原始运行记录中的 45° 是实验保护门限；离线表格按原生采样窗报告观测峰值。时间以各页标明的轨迹相位或原生事件为零点。
 
 [复现指南](REPRODUCTION.md)列出发布样本和原始日志的入口。四类的原始定义与证据来源固定在 [2026-11-16 证据快照](https://github.com/JacksonW1025/uav_handover/tree/141a2b31becee1a909e0d76f552b0724eb315f99)。
+
+## 第二套飞控环境
+
+[Crazyflie 交接实验](../../evidence/crazyflie-20261123/README.md)用宿主经典与学习型外环交接，在始终保留 Crazyflie 固件 PID 的条件下观察了同样四类机制。

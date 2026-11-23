@@ -1,0 +1,92 @@
+created {'thresholds': {'seed': 20261110, 'instance': 21, 'ros_domain_id': 71, 'agent_port': 18888, 'startup_timeout_s': 90, 'takeoff_timeout_s': 45, 'landing_timeout_s': 60, 'hover_s': 10, 'neural_s': 5, 'repetitions': 1, 'altitude_m': 3.5, 'hover_max_error_m': 1.0, 'hover_max_tilt_deg': 15, 'safety_radius_m': 10, 'safety_altitude_m': 8, 'safety_tilt_deg': 45, 'safety_angular_rate_rad_s': 8, 'inference_p99_us': 2500, 'settling_band_m': 0.2, 'settling_dwell_s': 2.0, 'joint_recovery': {'position_reference': 'active_trajectory_setpoint', 'position_reference_ned_m': [0, 0, -3], 'velocity_reference_ned_m_s': [0, 0, 0], 'angular_velocity_reference_frd_rad_s': [0, 0, 0], 'position_threshold_m': 0.2, 'velocity_threshold_m_s': 0.1, 'angular_velocity_threshold_rad_s': 0.1, 'dwell_s': 2.0, 'max_observation_gap_s': 0.02}, 'p0_strict': True, 'p1': {'conditions': {'single': {'speed_m_s': 1.2}}}, 'p11': {'observe': True, 'ulog_storage': 'hardlink_after_shutdown'}, 'cn_single': {'subject': '100-condition exploratory handover; declared history/physical/target changes, no hidden injection', 'seed': 20261110, 'classic_prefix': 'AUTO_TAKEOFF 3.5m, AUTO_LOITER10s, then offboard', 'trigger': 'profile-time switches', 'external_reference': 'continuous_shared_50hz', 'gap_profile_s': None, 'task_failure_criterion': {'tilt_deg': 45, 'altitude_loss_m': 1}, 'safety_limits_unchanged': True, 'memory': "{'MC_RAPTOR_RINI': 0, 'MC_RAPTOR_RTGT': 0, 'MC_RAPTOR_RTDEC': 2.0, 'MC_RAPTOR_RREC': 0.0, 'MC_RAPTOR_NCO': 0}", 'recovery': 'non-subject NtoC AUTO_LOITER4s then LAND/disarm', 'startup_budget': None, 'flight_failures_are_results': True, 'mode_or_arming_forcing': False, 'frozen_primary_criteria': {'safety_envelope': 'any of tilt >= 45 deg, angular-rate component >= 8 rad/s, horizontal radius >= 10 m, altitude >= 8 m (frozen safety envelope; reaching the limit counts), or a runner safety abort', 'no_joint_recovery_s': 10.0, 'no_joint_recovery': 'joint recovery not SETTLED within 10 s after the actual change (frozen P0 thresholds, active controller target)', 'motor_saturation_continuous_s': 0.5, 'motor_saturation': 'any motor at >=0.999 or <=0.001 continuously for at least 0.5 s inside [trigger, window end]', 'ground_altitude_m': 0.2, 'ground': 'altitude <= 0.2 m inside [trigger, window end]'}, 'primary_window_note': 'Measured from actual first neural publication to subject end; original 10s joint recovery criterion is reported even though a moving reference may intentionally violate it. It is not silently replaced by tracking error.', 'persistent_mavlink': True}, 'explore': {'source': 'offboard', 'seed': 20261110, 'duration_s': 8.0, 'knots': [[0, [0, 0, 0], [0, 0, 0]], [8, [0, 0, 0], [0, 0, 0]]], 'yaw_sweep_deg': 0, 'reference_kind': 'continuous_shared_50hz', 'planned_gaps': False, 'initial_yaw_deg': 0.0, 'altitude_m': 3.5, 'state_parameters': {'MC_RAPTOR_RINI': 0, 'MC_RAPTOR_RTGT': 0, 'MC_RAPTOR_RTDEC': 2.0, 'MC_RAPTOR_RREC': 0.0, 'MC_RAPTOR_NCO': 0}, 'profile': 'fixed_hover', 'reference_mode': 'continuous', 'family': 'fixed_hover', 'policy_scope': 'fixed x500 policy; no training', 'single_seed_limit': True, 'case': '001_deadline60', 'label': '001_deadline60', 'switches': [[2.0, 'N']], 'search_role': 'T4_delivery_diagnostic', 'rationale': 'T4 paired fixed hover, same bounded hold with or without fresh-active notification release', 'classic_capture_control': False, 'hold_us': 60000, 'early_release': False}, 'p1_condition': 'single', 'p1_speed_m_s': 1.2, 'p4_independence': {'sim_seed': 20261110, 'initial_yaw_deg': 0.0}}}
+process_started {'name': 'agent', 'pid': 1425209, 'command': ['taskset', '-c', '6-7', '/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+process_started {'name': 'gazebo', 'pid': 1425210, 'command': ['taskset', '-c', '12-13', 'gz', 'sim', '-r', '-s', '-v', '3', '--seed', '20261110', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/Tools/simulation/gz/worlds/default.sdf']}
+process_started {'name': 'relay', 'pid': 1425211, 'command': ['/tmp/handover3h-thor-20261116/t4-active-release/relay', 'x500_21', '/home/car/uav_handover/data/handover-t4-active-release-20261116/001_deadline60-a1/flight/relay', '60000']}
+process_started {'name': 'gz-stats', 'pid': 1425212, 'command': ['gz', 'topic', '-e', '-t', '/world/default/stats']}
+process_started {'name': 'tegrastats', 'pid': 1425215, 'command': ['/usr/bin/tegrastats', '--interval', '1000']}
+process_started {'name': 'px4', 'pid': 1425255, 'command': ['taskset', '-c', '8-11', '/home/car/uav_handover/uav_lab/.local/checkouts/px4-raptor/build/px4_sitl_raptor/bin/px4', '-d', '-i', '21', '-w', '/home/car/uav_handover/data/handover-t4-active-release-20261116/001_deadline60-a1/flight/rootfs', '/home/car/uav_handover/data/handover-t4-active-release-20261116/001_deadline60-a1/flight/rootfs/etc']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1794827404490348}
+ready {'condition': 'PX4 DDS telemetry'}
+sensor_readiness {'ready': True, 'reasons': [], 'continuous_host_s': 2.0037177900085226, 'native_publication_stamps': {'sensor_baro': 1794827411498357, 'vehicle_air_data': 1794827411498357, 'vehicle_local_position': 1794827411502357}, 'raw_pressure_pa': 101324.390625, 'raw_device_id': 6619404, 'selected_pressure_pa': 101323.421875, 'selected_device_id': 6619404}
+mavlink_identity {'system_id': 22, 'autopilot': 12, 'udp_port': 18591}
+cn_mavlink_retained {'local_endpoint': ['0.0.0.0', 42348]}
+process_started {'name': 'agent-reconnected', 'pid': 1425777, 'command': ['taskset', '-c', '6-7', '/home/car/uav_handover/uav_lab/scripts/MicroXRCEAgent', 'udp4', '-p', '18888', '-v', '4']}
+command_ack {'command': 211, 'result': 0, 'timestamp': 1794827404490344}
+ready {'condition': 'DDS Client reconnection with fresh telemetry'}
+command_requested {'command': 176, 'params': {'param1': 1, 'param2': 4, 'param3': 3}}
+command_ack {'command': 176, 'result': 0, 'timestamp': 1794827422450351}
+ready {'condition': 'command acknowledgement'}
+command_requested {'command': 100001, 'params': {'param1': 14}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1794827423554352}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=14'}
+mode_confirmed {'mode': 14, 'px4_timestamp': 1794827423566352}
+command_requested {'command': 100001, 'params': {'param1': 4}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1794827424034352}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=4'}
+mode_confirmed {'mode': 4, 'px4_timestamp': 1794827424046352}
+state_operation {'target': 'raptor', 'operation': 'read', 'response': {'request_id': 24348000, 'applied_us': 24352000, 'target': 1, 'operation': 1, 'result': 1, 'dimension': 26, 'active': False, 'holding': False, 'values': [-0.209589243, -0.232601866, -0.365622491, -0.669397175, -0.389578849, -0.399399132, -0.376322627, -0.179224879, -0.829439521, 0.972499251, 0.000592626107, -0.513908505, 0.617942452, 0.874747574, -0.546187639, 0.660868466, -0.777135432, -0.736854136, -0.606136024, -0.615039647, -0.0173229165, -0.00201843888, 0.0327135548, 0, -0.00103312824, 0.698848009]}}
+ready {'condition': 'valid local position'}
+state_capture_started {'label': 'disarmed_read_only'}
+state_operation {'target': 'raptor', 'operation': 'read', 'response': {'request_id': 28484000, 'applied_us': 28488000, 'target': 1, 'operation': 1, 'result': 0, 'dimension': 26, 'active': False, 'holding': False, 'values': [-0.20981653, -0.238143697, -0.367162049, -0.670175672, -0.398612469, -0.390147716, -0.37858364, -0.175382435, -0.831792593, 0.972413123, -0.03310645, -0.515717566, 0.622328222, 0.872277379, -0.543580651, 0.656489849, -0.780309379, -0.744064033, -0.609502196, -0.614043415, -0.0332566313, -0.0331621543, 0.0560995154, 3.76922458e-06, 0.000511901919, 0.699488223]}}
+state_operation {'target': 'rate', 'operation': 'read', 'response': {'request_id': 28500000, 'applied_us': 28504000, 'target': 2, 'operation': 1, 'result': 0, 'dimension': 3, 'active': False, 'holding': False, 'values': [0, 0, 0]}}
+state_operation {'target': 'velocity', 'operation': 'read', 'response': {'request_id': 28516000, 'applied_us': 28516000, 'target': 3, 'operation': 1, 'result': 0, 'dimension': 3, 'active': False, 'holding': False, 'values': [0, 0, 0]}}
+state_capture_finished {'label': 'disarmed_read_only'}
+hundred_parameters_before_arming {'parameters': {'MC_RAPTOR_RINI': 0.0, 'MC_RAPTOR_RTGT': 0.0, 'MC_RAPTOR_RTDEC': 2.0, 'MC_RAPTOR_RREC': 0.0, 'MC_RAPTOR_NCO': 0.0}}
+command_requested {'command': 400, 'params': {'param1': 1}}
+command_ack {'command': 400, 'result': 0, 'timestamp': 1794827428534354}
+ready {'condition': 'command acknowledgement'}
+command_requested {'command': 22, 'params': {'param4': None, 'param5': None, 'param6': None, 'param7': None}}
+command_ack {'command': 22, 'result': 0, 'timestamp': 1794827428642354}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'takeoff altitude'}
+command_requested {'command': 100001, 'params': {'param1': 4}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1794827437450356}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=4'}
+mode_confirmed {'mode': 4, 'px4_timestamp': 1794827437450356}
+hover_started {'label': 'classic_before', 'duration_s': 10, 'px4_start_us': 37756000}
+hover_ended {'label': 'classic_before', 'px4_end_us': 47836000}
+explore_reference_geometry {'max_reference_radius_m': 0.04360255267756694, 'min_reference_altitude_m': 3.45559, 'max_reference_altitude_m': 3.45559, 'max_reference_speed_m_s': 0.0, 'max_reference_acceleration_m_s2': 0.0}
+explore_first_publish {'before_ns': 1035566592641339, 'after_ns': 1035566592688284, 'profile_s': 0.0}
+command_requested {'command': 100001, 'params': {'param1': 14}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1794827448958364}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=14'}
+mode_confirmed {'mode': 14, 'px4_timestamp': 1794827448970364}
+explore_profile_started {'origin': [-0.03051, -0.03115, -3.45559], 'yaw': 1.6749, 'profile_t0_monotonic_s': 1035568.004511713, 'source': 'classic_OFFBOARD', 'shared_continuous_reference': True, 'native_start_lower_us': 49268000}
+explore_pre_switch {'position': [-0.026553981006145477, -0.02735854499042034, -3.455618381500244], 'velocity': [-0.003251167945563793, 0.007050440181046724, 0.0016865208745002747], 'quaternion': [0.6691622734069824, 1.7794758605305105e-05, 0.000676608644425869, 0.7431160807609558], 'nav_state': 14, 'iteration': 0}
+t4_relay_window_armed {'hold_us': 60000, 'native_begin_us': 51288000}
+handover_requested {'end_bound_px4_us': 51288000, 'from_controller': 'C', 'to_controller': 'N', 'iteration': 0, 'subject': True}
+command_requested {'command': 100001, 'params': {'param1': 23}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1794827451202365}
+t4_fresh_active_observed {'received_ns': 1035570048588379, 'timestamp': 1794827451214365, 'timestamp_sample': 1794827451214365, 'active': True, 'exit_reason': 0, 'early_release': False}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=23'}
+mode_confirmed {'mode': 23, 'px4_timestamp': 1794827451214365}
+ready {'condition': 'RAPTOR active'}
+explore_switch_confirmed {'iteration': 0, 'to_controller': 'N', 'end_bound_px4_us': 51600000}
+explore_subject_finished {'end_bound_px4_us': 57300000, 'published': 463}
+handover_requested {'end_bound_px4_us': 57312000, 'from_controller': 'N', 'to_controller': 'C', 'iteration': 99, 'subject': False, 'purpose': 'landing recovery'}
+command_requested {'command': 100001, 'params': {'param1': 4}}
+command_ack {'command': 100001, 'result': 0, 'timestamp': 1794827457214367}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'nav_state=4'}
+mode_confirmed {'mode': 4, 'px4_timestamp': 1794827457226367}
+p1_phase_started {'label': 'landing_recovery', 'duration_s': 4.0, 'px4_start_us': 57524000}
+p1_phase_ended {'label': 'landing_recovery', 'px4_end_us': 61524000}
+landing_requested {'end_bound_px4_us': 61532000}
+command_requested {'command': 21, 'params': {}}
+command_ack {'command': 21, 'result': 0, 'timestamp': 1794827461438369}
+ready {'condition': 'command acknowledgement'}
+ready {'condition': 'landing'}
+ready {'condition': 'disarmed'}
+process_stopped {'name': 'agent-reconnected', 'pid': 1425777, 'exit_code': -2}
+process_stopped {'name': 'px4', 'pid': 1425255, 'exit_code': 0}
+process_stopped {'name': 'tegrastats', 'pid': 1425215, 'exit_code': -2}
+process_stopped {'name': 'gz-stats', 'pid': 1425212, 'exit_code': 0}
+process_stopped {'name': 'relay', 'pid': 1425211, 'exit_code': 0}
+process_stopped {'name': 'gazebo', 'pid': 1425210, 'exit_code': 0}
+process_stopped {'name': 'agent', 'pid': 1425209, 'exit_code': -2}
+EXPLORE_RESULT {"case": "001_deadline60", "label": "001_deadline60", "attempt": "a1", "execution_status": "PASS", "reason": null, "cleanup_error": null, "candidate_unchanged": true, "execution_cost": {"wall_s": 73.10497602191754, "cpu_s": 34.73462677}, "flight": "data/handover-t4-active-release-20261116/001_deadline60-a1/flight", "note": "execution completion is not flight safety or evidence acceptance"}

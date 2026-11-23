@@ -1,7 +1,5 @@
 #pragma once
 #include "StateOps.hpp"
-#include "SampleClock.hpp"
-#include "TimingRecord.hpp"
 #include <drivers/drv_hrt.h>
 #include <parameters/param.h>
 #include <uORB/Publication.hpp>

@@ -1,0 +1,36 @@
+--- /tmp/handover-t4-fullstack-20261115/runner.py	2026-11-16 02:40:43.999191751 +0800
++++ /tmp/handover3h-thor-20261116/t4-active-release/runner.py	2026-11-16 19:09:54.164475245 +0800
+@@ -6,7 +6,7 @@
+   super().__init__(args);self.cfg['cn_single']['subject']='T4 explicit bounded actuator relay delay, fixed hover, unchanged protection';old.base.write(args.config,self.cfg);old.base.write(self.out/'config.json',self.cfg);models=self.out/'private-models';shutil.copytree(self.source/'Tools/simulation/research_models/x500',models/'x500');p=models/'x500/model.sdf';tree=ET.parse(p);count=0
+   for plug in tree.findall('.//plugin'):
+    if plug.attrib.get('filename')=='ResearchMulticopterMotorModel':plug.find('commandSubTopic').text='command/t4_motor_speed';count+=1
+-  assert count==4;tree.write(p,encoding='unicode');self.env['PX4_GZ_MODELS']=str(models);self.env['GZ_SIM_RESOURCE_PATH']=str(models)+':'+self.env['GZ_SIM_RESOURCE_PATH'];self.relayprefix=str(self.out/'relay');self.metadata['t4_delivery']={'private_model':str(p),'model_sha256':old.base.digest(p),'relay_sha256':old.base.digest(A/'relay'),'hold_us':self.cfg['explore']['hold_us'],'wall_max_us':100000,'semantics':'one prearmed interval before mode command; no N identity assumed, actual owner/application audited'};self.metadata['environment'].update(PX4_GZ_MODELS=self.env['PX4_GZ_MODELS'],GZ_SIM_RESOURCE_PATH=self.env['GZ_SIM_RESOURCE_PATH'])
++  assert count==4;tree.write(p,encoding='unicode');self.env['PX4_GZ_MODELS']=str(models);self.env['GZ_SIM_RESOURCE_PATH']=str(models)+':'+self.env['GZ_SIM_RESOURCE_PATH'];self.relayprefix=str(self.out/'relay');self.metadata['t4_delivery']={'private_model':str(p),'model_sha256':old.base.digest(p),'relay_sha256':old.base.digest(A/'relay'),'hold_us':self.cfg['explore']['hold_us'],'wall_max_us':100000,'semantics':'pre-request bounded hold; optional fresh-active DDS release; no assumed native first N, actual owner/application audited'};self.metadata['environment'].update(PX4_GZ_MODELS=self.env['PX4_GZ_MODELS'],GZ_SIM_RESOURCE_PATH=self.env['GZ_SIM_RESOURCE_PATH'])
+  def spawn(self,name,argv,cwd=None):
+   p=super().spawn(name,argv,cwd)
+   if name=='gazebo':self.t4relay=super().spawn('relay',[str(A/'relay'),f'x500_{self.instance}',self.relayprefix,str(self.cfg['explore']['hold_us'])])
+@@ -14,6 +14,16 @@
+  def state_contract(self):
+   super().state_contract()
+   if self.t4relay.poll() is not None or not Path(self.relayprefix+'.ready').exists():raise RuntimeError('relay not connected before arming')
++ def receive(self,name,msg):
++  super().receive(name,msg)
++  if name=='raptor_status' and getattr(self,'t4_release_waiting',False):
++   now=time.monotonic_ns()
++   if old.fresh_active(msg,now,self.t4_request_ns,self.t4_previous_timestamp):
++    self.t4_release_waiting=False
++    self.event('t4_fresh_active_observed',received_ns=now,timestamp=int(msg.timestamp),timestamp_sample=int(msg.timestamp_sample),active=bool(msg.active),exit_reason=int(msg.exit_reason),early_release=self.spec['early_release'])
++    if self.spec['early_release']:
++     Path(self.relayprefix+'.release').write_text(str(now))
++     self.event('t4_early_release_requested',received_ns=now)
+  def switch(self,current,target,iteration):
+   bound=self.native_bound_streaming();l=self.latest['vehicle_local_position'];q=self.latest['vehicle_attitude'];self.event('explore_pre_switch',position=[float(l.x),float(l.y),float(l.z)],velocity=[float(l.vx),float(l.vy),float(l.vz)],quaternion=list(map(float,q.q)),nav_state=int(self.latest['vehicle_status'].nav_state),iteration=iteration)
+   Path(self.relayprefix+'.trigger').write_text(str(time.monotonic_ns()));deadline=time.monotonic()+.1
+@@ -22,6 +32,7 @@
+    time.sleep(.0005)
+   self.event('t4_relay_window_armed',hold_us=self.spec['hold_us'],native_begin_us=int(Path(self.relayprefix+'.ack').read_text()))
+   self.event('handover_requested',end_bound_px4_us=bound,from_controller=current,to_controller=target,iteration=iteration,subject=True)
++  self.t4_previous_timestamp=int(self.latest['raptor_status'].timestamp);self.t4_request_ns=time.monotonic_ns();self.t4_release_waiting=True
+   self.mode(self.neural_mode);self.wait(lambda:self.latest.get('raptor_status') and self.latest['raptor_status'].active,5,'RAPTOR active');self.event('explore_switch_confirmed',iteration=iteration,to_controller='N',end_bound_px4_us=self.native_bound_streaming())
+ old.Experiment=Experiment
+ if __name__=='__main__':

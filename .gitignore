@@ -1,28 +1,9 @@
-# 保留项目源码、仿真资源、策略检查点、实验证据、依赖清单和文档。
-# 大体积原始飞行数据（2026-10-15 起）只保存在实验机本地，不进远程仓库；见 data/README.md“数据保存策略”。
-
 # 整个 Lab 属于本机实验环境，不上传；项目实验源码、数据和文档放在 Lab 外。
 /uav_lab/
 
 # 每轮 SITL 的运行副本和本机 IPC 命令链接；原始 flight.ulg、证据与结果保留。
 /data/*/rootfs/
 /data/*/cli/
-# P9 keeps each counted attempt in its own directory with a nested run/.
-/data/p9-*/**/rootfs/
-/data/p9-*/**/cli/
-
-# 原始飞行数据只保存在本机：ULog、逐物理步电机轨迹、逐帧遥测/资源记录、Gazebo 原始传感器抓取。
-# 每轮 metadata.json 记录 flight.ulg 的 SHA-256，可与本机原始文件核对。保留三个完整示例 ULog。
-/data/**/flight.ulg
-/data/**/gz-motor/
-/data/**/telemetry.jsonl
-/data/**/resources.jsonl
-/data/**/logs/gz-imu.log
-/data/**/logs/gz-pressure.log
-/data/**/logs/probe-*.log
-!/data/p1-20261013-b02-S1-c_to_n-1/flight.ulg
-!/data/p2-20261015-s1a-S1-c_to_n-N0-1/flight.ulg
-!/data/p2-20261015-s1a-S1-c_to_n-N2-1/flight.ulg
 
 # PX4 / CMake / ROS 2 中间产物
 build/
@@ -90,113 +71,8 @@ Thumbs.db
 *~
 *.tmp
 *.temp
-# P11 preserved old binary and full per-send sidecars remain local; hashes are delivered.
-data/p11-*/px4-before-p11
-data/p11-*/**/p11-sends.jsonl
-/data/p12-*/**/rootfs/
-/data/p12-*/**/cli/
-/data/p12-*/**/p11-sends.jsonl
-# Full structured repack of raw per-physics motor data, retained locally.
-/data/p12-*/**/execution.npz
-# Verbose check of verbatim generated evidence; scoped result/hash is delivered.
-/data/p12-*/**/source-whitespace-check.log
-# Actual P12 continuation runtime snapshots, local only; manifest is committed.
-/data/p12-cont-*/**/runtime-local/
-/data/p12-cont-*-runtime-local/
-# Disconnection left long raw resource streams; preserve locally with manifest.
-/data/p12-cont-20261026-development/window-10-single-repair/run/logs/gz-stats.log
-/data/p12-cont-20261026-development/window-10-single-repair/run/logs/tegrastats.log
-# Continuation full derived arrays are retained locally, uniformly hashed in delivery.
-# No fields/samples omitted; policy arrays remain a small frozen model input.
-/data/p12-cont-*/**/*.npz
-!/data/p12-cont-20261026-freeze/models/policy.npz
-# Formal disconnect resource logs retained locally and covered by raw manifest.
-/data/p12-cont-20261026-formal/b1-ph2-NORMAL1/run/logs/gz-stats.log
-/data/p12-cont-20261026-formal/b1-ph2-NORMAL1/run/logs/tegrastats.log
-# P12b full source/build inputs and runtime copies, retained locally with manifests.
-/data/p12b-*-source-local/
-/data/p12b-*-runtime-local/
-/data/p12b-*/**/*.npz
-!/data/p12b-20261026-freeze/models/policy.npz
-/data/p12b-*/**/rootfs/
-/data/p12b-*/**/cli/
-/data/p12b-*/**/p11-sends.jsonl
-/data/p12b-*/**/*.bin
-/data/p12c-*-runtime-local/
-/data/p12c-*/**/*.npz
-!/data/p12c-20261026-freeze/models/policy.npz
-/data/p12c-*/**/*.bin
-/data/p12c-*/**/rootfs/
-/data/p12c-*/**/cli/
-/data/p12c-*/**/p11-sends.jsonl
-# P13 raw physics/flight and ordinary runtime snapshots stay local, hash manifests delivered.
-/data/p13-*-runtime-local*/
-/data/p13-*/**/*.bin
-/data/p13-*/**/*.npz
-!/data/p13-20261026-preparation/models/policy.npz
-!/data/p13-20261026-freeze/models/policy.npz
-/data/p13-*/**/rootfs/
-/data/p13-*/**/cli/
-/data/p13-*/**/p11-sends.jsonl
-/data/p13-*/**/logs/gz-stats.log
-/data/p13-*/**/logs/tegrastats.log
-# P14 is offline only; complete derived arrays stay local, manifests are committed.
-/data/p14-*/**/*.npz
-# P14R passive raw/snapshots remain local, uniformly hashed in manifests.
-/data/p14r-*/**/*.npz
-/data/p14r-*/**/*.bin
-/data/p14r-*/**/build/
-/data/p14r-*/**/rootfs/
-/data/p14r-*/**/cli/
-/data/p14r-*/**/p11-sends.jsonl
-# P14G: fully offline full arrays/checkpoints are local, uniformly hashed.
-/data/p14g-*/**/*.npz
-/data/p14g-*/**/*.bin
 
-# P14H independent raw arrays/runtime snapshots remain local.
-/data/p14h-*/**/*.npz
-/data/p14h-*/**/*.bin
-/data/p14h-*/**/rootfs/
-/data/p14h-*/**/cli/
-/data/p14h-*/**/p11-sends.jsonl
-# Full per-call forecast/branch records are local raw derived data. Every
-# terminal result, failure and source hash is indexed in the P14H delivery.
-/data/p14h-*/offline-v*/[0-9][0-9][0-9]/result/result.json
-/data/p14h-*/response-trials-v*/[0-9][0-9][0-9]/result/result.json
-/data/p14h-*/selection-v*/[0-9][0-9][0-9]/result/result.json
-/data/p14h-*/prediction-*/worker/result/*.json
-/data/p14h-*/**/*.lock
-/data/p14h-*/evaluation-*/**/result/result.json
-/data/p14h-*/counterfactual-response-*/[0-9][0-9][0-9]/result/result.json
-# P15 independent raw/runtime and full per-call model data remain local.
-/data/p15-*/**/*.npz
-/data/p15-*/**/*.bin
-/data/p15-*/**/rootfs/
-/data/p15-*/**/cli/
-/data/p15-*/**/p11-sends.jsonl
-/data/p15-*/**/*.lock
-/data/p15-*/baseline.json
-/data/p15-*/**/run/p15-selection-input.json
-/data/p15-*/**/run/p15-selection.json
-/data/p15-*/**/run/p15-map-prior-input.json
-/data/p15-*/**/run/p15-map-prior.json
-/data/p15-*/benchmark-v*/result.json
-/data/p15-*/evaluation/*/forecast.json
-/data/p15-*/**/logs/gz-stats.log
-/data/p15-*/**/logs/tegrastats.log
-/data/p15-*/benchmark-v*/input.json
-/data/p15-*/development-evaluation-*/forecast.json
-# P15 scoped LP-only recovery forecast and host inventory remain local, hashes published.
-/data/p15-20261027/evaluation-LP-only-v2/*/forecast.json
-/data/p15-20261027/final-host-state-v1/host-processes.txt
-# P16 raw runs and actual runtime/model-array snapshots stay on Thor.
-/data/p16-*/**/*.npz
-/data/p16-*/**/*.bin
-/data/p16-*/**/*.lock
-/data/p16-*/**/run/rootfs/
-/data/p16-*/**/run/cli/
-/data/p16-*/**/run/p11-sends.jsonl
-/data/p16-*/**/logs/gz-stats.log
-/data/p16-*/**/logs/tegrastats.log
-# P16 offline probe raw alias stays local; original run/raw hash remains published.
-/data/p16-*/return-field-probe-v*/**/run
+# 基线仅保留data说明；本地输出、失败记录不删除、不默认上传。
+/data/*
+!/data/README.md
+*.ulg

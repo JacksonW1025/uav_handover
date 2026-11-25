@@ -13,8 +13,8 @@ Crazyflie 2.x 标准模型、同一种子、七次独立的 CrazySim/MuJoCo SITL
 
 ## 复核
 
-从仓库根目录运行 `python3 evidence/crazyflie-20261123/analyze.py`，不需要仿真环境。CSV 仅保存切换附近窗口和各通道末端样本；时间戳和值原样保留。各臂的 `summary.json` 来自完整记录；`metrics.json` 全部数值与完整记录复算一致。完整日志、容器、固件二进制、模型和 Python 环境都不在 Git 中。
+从仓库根目录运行 `python3 evidence/crazyflie-20261123/analyze.py`，不需要仿真环境。CSV 仅保存切换附近窗口和各通道末端样本；时间戳和值原样保留。分析会重新生成 REPORT.zh.md 和 metrics.json；SITL 日志限制也会保留在生成的报告中。各臂的 `summary.json` 来自完整记录；`metrics.json` 全部数值与完整记录复算一致。完整日志、容器、固件二进制、模型和 Python 环境都不在 Git 中。
 
 [runner.py](runner.py) 是实验当时的脚本，保留原样。运行时，将它放到已配置 [CrazySim](https://github.com/gtfactslab/CrazySim/tree/3ec8b55da4bff887da542a9f314da825460e65be) 的本机忽略目录 `uav_lab/.local/crazyflie-sim/handover-pilot/`。脚本会从上一层寻找 CrazySim 源码和 Ubuntu 22.04 ARM64 容器版 `jammy/cf2`。发布的数据目录只用于离线复核。依赖版本见 [manifest.json](manifest.json)。
 
-**SITL 日志说明：** motor.m*req 读取的实机补偿缓冲在本 SITL 分支未更新，数值为零不能单独证明停桨。落地由宿主完成标记和末端位置复核；参见[补充记录](../crazyflie-full-state-20261125/README.md)中直接记录四路 PWM 的对照。
+**SITL 日志说明：** motor.m*req 读取的实机补偿缓冲在本 SITL 分支未更新，飞行中也可能一直为零，不能用于核实实际电机输出、停桨或解除解锁。数值摘要中的 final_motor_requests 仅保留原始字段供兼容。落地由宿主完成标记和末端位置复核；参见[补充记录](../crazyflie-full-state-20261125/README.md)中直接记录四路 PWM 的对照。

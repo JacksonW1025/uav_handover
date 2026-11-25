@@ -10,3 +10,5 @@
 | [T4：下游仍发送旧输出](../../evidence/crazyflie-20261123/results-v1/D_hold/host.csv) | 学习外环读对参考并算出 −0.018 m/s，下游却继续发缓存的经典 +0.224 m/s。 | 固件日志首次观测到负目标 331 ms；前 1 秒净前移 9.0 cm（正常组 2.8 cm）。 |
 
 T2–T4 共用已冻结的 [正常对照 N_slow](../../evidence/crazyflie-20261123/results-v1/N_slow/host.csv)。详见[前轮结果及复核说明](../../evidence/crazyflie-20261123/README.md)与[数值摘要](../../evidence/crazyflie-20261123/metrics.json)。T3 与 T4 的飞机都晚刹；区分它们，要对照学习器读到了什么、算出了什么、最终发出的是什么。
+
+[补充记录：轻风与原厂全状态飞控](../../evidence/crazyflie-full-state-20261125/README.md)包含新对照、超过 45° 的全经典案例和 T2 离线回放。

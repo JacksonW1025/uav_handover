@@ -28,3 +28,5 @@ CrazySim/MuJoCo Crazyflie 2.x 标准模型 cf2x_L250，CrazySim 所用 Crazyflie
 - `runner.py`：`Learned` / `target` 产生共享参考和候选控制器，循环中分别标记 reset、实际参考、所选输出和发送时间。每臂 `host.csv` 保留这些数据。
 - Crazyflie 固件 `crtp_commander_generic.c:98` 解码速度包，`commander.c:74,100` 保存并提供当前目标，`stabilizer.c:326,341` 读目标并喂给上机 PID。其 `stabilizer.c:409` 日志给出 `ctrltarget`；`native.csv` 同时记录机体状态和电机请求（非实测电机转速）。复核时以 `native.csv` 的 `firmware_ms` 观察固件内顺序，以同一宿主的回调时间与发送对齐。
 - 固定源码版本见同目录 `README.md`。运行 `python3 analyze.py` 可重算表；`metrics.json` 是机器可读摘要。数据留本地 Git 忽略目录。
+
+**SITL 日志说明：** motor.m*req 读取的实机补偿缓冲在本 SITL 分支未更新，数值为零不能单独证明停桨。落地由宿主完成标记和末端位置复核；参见[补充记录](../crazyflie-full-state-20261125/README.md)中直接记录四路 PWM 的对照。

@@ -22,3 +22,5 @@
 [实测曲线](turn-brake.pdf) · [数值摘要](metrics.json) · [轻量证据索引](manifest.json) · [四类案例](../../docs/handover/CRAZYFLIE_CASES.md)
 
 从仓库根目录运行 `python3 evidence/crazyflie-turn-brake-20261124/verify.py`。公开 CSV 仅保留切换窗口及用于核对落地的末端记录。原生姿态采样峰值与 10 ms 对齐网格峰值（17.16° / 12.11°）分别保存在数值摘要。实验包装脚本 [run.py](run.py) 记录原运行配置，包含未在此发布的另两条出弯轨迹。运行时把它放入本地仿真根目录的子目录，由同级 `handover-pilot/runner.py` 提供[原始运行器](../crazyflie-20261123/runner.py)；离线复算不需要这些依赖。
+
+**SITL 日志说明：** motor.m*req 读取的实机补偿缓冲在本 SITL 分支未更新，数值为零不能单独证明停桨。落地由宿主完成标记和末端位置复核；参见[补充记录](../crazyflie-full-state-20261125/README.md)中直接记录四路 PWM 的对照。

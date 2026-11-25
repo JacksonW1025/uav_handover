@@ -34,6 +34,12 @@ for case in ('C_turn_brake','N_turn_brake'):
     assert float(p[-1]['stateEstimate.z']) < 0.075
     adopt=next(r for r in target if 0<=float(r['wall'])-t0<=.14 and all(abs(float(r[f'ctrltarget.v{k}'])-float(first[fld]))<1e-5 for k,fld in [('x','sent_vx'),('y','vycmd')]))
     assert abs((float(adopt['wall'])-t0)*1000-metrics[case]['first_pair_firmware_target_callback_ms'])<1e-6
+    def raw_tilt(r):
+        roll, pitch = map(float, (r['stabilizer.roll'], r['stabilizer.pitch']))
+        return math.degrees(math.acos(math.cos(math.radians(roll))*math.cos(math.radians(pitch))))
+    peak = max((r for r in a if 0 <= float(r['wall'])-t0 <= 1), key=raw_tilt)
+    assert abs(raw_tilt(peak)-metrics[case]['native_peak_first_second_deg'])<1e-9
+    assert abs((float(peak['wall'])-t0)*1000-metrics[case]['native_peak_first_second_ms'])<1e-8
     for dt in (.3,.4):
         vx,vy = sample(p,t0+dt,('stateEstimate.vx','stateEstimate.vy'))
         roll,pitch=sample(a,t0+dt,('stabilizer.roll','stabilizer.pitch'))

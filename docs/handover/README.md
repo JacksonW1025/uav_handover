@@ -15,4 +15,4 @@ T1 的 35° 是紧弯实验的倾角预算。T1 和 T3 原始运行记录中的 
 
 ## 第二套飞控环境
 
-[Crazyflie 交接实验](../../evidence/crazyflie-20261123/README.md)用宿主经典与学习型外环交接，在始终保留 Crazyflie 固件 PID 的条件下观察了同样四类机制。
+[Crazyflie 四类交接案例](CRAZYFLIE_CASES.md)用宿主经典与学习型外环交接，在始终保留 Crazyflie 固件 PID 的条件下观察了同样四类机制。

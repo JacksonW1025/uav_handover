@@ -5,7 +5,7 @@
 ## 交接实验
 
 - [PX4/RAPTOR 交接实验](docs/handover/README.md)
-- [Crazyflie 交接实验](evidence/crazyflie-20261123/README.md)：单种子、七次 SITL，包含四类交接机制的闭环实例。
+- [Crazyflie 四类交接案例](docs/handover/CRAZYFLIE_CASES.md)：单种子 SITL，含转弯刹车对照和历史、参考、命令交付案例。
 
 ## 本地检查
 

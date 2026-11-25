@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="460" viewBox="0 0 1000 460">
+<defs><marker id="arrow" markerWidth="9" markerHeight="8" refX="8" refY="4" orient="auto"><path fill="#42657e" d="M0 0L8 4L0 8Z"/></marker></defs>
+<style>text{font:16px system-ui,sans-serif;fill:#18354c}.title{font-size:24px;font-weight:700}.small{font-size:14px}.box{fill:#f8fbff;stroke:#9eb7ca;stroke-width:1.5}.arrow{stroke:#42657e;stroke-width:2;fill:none;marker-end:url(#arrow)}.classical{fill:#eaf4ff}.neural{fill:#f2edff}.neutral{fill:#eaf7f0}</style>
+<rect width="1000" height="460" fill="#fff"/><text x="28" y="40" class="title">Autoware 2.0.0 · Runtime planner handover in simulation</text>
+<rect class="box" x="28" y="74" width="220" height="84" rx="12"/><text x="42" y="105">Shared observations</text><text class="small" x="42" y="130">odometry · map · route · objects</text>
+<rect class="box classical" x="290" y="69" width="219" height="66" rx="12"/><text x="304" y="98">Stock full rule-based planner</text><text class="small" x="304" y="119">Trajectory → Candidate adapter</text>
+<rect class="box neural" x="290" y="165" width="219" height="66" rx="12"/><text x="304" y="194">Stock Diffusion Planner</text><text class="small" x="304" y="216">native history → stock modifier</text>
+<path class="arrow" d="M248 105H288"/><path class="arrow" d="M248 133h20v65h20"/>
+<rect class="box neutral" x="558" y="107" width="411" height="114" rx="12"/><text x="574" y="139">Official Selector with explicit C / N source preference</text><text class="small" x="574" y="169">Concatenate → official validation → source filter</text><text class="small" x="574" y="195">→ rank → official adapter (unchanged header &amp; points)</text>
+<path class="arrow" d="M509 110h24v39h24"/><path class="arrow" d="M509 198h24v-20h24"/>
+<rect class="box" x="28" y="280" width="228" height="68" rx="12"/><text x="42" y="310">Planning Validator</text><text class="small" x="42" y="333">stock common downstream check</text>
+<rect class="box" x="285" y="280" width="180" height="68" rx="12"/><text x="300" y="310">MPC / PID</text><text class="small" x="300" y="333">actual control tick trace</text>
+<rect class="box" x="495" y="280" width="174" height="68" rx="12"/><text x="508" y="310">Vehicle command gate</text><text class="small" x="508" y="333">stock filters</text>
+<rect class="box" x="702" y="280" width="267" height="68" rx="12"/><text x="715" y="310">Planning Simulator</text><text class="small" x="715" y="333">actual vehicle-model input + motion</text>
+<path class="arrow" d="M770 223v28H140v28"/><path class="arrow" d="M256 316h28"/><path class="arrow" d="M465 316h29"/><path class="arrow" d="M669 316h32"/>
+<path class="arrow" d="M835 348v43H16V115h11"/><text x="32" y="429" class="small">Command source preference changes while both planners and simulator remain running. No reference smoothing is added.</text>
+</svg>

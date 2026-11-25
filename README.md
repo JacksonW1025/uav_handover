@@ -4,6 +4,7 @@
 
 ## 交接实验
 
+- [跨平台 T1–T4 证据索引](docs/handover/CROSS_PLATFORM_EVIDENCE.md)：PX4、Crazyflie、ArduPilot、Paparazzi 与 Autoware。
 - [PX4/RAPTOR 交接实验](docs/handover/README.md)
 - [Crazyflie 四类交接案例](docs/handover/CRAZYFLIE_CASES.md)：单种子 SITL，含转弯刹车对照和历史、参考、命令交付案例。
 

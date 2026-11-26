@@ -1,0 +1,128 @@
+diff --git a/src/modules/commander/Commander.cpp b/src/modules/commander/Commander.cpp
+index 5022375a..55c00e08 100644
+--- a/src/modules/commander/Commander.cpp
++++ b/src/modules/commander/Commander.cpp
+@@ -39,6 +39,7 @@
+  */
+ 
+ #include "Commander.hpp"
++#include <lib/mcnn_obs/mcnn_readonly_observer.hpp>
+ 
+ /* commander module headers */
+ #include "Arming/ArmAuthorization/ArmAuthorization.h"
+@@ -1024,6 +1025,9 @@ Commander::handle_command(const vehicle_command_s &cmd)
+ 
+ 						case PX4_CUSTOM_SUB_MODE_EXTERNAL1...PX4_CUSTOM_SUB_MODE_EXTERNAL8:
+ 							desired_nav_state = vehicle_status_s::NAVIGATION_STATE_EXTERNAL1 + (custom_sub_mode - PX4_CUSTOM_SUB_MODE_EXTERNAL1);
++#ifdef __PX4_POSIX
++							mcnn_obs::Observer::instance().record_mode_request(hrt_absolute_time(), desired_nav_state);
++#endif
+ 							break;
+ 
+ 						default:
+diff --git a/src/modules/mc_nn_control/mc_nn_control.cpp b/src/modules/mc_nn_control/mc_nn_control.cpp
+index 84aa2ca5..2e44cf06 100644
+--- a/src/modules/mc_nn_control/mc_nn_control.cpp
++++ b/src/modules/mc_nn_control/mc_nn_control.cpp
+@@ -40,6 +40,7 @@
+ 
+ #include "mc_nn_control.hpp"
+ #include <px4_platform_common/events.h>
++#include <lib/mcnn_obs/mcnn_readonly_observer.hpp>
+ 
+ using namespace time_literals;
+ #ifdef __PX4_NUTTX
+@@ -632,6 +633,12 @@ void MulticopterNeuralNetworkControl::Run()
+ 		_use_neural = vehicle_status.nav_state == _mode_id;
+ 
+ 		if (!prev_use_neural && _use_neural) {
++#ifdef __PX4_POSIX
++			mcnn_obs::Observer::instance().record_mode_transition(
++				true, hrt_absolute_time(), static_cast<int>(_mode_id),
++				_trajectory_setpoint.timestamp, _trajectory_setpoint.position,
++				_position.x, _position.y, _position.z);
++#endif
+ 			ConfigureNeuralFlightMode(_mode_id);
+ 			ReportActionRange();
+ 
+@@ -641,6 +648,13 @@ void MulticopterNeuralNetworkControl::Run()
+ 			    || !PX4_ISFINITE(_trajectory_setpoint.position[2])) {
+ 				reset_trajectory_setpoint(_position);
+ 			}
++		} else if (prev_use_neural && !_use_neural) {
++#ifdef __PX4_POSIX
++			mcnn_obs::Observer::instance().record_mode_transition(
++				false, hrt_absolute_time(), static_cast<int>(_mode_id),
++				_trajectory_setpoint.timestamp, _trajectory_setpoint.position,
++				_position.x, _position.y, _position.z);
++#endif
+ 		}
+ 	}
+ 
+@@ -670,6 +684,9 @@ void MulticopterNeuralNetworkControl::Run()
+ 	if (!_use_neural || !_mapping_valid) {
+ 		// If the neural network flight mode is not enabled, do nothing. A network that
+ 		// misbehaved is trusted again once the mode has been left.
++#ifdef __PX4_POSIX
++		mcnn_obs::Observer::instance().on_neural_inactive();
++#endif
+ 		_output_fault = false;
+ 		_reported_observation_fault = nn_control::ObservationFault::None;
+ 		_have_last_command = false;
+@@ -793,7 +810,16 @@ void MulticopterNeuralNetworkControl::Run()
+ 		}
+ 
+ 		_have_last_command = true;
++#ifdef __PX4_POSIX
++		const int64_t obs_pub_seq = mcnn_obs::Observer::instance().before_neural_publish();
++#endif
+ 		PublishOutput(_output_tensor->data.f);
++#ifdef __PX4_POSIX
++		mcnn_obs::Observer::instance().after_neural_publish(
++			hrt_absolute_time(), obs_pub_seq,
++			_trajectory_setpoint.timestamp, _trajectory_setpoint.position,
++			_position.x, _position.y, _position.z, _output_tensor->data.f);
++#endif
+ 
+ 		int32_t full_controller_time = GetTime() - start_time1;
+ 
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+index c2c8588b..bde01e80 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+@@ -33,6 +33,7 @@
+ 
+ #include "GZMixingInterfaceESC.hpp"
+ #include <lib/mathlib/mathlib.h>
++#include <lib/mcnn_obs/mcnn_readonly_observer.hpp>
+ 
+ bool GZMixingInterfaceESC::init(const std::string &model_name)
+ {
+@@ -100,6 +101,27 @@ bool GZMixingInterfaceESC::updateOutputs(float outputs[MAX_ACTUATORS], unsigned
+ 		}
+ 
+ 		if (_actuators_pub.Valid()) {
++#ifdef __PX4_POSIX
++			const uint64_t now_us = hrt_absolute_time();
++			const mcnn_obs::Snapshot snap = mcnn_obs::Observer::instance().snapshot();
++			auto *hdr = rotor_velocity_message.mutable_header();
++			auto *kv_pub = hdr->add_data();
++			kv_pub->set_key("px4_pub_us");
++			kv_pub->add_value(std::to_string(static_cast<unsigned long long>(now_us)));
++			auto *kv_nn = hdr->add_data();
++			kv_nn->set_key("is_neural");
++			kv_nn->add_value(std::to_string(snap.is_neural));
++			auto *kv_seq = hdr->add_data();
++			kv_seq->set_key("mcnn_seq");
++			kv_seq->add_value(std::to_string(static_cast<long long>(snap.pub_seq)));
++			float out4[4] {0.f, 0.f, 0.f, 0.f};
++
++			for (unsigned i = 0; i < 4 && i < active_output_count; ++i) {
++				out4[i] = outputs[i];
++			}
++
++			mcnn_obs::Observer::instance().record_gz_esc_pub(now_us, snap, out4);
++#endif
+ 			return _actuators_pub.Publish(rotor_velocity_message);
+ 		}
+ 	}

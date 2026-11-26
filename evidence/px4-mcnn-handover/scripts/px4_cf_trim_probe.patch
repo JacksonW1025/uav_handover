@@ -1,0 +1,253 @@
+diff --git a/src/modules/commander/Commander.cpp b/src/modules/commander/Commander.cpp
+index 5022375a..55c00e08 100644
+--- a/src/modules/commander/Commander.cpp
++++ b/src/modules/commander/Commander.cpp
+@@ -39,6 +39,7 @@
+  */
+ 
+ #include "Commander.hpp"
++#include <lib/mcnn_obs/mcnn_readonly_observer.hpp>
+ 
+ /* commander module headers */
+ #include "Arming/ArmAuthorization/ArmAuthorization.h"
+@@ -1024,6 +1025,9 @@ Commander::handle_command(const vehicle_command_s &cmd)
+ 
+ 						case PX4_CUSTOM_SUB_MODE_EXTERNAL1...PX4_CUSTOM_SUB_MODE_EXTERNAL8:
+ 							desired_nav_state = vehicle_status_s::NAVIGATION_STATE_EXTERNAL1 + (custom_sub_mode - PX4_CUSTOM_SUB_MODE_EXTERNAL1);
++#ifdef __PX4_POSIX
++							mcnn_obs::Observer::instance().record_mode_request(hrt_absolute_time(), desired_nav_state);
++#endif
+ 							break;
+ 
+ 						default:
+diff --git a/src/modules/mc_nn_control/mc_nn_control.cpp b/src/modules/mc_nn_control/mc_nn_control.cpp
+index 84aa2ca5..cbce2732 100644
+--- a/src/modules/mc_nn_control/mc_nn_control.cpp
++++ b/src/modules/mc_nn_control/mc_nn_control.cpp
+@@ -40,6 +40,7 @@
+ 
+ #include "mc_nn_control.hpp"
+ #include <px4_platform_common/events.h>
++#include <lib/mcnn_obs/mcnn_readonly_observer.hpp>
+ 
+ using namespace time_literals;
+ #ifdef __PX4_NUTTX
+@@ -632,6 +633,12 @@ void MulticopterNeuralNetworkControl::Run()
+ 		_use_neural = vehicle_status.nav_state == _mode_id;
+ 
+ 		if (!prev_use_neural && _use_neural) {
++#ifdef __PX4_POSIX
++			mcnn_obs::Observer::instance().record_mode_transition(
++				true, hrt_absolute_time(), static_cast<int>(_mode_id),
++				_trajectory_setpoint.timestamp, _trajectory_setpoint.position,
++				_position.x, _position.y, _position.z);
++#endif
+ 			ConfigureNeuralFlightMode(_mode_id);
+ 			ReportActionRange();
+ 
+@@ -641,6 +648,13 @@ void MulticopterNeuralNetworkControl::Run()
+ 			    || !PX4_ISFINITE(_trajectory_setpoint.position[2])) {
+ 				reset_trajectory_setpoint(_position);
+ 			}
++		} else if (prev_use_neural && !_use_neural) {
++#ifdef __PX4_POSIX
++			mcnn_obs::Observer::instance().record_mode_transition(
++				false, hrt_absolute_time(), static_cast<int>(_mode_id),
++				_trajectory_setpoint.timestamp, _trajectory_setpoint.position,
++				_position.x, _position.y, _position.z);
++#endif
+ 		}
+ 	}
+ 
+@@ -670,6 +684,56 @@ void MulticopterNeuralNetworkControl::Run()
+ 	if (!_use_neural || !_mapping_valid) {
+ 		// If the neural network flight mode is not enabled, do nothing. A network that
+ 		// misbehaved is trusted again once the mode has been left.
++#ifdef __PX4_POSIX
++		mcnn_obs::Observer::instance().on_neural_inactive();
++		actuator_motors_s am_last{};
++
++		if (_cf_actuator_motors_sub.update(&am_last)) {
++			bool all_ok = true;
++
++			for (int i = 0; i < 4; i++) {
++				if (!PX4_ISFINITE(am_last.control[i])) {
++					all_ok = false;
++				}
++			}
++
++			if (all_ok) {
++				for (int i = 0; i < 4; i++) {
++					_cf_last_classic_u[i] = am_last.control[i];
++				}
++
++				_cf_have_classic = true;
++
++				const char *cf_mode_env = std::getenv("MCNN_CF_TRIM_MODE");
++
++				if (cf_mode_env != nullptr && (cf_mode_env[0] == 's' || cf_mode_env[0] == 'b')) {
++					vehicle_local_position_s lp_cf{};
++					vehicle_angular_velocity_s av_cf{};
++
++					if (_position_sub.copy(&lp_cf) && _angular_velocity_sub.copy(&av_cf)) {
++						const float spd = sqrtf(lp_cf.vx * lp_cf.vx + lp_cf.vy * lp_cf.vy + lp_cf.vz * lp_cf.vz);
++						const float wmag = sqrtf(av_cf.xyz[0] * av_cf.xyz[0] + av_cf.xyz[1] * av_cf.xyz[1] + av_cf.xyz[2] * av_cf.xyz[2]);
++
++						if (lp_cf.z < -2.0f && spd < 0.25f && wmag < 0.15f) {
++							const char *nom_env = std::getenv("MCNN_CF_NOM_HOVER_U");
++							const float nom_u = (nom_env != nullptr && nom_env[0] != '\0') ? static_cast<float>(std::atof(nom_env)) : 0.5564f;
++							const float mean_c = 0.25f * (_cf_last_classic_u[0] + _cf_last_classic_u[1] + _cf_last_classic_u[2] + _cf_last_classic_u[3]);
++							const float d_coll = mean_c - nom_u;
++							const float alpha = _cf_have_steady_trim ? 0.02f : 1.0f;
++
++							for (int i = 0; i < 4; i++) {
++								_cf_steady_trim[i] = (1.f - alpha) * _cf_steady_trim[i] + alpha * d_coll;
++							}
++
++							_cf_have_steady_trim = true;
++						}
++					}
++				}
++			}
++		}
++
++		_cf_bias_captured = false;
++#endif
+ 		_output_fault = false;
+ 		_reported_observation_fault = nn_control::ObservationFault::None;
+ 		_have_last_command = false;
+@@ -788,12 +852,68 @@ void MulticopterNeuralNetworkControl::Run()
+ 		// Convert the output tensor to actuator values
+ 		RescaleActions();
+ 
++#ifdef __PX4_POSIX
++		// Counterfactual diagnostic probe ONLY (explicitly opted-in via env MCNN_CF_TRIM_TAU_S)
++		const char *cf_tau_env = std::getenv("MCNN_CF_TRIM_TAU_S");
++
++		if (cf_tau_env != nullptr && cf_tau_env[0] != '\0' && _cf_have_classic) {
++			const float cf_tau = static_cast<float>(std::atof(cf_tau_env));
++
++			const char *cf_mode_env = std::getenv("MCNN_CF_TRIM_MODE");
++			const bool steady_mode = (cf_mode_env != nullptr && cf_mode_env[0] == 's' && _cf_have_steady_trim);
++			const bool bumpless_steady = (cf_mode_env != nullptr && cf_mode_env[0] == 'b' && _cf_have_steady_trim);
++
++			if (!_cf_bias_captured) {
++				if (steady_mode) {
++					for (int i = 0; i < 4; i++) {
++						_cf_trim_bias[i] = _cf_steady_trim[i];
++					}
++				} else if (bumpless_steady) {
++					for (int i = 0; i < 4; i++) {
++						_cf_trim_bias[i] = _cf_last_classic_u[i] - (_output_tensor->data.f[i] + _cf_steady_trim[i]);
++					}
++				} else {
++					for (int i = 0; i < 4; i++) {
++						_cf_trim_bias[i] = _cf_last_classic_u[i] - _output_tensor->data.f[i];
++					}
++				}
++
++				_cf_t0_us = hrt_absolute_time();
++				_cf_bias_captured = true;
++			}
++
++			float weight = 0.f;
++
++			if (cf_tau < 0.f) {
++				weight = 1.f;
++
++			} else if (cf_tau > 1e-4f) {
++				const float dt_cf = static_cast<float>(hrt_absolute_time() - _cf_t0_us) * 1e-6f;
++				weight = expf(-dt_cf / cf_tau);
++			}
++
++			for (int i = 0; i < 4; i++) {
++				const float steady_add = bumpless_steady ? _cf_steady_trim[i] : 0.f;
++				_output_tensor->data.f[i] = math::constrain(_output_tensor->data.f[i] + steady_add + weight * _cf_trim_bias[i], 0.f, 1.f);
++			}
++		}
++#endif
++
+ 		for (int i = 0; i < nn_control::kOutputSize; i++) {
+ 			_last_command[i] = _output_tensor->data.f[i];
+ 		}
+ 
+ 		_have_last_command = true;
++#ifdef __PX4_POSIX
++		const int64_t obs_pub_seq = mcnn_obs::Observer::instance().before_neural_publish();
++#endif
+ 		PublishOutput(_output_tensor->data.f);
++#ifdef __PX4_POSIX
++		mcnn_obs::Observer::instance().after_neural_publish(
++			hrt_absolute_time(), obs_pub_seq,
++			_trajectory_setpoint.timestamp, _trajectory_setpoint.position,
++			_position.x, _position.y, _position.z, _output_tensor->data.f);
++#endif
+ 
+ 		int32_t full_controller_time = GetTime() - start_time1;
+ 
+diff --git a/src/modules/mc_nn_control/mc_nn_control.hpp b/src/modules/mc_nn_control/mc_nn_control.hpp
+index f2db6e0b..9358e28c 100644
+--- a/src/modules/mc_nn_control/mc_nn_control.hpp
++++ b/src/modules/mc_nn_control/mc_nn_control.hpp
+@@ -141,6 +141,7 @@ private:
+ 	uORB::Subscription _trajectory_setpoint_sub{ORB_ID(trajectory_setpoint)};
+ 	uORB::Subscription _attitude_sub{ORB_ID(vehicle_attitude)};
+ 	uORB::Subscription _manual_control_setpoint_sub{ORB_ID(manual_control_setpoint)};
++	uORB::Subscription _cf_actuator_motors_sub{ORB_ID(actuator_motors)};
+ 	uORB::SubscriptionCallbackWorkItem _angular_velocity_sub{this, ORB_ID(vehicle_angular_velocity)};
+ 
+ 	// Publications
+@@ -177,6 +178,13 @@ private:
+ 	// commander leaves the mode after a fault. Cleared whenever the mode is not active.
+ 	float _last_command[4] {};
+ 	bool _have_last_command{false};
++	float _cf_last_classic_u[4] {0.f, 0.f, 0.f, 0.f};
++	bool _cf_have_classic{false};
++	float _cf_trim_bias[4] {0.f, 0.f, 0.f, 0.f};
++	bool _cf_bias_captured{false};
++	float _cf_steady_trim[4] {0.f, 0.f, 0.f, 0.f};
++	bool _cf_have_steady_trim{false};
++	hrt_abstime _cf_t0_us{0};
+ 	hrt_abstime _last_invalid_limits_report{0};
+ 	float _mapping_thrust_coeff{0.f};
+ 	float _mapping_min_rpm{0.f};
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+index c2c8588b..bde01e80 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+@@ -33,6 +33,7 @@
+ 
+ #include "GZMixingInterfaceESC.hpp"
+ #include <lib/mathlib/mathlib.h>
++#include <lib/mcnn_obs/mcnn_readonly_observer.hpp>
+ 
+ bool GZMixingInterfaceESC::init(const std::string &model_name)
+ {
+@@ -100,6 +101,27 @@ bool GZMixingInterfaceESC::updateOutputs(float outputs[MAX_ACTUATORS], unsigned
+ 		}
+ 
+ 		if (_actuators_pub.Valid()) {
++#ifdef __PX4_POSIX
++			const uint64_t now_us = hrt_absolute_time();
++			const mcnn_obs::Snapshot snap = mcnn_obs::Observer::instance().snapshot();
++			auto *hdr = rotor_velocity_message.mutable_header();
++			auto *kv_pub = hdr->add_data();
++			kv_pub->set_key("px4_pub_us");
++			kv_pub->add_value(std::to_string(static_cast<unsigned long long>(now_us)));
++			auto *kv_nn = hdr->add_data();
++			kv_nn->set_key("is_neural");
++			kv_nn->add_value(std::to_string(snap.is_neural));
++			auto *kv_seq = hdr->add_data();
++			kv_seq->set_key("mcnn_seq");
++			kv_seq->add_value(std::to_string(static_cast<long long>(snap.pub_seq)));
++			float out4[4] {0.f, 0.f, 0.f, 0.f};
++
++			for (unsigned i = 0; i < 4 && i < active_output_count; ++i) {
++				out4[i] = outputs[i];
++			}
++
++			mcnn_obs::Observer::instance().record_gz_esc_pub(now_us, snap, out4);
++#endif
+ 			return _actuators_pub.Publish(rotor_velocity_message);
+ 		}
+ 	}

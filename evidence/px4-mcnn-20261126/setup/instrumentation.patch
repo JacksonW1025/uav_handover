@@ -1,0 +1,108 @@
+diff --git a/src/lib/mixer_module/functions/FunctionMotors.hpp b/src/lib/mixer_module/functions/FunctionMotors.hpp
+index 76e2b274..71f30a9f 100644
+--- a/src/lib/mixer_module/functions/FunctionMotors.hpp
++++ b/src/lib/mixer_module/functions/FunctionMotors.hpp
+@@ -78,6 +78,8 @@ public:
+ 
+ 	bool getLatestSampleTimestamp(hrt_abstime &t) const override { t = _data.timestamp_sample; return t != 0; }
+ 
++	hrt_abstime getLatestMotorPublicationTimestamp() const { return _data.timestamp; }
++
+ 	static inline void updateValues(uint32_t reversible, float thrust_factor, float *values, int num_values)
+ 	{
+ 		if (thrust_factor > FLT_EPSILON && thrust_factor <= 1.f) {
+diff --git a/src/lib/mixer_module/mixer_module.hpp b/src/lib/mixer_module/mixer_module.hpp
+index d2b9d709..8dbc2e6e 100644
+--- a/src/lib/mixer_module/mixer_module.hpp
++++ b/src/lib/mixer_module/mixer_module.hpp
+@@ -144,6 +144,8 @@ public:
+ 	 */
+ 	bool isFunctionSet(int index) const { return _functions[index] != nullptr; }
+ 
++	hrt_abstime getLatestMotorPublicationTimestamp(int index) const { return isMotor(index) ? static_cast<FunctionMotors *>(_functions[index])->getLatestMotorPublicationTimestamp() : 0; }
++
+ 	OutputFunction outputFunction(int index) const { return _function_assignment[index]; }
+ 
+ 	bool isMotor(int index) const { return isFunctionSet(index) && (_function_assignment[index] >= OutputFunction::Motor1) && (_function_assignment[index] <= OutputFunction::Motor12); }
+diff --git a/src/modules/mc_nn_control/mc_nn_control.cpp b/src/modules/mc_nn_control/mc_nn_control.cpp
+index 84aa2ca5..38220248 100644
+--- a/src/modules/mc_nn_control/mc_nn_control.cpp
++++ b/src/modules/mc_nn_control/mc_nn_control.cpp
+@@ -46,12 +46,33 @@ using namespace time_literals;
+ #include <drivers/drv_hrt.h>
+ #else
+ #include <chrono>
++#include <cstdio>
++#include <cstdlib>
+ #endif
+ 
+ ModuleBase::Descriptor MulticopterNeuralNetworkControl::desc{task_spawn, custom_command, print_usage};
+ 
+ namespace
+ {
++#if defined(__PX4_POSIX)
++// Read-only SITL timing observer. The recorded values never feed inference or control.
++void mcnn_trace(char event, uint64_t when, const trajectory_setpoint_s &sp,
++                const vehicle_local_position_s &pos, const float *act = nullptr)
++{
++ static FILE *file = []() -> FILE * {
++  const char *name = std::getenv("MCNN_NATIVE_TRACE");
++  return name ? std::fopen(name, "w") : nullptr;
++ }();
++ if (!file) { return; }
++ std::fprintf(file, "%c,%llu,%llu,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g\n",
++  event, static_cast<unsigned long long>(when), static_cast<unsigned long long>(sp.timestamp),
++  static_cast<double>(sp.position[0]), static_cast<double>(sp.position[1]), static_cast<double>(sp.position[2]),
++  static_cast<double>(pos.x), static_cast<double>(pos.y), static_cast<double>(pos.z),
++  static_cast<double>(act ? act[0] : NAN), static_cast<double>(act ? act[1] : NAN),
++  static_cast<double>(act ? act[2] : NAN), static_cast<double>(act ? act[3] : NAN));
++ if (event == 'A') { std::fflush(file); }
++}
++#endif
+ }  // namespace
+ 
+ MulticopterNeuralNetworkControl::MulticopterNeuralNetworkControl() :
+@@ -531,6 +552,9 @@ void MulticopterNeuralNetworkControl::PublishOutput(float *command_actions)
+ 	actuator_motors.reversible_flags = 0;
+ 
+ 	_actuator_motors_pub.publish(actuator_motors);
++#if defined(__PX4_POSIX)
++	mcnn_trace('N', actuator_motors.timestamp, _trajectory_setpoint, _position, command_actions);
++#endif
+ }
+ 
+ 
+@@ -632,6 +656,9 @@ void MulticopterNeuralNetworkControl::Run()
+ 		_use_neural = vehicle_status.nav_state == _mode_id;
+ 
+ 		if (!prev_use_neural && _use_neural) {
++#if defined(__PX4_POSIX)
++			mcnn_trace('A', hrt_absolute_time(), _trajectory_setpoint, _position);
++#endif
+ 			ConfigureNeuralFlightMode(_mode_id);
+ 			ReportActionRange();
+ 
+@@ -744,6 +771,9 @@ void MulticopterNeuralNetworkControl::Run()
+ 				if (PX4_ISFINITE(_trajectory_setpoint_temp.position[0]) && PX4_ISFINITE(_trajectory_setpoint_temp.position[1]) &&
+ 				    PX4_ISFINITE(_trajectory_setpoint_temp.position[2])) {
+ 					_trajectory_setpoint = _trajectory_setpoint_temp;
++#if defined(__PX4_POSIX)
++					mcnn_trace('R', hrt_absolute_time(), _trajectory_setpoint, _position);
++#endif
+ 				}
+ 			}
+ 		}
+diff --git a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+index c2c8588b..8930e701 100644
+--- a/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
++++ b/src/modules/simulation/gz_bridge/GZMixingInterfaceESC.cpp
+@@ -90,6 +90,9 @@ bool GZMixingInterfaceESC::updateOutputs(float outputs[MAX_ACTUATORS], unsigned
+ 
+ 	if (active_output_count > 0) {
+ 		gz::msgs::Actuators rotor_velocity_message;
++		const auto motor_pub_us = _mixing_output.getLatestMotorPublicationTimestamp(0);
++		rotor_velocity_message.mutable_header()->mutable_stamp()->set_sec(motor_pub_us / 1000000);
++		rotor_velocity_message.mutable_header()->mutable_stamp()->set_nsec((motor_pub_us % 1000000) * 1000);
+ 
+ 		auto *vel = rotor_velocity_message.mutable_velocity();
+ 		vel->Clear();

@@ -2,9 +2,15 @@
 
 ## 已发布数据
 
-在仓库根目录运行 `python3 tests/check_evidence.py`。脚本读取版本库中的 CSV、压缩轨迹和 JSON，核对 T1 三臂峰值与接管时序、T2 电机和高度响应及紧弯回放、T3 两组参考空窗和六条转弯轨迹、T4 样本的转发及应用。它只读取数据。Python、JSON 和源码归档的静态核对使用 `python3 tests/check_baseline.py`。
+在仓库根目录运行 `python3 tests/check_evidence.py`。脚本只读核对两套飞控已发布数据：PX4/RAPTOR 的 T1–T4 轨迹、峰值、时序和样本审计（含机制图存在性），以及 Crazyflie 2.1 的 69 组闭环摘要、5 张图谱、64 份压缩轨迹及 SHA-256 清单。Python、JSON 和源码归档的静态核对使用 `python3 tests/check_baseline.py`。
 
-## 从原始记录重新分析
+## Crazyflie 2.1 离线核验与本地重跑
+
+- 离线核验：`python3 evidence/crazyflie/verify.py`
+- 从归档压缩轨迹重绘 5 张图谱：`python3 evidence/crazyflie/harness/plot_crazyflie_evidence.py`
+- 重新编译并执行 69 组 1000 Hz 固件锁步闭环：参见 [evidence/crazyflie/README.md](../../evidence/crazyflie/README.md)（按 [manifest.json](../../evidence/crazyflie/manifest.json) 检出四个固定上游提交，设置 `CF_DEPS_DIR` 后执行 `evidence/crazyflie/harness/build.sh`）。
+
+## 从原始记录重新分析（PX4 / RAPTOR）
 
 | 案例 | 入口 | 输入 |
 | --- | --- | --- |

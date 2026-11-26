@@ -1,0 +1,3 @@
+#pragma once
+#define CONFIG_PLATFORM_CF2 1
+#define CONFIG_CONTROLLER_OOT 1

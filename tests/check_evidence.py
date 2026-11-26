@@ -160,6 +160,31 @@ def check_t4():
     print("T4 · hover pair, motor-sample chain and archive hashes")
 
 
+def check_px4_figures():
+    figures = EVIDENCE / "px4-figures"
+    expected = [
+        "t1-x500-photo-v12.png",
+        "t2-closed-loop-straight.png",
+        "t2-tight-turn-v7.png",
+        "t3-reference-mechanism-v6.png",
+        "t3-reference-mechanism-v14.png",
+        "t4-turn-exit-mechanism-v8.png",
+    ]
+    for name in expected:
+        path = figures / name
+        assert path.exists() and path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n", path
+    print("PX4 figures · 6 mechanism diagrams verified")
+
+
+def check_crazyflie():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("cf_verify", EVIDENCE / "crazyflie/verify.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.main()
+
+
 def check_docs():
     for document in ROOT.rglob("*.md"):
         for target in re.findall(r"\]\(([^)]+)\)", document.read_text()):
@@ -173,5 +198,7 @@ if __name__ == "__main__":
     check_t2()
     check_t3()
     check_t4()
+    check_px4_figures()
+    check_crazyflie()
     check_docs()
-    print("PASS · published T1–T4 evidence and local documentation links")
+    print("PASS · published PX4 & Crazyflie T1–T4 evidence and local documentation links")

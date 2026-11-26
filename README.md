@@ -1,12 +1,12 @@
 # 无人机仿真工具
 
-本仓库提供基于 PX4 和 Gazebo 的软件在环（SITL）实验配置、运行脚本和日志分析工具。
+本仓库提供基于 PX4/Gazebo 与 Crazyflie 固件闭环的仿真配置、运行脚本和日志分析工具。
 
 ## 交接实验
 
-- [跨平台 T1–T4 证据索引](docs/handover/CROSS_PLATFORM_EVIDENCE.md)：PX4、Crazyflie、ArduPilot、Paparazzi 与 Autoware。
-- [PX4/RAPTOR 交接实验](docs/handover/README.md)
-- [Crazyflie 四类交接案例](docs/handover/CRAZYFLIE_CASES.md)：单种子 SITL，含转弯刹车对照和历史、参考、命令交付案例。
+- [PX4/RAPTOR 与 Crazyflie 2.1 交接汇总](docs/handover/README.md)
+- [PX4/RAPTOR T1–T4](docs/handover/T1.md)（[T1](docs/handover/T1.md) · [T2](docs/handover/T2.md) · [T3](docs/handover/T3.md) · [T4](docs/handover/T4.md)）
+- [Crazyflie 2.1 T1–T4](docs/handover/CRAZYFLIE_CASES.md)
 
 ## 本地检查
 
@@ -14,9 +14,8 @@
 
 ```bash
 python3 tests/check_baseline.py
+python3 tests/check_evidence.py
 ```
-
-该命令检查 Python 与 JSON 文件、源码归档路径和本地文档链接。
 
 ## 仿真环境
 

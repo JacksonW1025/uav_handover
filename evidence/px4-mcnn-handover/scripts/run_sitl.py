@@ -192,53 +192,52 @@ def smooth_ramp_1d(t: float, t_accel: float, v_max: float) -> tuple[float, float
     return x_end + v_max * (t - t_accel), v_max, 0.0
 
 
+def _rot2d(fwd: float, right: float, yaw_rad: float) -> tuple[float, float]:
+    """Rotate horizontal (forward, right) vector by NED yaw_rad into (x_ned, y_ned)."""
+    c = math.cos(yaw_rad)
+    s = math.sin(yaw_rad)
+    return c * fwd - s * right, s * fwd + c * right
+
+
 def eval_trajectory(spec: dict[str, Any], tau: float) -> dict[str, Any]:
     """
     Deterministic analytic trajectory reference in PX4 NED frame at elapsed maneuver time tau >= 0.
+    Computes trajectory in body-aligned (fwd, right) coordinates and rotates by yaw_ref_deg
+    (default +90 deg NED = East = ENU 0 deg equilibrium of official mc_nn_control) into NED.
     Returns dict(pos=(x,y,z), vel=(vx,vy,vz), acc=(ax,ay,az), yaw=float, use_pos=bool, use_vel=bool, use_acc=bool).
     """
     kind = spec["trajectory"]
     z0 = -float(spec.get("altitude_m", DEFAULT_H_M))
-    nan = math.nan
+    yaw_ref = math.radians(float(spec.get("yaw_ref_deg", 90.0)))
 
-    if kind == "hover":
+    def _pack(s_fwd: float, s_right: float, v_fwd: float, v_right: float, a_fwd: float, a_right: float) -> dict[str, Any]:
+        px, py = _rot2d(s_fwd, s_right, yaw_ref)
+        vx, vy = _rot2d(v_fwd, v_right, yaw_ref)
+        ax, ay = _rot2d(a_fwd, a_right, yaw_ref)
         return {
-            "pos": (0.0, 0.0, z0),
-            "vel": (0.0, 0.0, 0.0),
-            "acc": (0.0, 0.0, 0.0),
-            "yaw": 0.0,
+            "pos": (px, py, z0),
+            "vel": (vx, vy, 0.0),
+            "acc": (ax, ay, 0.0),
+            "yaw": yaw_ref,
             "use_pos": True,
             "use_vel": True,
             "use_acc": True,
         }
+
+    if kind == "hover":
+        return _pack(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
 
     if kind == "benign_cruise":
         v = float(spec.get("speed_m_s", 1.0))
         t_acc = float(spec.get("t_accel_s", 2.0))
         x, vx, ax = smooth_ramp_1d(tau, t_acc, v)
-        return {
-            "pos": (x, 0.0, z0),
-            "vel": (vx, 0.0, 0.0),
-            "acc": (ax, 0.0, 0.0),
-            "yaw": 0.0,
-            "use_pos": True,
-            "use_vel": True,
-            "use_acc": True,
-        }
+        return _pack(x, 0.0, vx, 0.0, ax, 0.0)
 
     if kind == "straight_cruise":
         v = float(spec.get("speed_m_s", 2.5))
         t_acc = float(spec.get("t_accel_s", 2.0))
         x, vx, ax = smooth_ramp_1d(tau, t_acc, v)
-        return {
-            "pos": (x, 0.0, z0),
-            "vel": (vx, 0.0, 0.0),
-            "acc": (ax, 0.0, 0.0),
-            "yaw": 0.0,
-            "use_pos": True,
-            "use_vel": True,
-            "use_acc": True,
-        }
+        return _pack(x, 0.0, vx, 0.0, ax, 0.0)
 
     if kind == "straight_brake":
         v = float(spec.get("speed_m_s", 5.0))
@@ -259,18 +258,10 @@ def eval_trajectory(spec: dict[str, Any], tau: float) -> dict[str, Any]:
                 x = x_b + 0.5 * v * t_dec
                 vx = 0.0
                 ax = 0.0
-        return {
-            "pos": (x, 0.0, z0),
-            "vel": (vx, 0.0, 0.0),
-            "acc": (ax, 0.0, 0.0),
-            "yaw": 0.0,
-            "use_pos": True,
-            "use_vel": True,
-            "use_acc": True,
-        }
+        return _pack(x, 0.0, vx, 0.0, ax, 0.0)
 
     if kind == "tight_turn_brake":
-        # Straight acceleration along +X, then circular right turn (+Y) of radius R, then smooth brake to stop.
+        # Straight acceleration along +fwd, then circular right turn (+right) of radius R, then smooth brake to stop.
         v = float(spec.get("speed_m_s", 4.5))
         t_acc = float(spec.get("t_accel_s", 2.0))
         t_turn_start = float(spec.get("t_turn_start_s", 3.0))
@@ -316,20 +307,11 @@ def eval_trajectory(spec: dict[str, Any], tau: float) -> dict[str, Any]:
                 vy = spd * ty
                 ax = acc_t * tx
                 ay = acc_t * ty
-        return {
-            "pos": (x, y, z0),
-            "vel": (vx, vy, 0.0),
-            "acc": (ax, ay, 0.0),
-            "yaw": 0.0,
-            "use_pos": True,
-            "use_vel": True,
-            "use_acc": True,
-        }
+        return _pack(x, y, vx, vy, ax, ay)
 
     if kind == "turn_exit_rollout":
-        # Straight lead-in along +X, strong right circular turn (+Y, large roll bank), then at t_exit
-        # immediate transition to straight tangent or reverse-curve rollout so controller commands hard
-        # reverse roll-leveling differential torque right at t_sw.
+        # Straight lead-in along +fwd, strong right circular turn (+right, large roll bank), then at t_exit
+        # immediate transition to straight tangent or reverse-curve rollout.
         v = float(spec.get("speed_m_s", 4.5))
         t_acc = float(spec.get("t_accel_s", 2.0))
         t_turn_start = float(spec.get("t_turn_start_s", 2.8))
@@ -359,7 +341,6 @@ def eval_trajectory(spec: dict[str, Any], tau: float) -> dict[str, Any]:
                 ye = radius * (1.0 - math.cos(theta_e))
                 tx = math.cos(theta_e)
                 ty = math.sin(theta_e)
-                # Left normal (opposite bank direction)
                 nx = math.sin(theta_e)
                 ny = -math.cos(theta_e)
                 dt = tau - t_exit
@@ -373,7 +354,6 @@ def eval_trajectory(spec: dict[str, Any], tau: float) -> dict[str, Any]:
                     ax = v * w2 * (-math.sin(psi) * tx + math.cos(psi) * nx)
                     ay = v * w2 * (-math.sin(psi) * ty + math.cos(psi) * ny)
                 else:
-                    # Tangent rollout + gentle hold
                     t_hold = float(spec.get("t_rollout_dec_s", 2.5))
                     if dt < t_hold:
                         x = xe + v * dt * tx
@@ -396,20 +376,11 @@ def eval_trajectory(spec: dict[str, Any], tau: float) -> dict[str, Any]:
                         y = ye + (v * t_hold + s) * ty
                         vx, vy = spd * tx, spd * ty
                         ax, ay = acc_t * tx, acc_t * ty
-        return {
-            "pos": (x, y, z0),
-            "vel": (vx, vy, 0.0),
-            "acc": (ax, ay, 0.0),
-            "yaw": 0.0,
-            "use_pos": True,
-            "use_vel": True,
-            "use_acc": True,
-        }
+        return _pack(x, y, vx, vy, ax, ay)
 
     if kind == "roll_bank_exit":
-        # Straight cruise along +X (yaw=0), then crisp lateral bank pulse toward +Y (pure positive roll
-        # and positive roll-rate right before t_sw), followed at t_sw by smooth lateral roll-out & braking
-        # so pos_err stays bounded while classic pre-switch differential motor torque is actively rolling right.
+        # Straight cruise along +fwd, then crisp lateral bank pulse toward +right (pure positive body roll
+        # and positive body roll rate right before t_sw), followed at t_sw by smooth lateral roll-out & braking.
         v = float(spec.get("speed_m_s", 2.5))
         t_acc = float(spec.get("t_accel_s", 1.8))
         t_bank_start = float(spec.get("t_bank_start_s", 2.6))
@@ -417,7 +388,6 @@ def eval_trajectory(spec: dict[str, Any], tau: float) -> dict[str, Any]:
         a_lat_peak = float(spec.get("a_lat_peak_m_s2", 6.5))
         t_decel = float(spec.get("t_decel_s", 1.8))
 
-        # Longitudinal X: cruise to t_bank_peak, then smoothly brake to stop over t_decel
         if tau <= t_bank_peak:
             x, vx, ax = smooth_ramp_1d(tau, t_acc, v)
         else:
@@ -433,16 +403,12 @@ def eval_trajectory(spec: dict[str, Any], tau: float) -> dict[str, Any]:
                 vx = 0.0
                 ax = 0.0
 
-        # Lateral Y: ramp lateral acceleration a_y smoothly from 0 to +a_lat_peak over [t_bank_start, t_bank_peak]
-        # (creating strong positive roll + positive roll rate at tau_sw = t_bank_peak!), then immediately
-        # reverse lateral acceleration to brake lateral motion back to rest over t_rollout_s.
         t_ramp = max(0.05, t_bank_peak - t_bank_start)
         t_rev = float(spec.get("t_rev_s", 0.9))
         if tau <= t_bank_start:
             y, vy, ay = 0.0, 0.0, 0.0
         elif tau <= t_bank_peak:
             u = tau - t_bank_start
-            # a_y(u) = a_lat_peak * (u / t_ramp) -> linear jerk builds active roll rate p > 0 right at u = t_ramp!
             ay = a_lat_peak * (u / t_ramp)
             vy = 0.5 * a_lat_peak * (u * u) / t_ramp
             y = (1.0 / 6.0) * a_lat_peak * (u * u * u) / t_ramp
@@ -451,7 +417,6 @@ def eval_trajectory(spec: dict[str, Any], tau: float) -> dict[str, Any]:
             y_sw = (1.0 / 6.0) * a_lat_peak * (t_ramp * t_ramp)
             dt = tau - t_bank_peak
             if dt < t_rev:
-                # Smoothly brake vy_sw -> 0 with cosine velocity profile (strong negative ay -> reverse roll-level!)
                 w = math.pi / t_rev
                 vy = 0.5 * vy_sw * (1.0 + math.cos(w * dt))
                 ay = -0.5 * vy_sw * w * math.sin(w * dt)
@@ -461,15 +426,7 @@ def eval_trajectory(spec: dict[str, Any], tau: float) -> dict[str, Any]:
                 vy = 0.0
                 ay = 0.0
 
-        return {
-            "pos": (x, y, z0),
-            "vel": (vx, vy, 0.0),
-            "acc": (ax, ay, 0.0),
-            "yaw": 0.0,
-            "use_pos": True,
-            "use_vel": True,
-            "use_acc": True,
-        }
+        return _pack(x, y, vx, vy, ax, ay)
 
     raise ValueError(f"Unknown trajectory kind: {kind}")
 
@@ -616,6 +573,8 @@ class SitlRunner:
             env["MCNN_CF_TRIM_TAU_S"] = str(self.spec["cf_trim_tau_s"])
         if variant == "cf_probe" and self.spec.get("cf_trim_mode") is not None:
             env["MCNN_CF_TRIM_MODE"] = str(self.spec["cf_trim_mode"])
+        if variant == "cf_probe" and self.spec.get("cf_nom_hover_u") is not None:
+            env["MCNN_CF_NOM_HOVER_U"] = str(self.spec["cf_nom_hover_u"])
 
         px4_log = (self.out_dir / "px4.log").open("w", encoding="utf-8")
         self.px4_proc = subprocess.Popen(
@@ -794,8 +753,10 @@ class SitlRunner:
 
             z0 = -float(self.spec.get("altitude_m", DEFAULT_H_M))
             t_maneuver_target_ms = int(self.spec.get("t_maneuver_start_ms", 18000))
+            yaw_ref_rad = math.radians(float(self.spec.get("yaw_ref_deg", 90.0)))
 
-            # Deterministic sim-clock-locked takeoff & hover settle until exact t_maneuver_target_ms
+            # Deterministic sim-clock-locked takeoff, yaw alignment (11.0-13.0 s smooth cosine ramp),
+            # and hover settle until exact t_maneuver_target_ms (18.0 s -> >=5 s settled at yaw_ref, r~0).
             t_takeoff_ms = None
             last_pub_ms = -1
             last_arm_req_ms = -1
@@ -804,7 +765,14 @@ class SitlRunner:
                 self._drain_mav(state)
                 sim_ms = state["sim_ms"]
                 if sim_ms != last_pub_ms:
-                    self._publish_sp((0.0, 0.0, z0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0, True, True, True)
+                    if sim_ms < 11000:
+                        yaw_cmd = 0.0
+                    elif sim_ms < 13000:
+                        u_y = (sim_ms - 11000) / 2000.0
+                        yaw_cmd = yaw_ref_rad * 0.5 * (1.0 - math.cos(math.pi * u_y))
+                    else:
+                        yaw_cmd = yaw_ref_rad
+                    self._publish_sp((0.0, 0.0, z0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), yaw_cmd, True, True, True)
                     last_pub_ms = sim_ms
                 if sim_ms >= 7500 and state["main_mode"] != PX4_MAIN_OFFBOARD and sim_ms - last_offb_req_ms >= 500:
                     self._set_mode_offboard()
@@ -959,54 +927,61 @@ class SitlRunner:
         v_transit = float(self.spec.get("transit_speed_m_s", 1.5))
         eval_after_s = float(self.spec.get("eval_after_s", 4.5))
         arm = self.spec["arm"]
+        yaw_ref = math.radians(float(self.spec.get("yaw_ref_deg", 90.0)))
+        fx, fy = math.cos(yaw_ref), math.sin(yaw_ref)
+        rx, ry = -math.sin(yaw_ref), math.cos(yaw_ref)
+        bx_tgt, by_tgt = d_ab * fx, d_ab * fy
 
         # Step 1: Enter MCNN at A=(0, 0, z0) for 1.5 s so _trajectory_setpoint caches A
         t_a_enter = state["sim_ms"]
-        self._publish_sp((0.0, 0.0, z0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0, True, True, True)
+        self._publish_sp((0.0, 0.0, z0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), yaw_ref, True, True, True)
         self._set_mode_neural()
         meta["events"]["t_first_mcnn_enter_ms"] = t_a_enter
         while state["sim_ms"] - t_a_enter < 1500:
             self._drain_mav(state)
-            self._publish_sp((0.0, 0.0, z0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0, True, True, True)
+            self._publish_sp((0.0, 0.0, z0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), yaw_ref, True, True, True)
             time.sleep(0.015)
 
         # Step 2: Exit back to Classic OFFBOARD with velocity-only setpoints (position=NaN!)
         t_offb_re = state["sim_ms"]
         meta["events"]["t_classic_transit_ms"] = t_offb_re
         nan = math.nan
-        self._publish_sp((nan, nan, nan), (0.0, 0.0, 0.0), (nan, nan, nan), 0.0, False, True, False)
+        self._publish_sp((nan, nan, nan), (0.0, 0.0, 0.0), (nan, nan, nan), yaw_ref, False, True, False)
         self._set_mode_offboard()
         while state["sim_ms"] - t_offb_re < 500:
             self._drain_mav(state)
-            self._publish_sp((nan, nan, nan), (0.0, 0.0, 0.0), (nan, nan, nan), 0.0, False, True, False)
+            self._publish_sp((nan, nan, nan), (0.0, 0.0, 0.0), (nan, nan, nan), yaw_ref, False, True, False)
             if state["main_mode"] != PX4_MAIN_OFFBOARD:
                 self._set_mode_offboard()
             time.sleep(0.015)
 
-        # Fly from A=(0,0,z0) to B=(d_ab, 0, z0) purely using velocity feedback (position=NaN)
+        # Fly from A=(0,0,z0) to B=(bx_tgt, by_tgt, z0) along +fwd purely using velocity feedback (position=NaN)
         t_fly0 = state["sim_ms"]
         reached_b_ms = None
         while True:
             self._drain_mav(state)
             px, py, pz = state["pos"]
-            err_x = d_ab - px
-            err_y = 0.0 - py
+            s_fwd = px * fx + py * fy
+            s_right = px * rx + py * ry
+            err_fwd = d_ab - s_fwd
+            err_right = 0.0 - s_right
             err_z = z0 - pz
             if moving_reentry:
-                # Accelerate & fly straight through B at constant velocity v_transit along +X
-                vx_cmd = v_transit
-                vy_cmd = max(-1.0, min(1.0, 1.2 * err_y))
+                v_fwd_cmd = v_transit
+                v_right_cmd = max(-1.0, min(1.0, 1.2 * err_right))
+                vx_cmd, vy_cmd = _rot2d(v_fwd_cmd, v_right_cmd, yaw_ref)
                 vz_cmd = max(-1.0, min(1.0, 1.5 * err_z))
-                self._publish_sp((nan, nan, nan), (vx_cmd, vy_cmd, vz_cmd), (nan, nan, nan), 0.0, False, True, False)
-                if px >= d_ab - 0.05:
+                self._publish_sp((nan, nan, nan), (vx_cmd, vy_cmd, vz_cmd), (nan, nan, nan), yaw_ref, False, True, False)
+                if s_fwd >= d_ab - 0.05:
                     break
             else:
-                vx_cmd = max(-v_transit, min(v_transit, 1.2 * err_x))
-                vy_cmd = max(-1.0, min(1.0, 1.2 * err_y))
+                v_fwd_cmd = max(-v_transit, min(v_transit, 1.2 * err_fwd))
+                v_right_cmd = max(-1.0, min(1.0, 1.2 * err_right))
+                vx_cmd, vy_cmd = _rot2d(v_fwd_cmd, v_right_cmd, yaw_ref)
                 vz_cmd = max(-1.0, min(1.0, 1.5 * err_z))
-                self._publish_sp((nan, nan, nan), (vx_cmd, vy_cmd, vz_cmd), (nan, nan, nan), 0.0, False, True, False)
+                self._publish_sp((nan, nan, nan), (vx_cmd, vy_cmd, vz_cmd), (nan, nan, nan), yaw_ref, False, True, False)
                 v_hor = math.hypot(state["vel"][0], state["vel"][1])
-                if abs(err_x) < 0.08 and abs(err_y) < 0.08 and v_hor < 0.12:
+                if abs(err_fwd) < 0.08 and abs(err_right) < 0.08 and v_hor < 0.12:
                     if reached_b_ms is None:
                         reached_b_ms = state["sim_ms"]
                     elif state["sim_ms"] - reached_b_ms >= 1000:
@@ -1025,7 +1000,7 @@ class SitlRunner:
         if fresh_reset:
             # Fresh control arm: refresh finite position setpoint to B before re-entry!
             for _ in range(5):
-                self._publish_sp((d_ab, 0.0, z0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0, True, True, True)
+                self._publish_sp((bx_tgt, by_tgt, z0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), yaw_ref, True, True, True)
                 time.sleep(0.02)
 
         t_sw_ms = state["sim_ms"]
@@ -1040,18 +1015,21 @@ class SitlRunner:
             self._drain_mav(state)
             dt_s = (state["sim_ms"] - t_sw_ms) * 1e-3
             if fresh_reset:
-                self._publish_sp((d_ab, 0.0, z0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0, True, True, True)
+                self._publish_sp((bx_tgt, by_tgt, z0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), yaw_ref, True, True, True)
             elif arm == "classic_keep":
                 px, py, pz = state["pos"]
+                s_fwd = px * fx + py * fy
+                s_right = px * rx + py * ry
                 if moving_reentry:
-                    vx_cmd = max(0.0, v_transit * max(0.0, 1.0 - dt_s / 1.5))
+                    v_fwd_cmd = max(0.0, v_transit * max(0.0, 1.0 - dt_s / 1.5))
                 else:
-                    vx_cmd = max(-1.5, min(1.5, 1.2 * (d_ab - px)))
-                vy_cmd = max(-1.0, min(1.0, 1.2 * (0.0 - py)))
+                    v_fwd_cmd = max(-1.5, min(1.5, 1.2 * (d_ab - s_fwd)))
+                v_right_cmd = max(-1.0, min(1.0, 1.2 * (0.0 - s_right)))
+                vx_cmd, vy_cmd = _rot2d(v_fwd_cmd, v_right_cmd, yaw_ref)
                 vz_cmd = max(-1.0, min(1.0, 1.5 * (z0 - pz)))
-                self._publish_sp((nan, nan, nan), (vx_cmd, vy_cmd, vz_cmd), (nan, nan, nan), 0.0, False, True, False)
+                self._publish_sp((nan, nan, nan), (vx_cmd, vy_cmd, vz_cmd), (nan, nan, nan), yaw_ref, False, True, False)
             else:
-                self._publish_sp((nan, nan, nan), (0.0, 0.0, 0.0), (nan, nan, nan), 0.0, False, True, False)
+                self._publish_sp((nan, nan, nan), (0.0, 0.0, 0.0), (nan, nan, nan), yaw_ref, False, True, False)
 
             if not state["armed"] or state["pos"][2] > -0.35:
                 meta["events"]["early_stop_reason"] = (

@@ -256,13 +256,15 @@ def extract_single_run(run_dir: Path, run_id_override: str | None = None, group_
     # Analytic reference trajectory for tracking RMSE
     traj_kind = spec["trajectory"]
     z0 = -float(spec.get("altitude_m", 4.0))
+    yaw_ref_deg = float(spec.get("yaw_ref_deg", 90.0))
+    yaw_ref_rad = math.radians(yaw_ref_deg)
     ref_x = np.full(len(t_sim), math.nan)
     ref_y = np.full(len(t_sim), math.nan)
     ref_z = np.full(len(t_sim), z0)
     if traj_kind == "stale_reentry":
         d_ab = float(spec.get("stale_distance_m", 2.0))
-        ref_x[:] = d_ab
-        ref_y[:] = 0.0
+        ref_x[:] = d_ab * math.cos(yaw_ref_rad)
+        ref_y[:] = d_ab * math.sin(yaw_ref_rad)
     else:
         for i, ts in enumerate(t_sim):
             tau = max(0.0, float(ts - t_man_start_s))
@@ -385,6 +387,7 @@ def extract_single_run(run_dir: Path, run_id_override: str | None = None, group_
         "trajectory": traj_kind,
         "px4_variant": spec.get("px4_variant", "obs"),
         "seed": int(spec.get("seed", 42)),
+        "yaw_ref_deg": yaw_ref_deg,
         "t_sw_sim_s": t_sw_s,
         "eval_after_s": eval_after_s,
         "hold_duration_ms": float(spec.get("hold_duration_ms", 0.0)),

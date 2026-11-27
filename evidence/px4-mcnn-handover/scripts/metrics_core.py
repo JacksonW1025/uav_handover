@@ -51,10 +51,16 @@ def _finite_mask(arr: np.ndarray) -> np.ndarray:
     return np.isfinite(arr)
 
 
+def wrap_deg_180(deg: np.ndarray | float) -> np.ndarray | float:
+    return (deg + 180.0) % 360.0 - 180.0
+
+
 def _window_metrics(
     t_rel: np.ndarray,
     data: dict[str, np.ndarray],
     h0: float,
+    yaw0_deg: float,
+    yaw_ref_rad: float,
     t_end: float,
     stop_t: float | None = None,
 ) -> dict[str, Any]:
@@ -68,8 +74,12 @@ def _window_metrics(
     tilt_w = data["tilt_deg"][m]
     roll_w = data["roll_deg"][m]
     pitch_w = data["pitch_deg"][m]
+    yaw_w = data["yaw_deg"][m]
+    yaw_dev_w = np.abs(wrap_deg_180(yaw_w - yaw0_deg))
     vxy_w = data["v_xy_m_s"][m]
     vx_w = data["vx_m_s"][m]
+    vy_w = data["vy_m_s"][m]
+    v_fwd_w = vx_w * math.cos(yaw_ref_rad) + vy_w * math.sin(yaw_ref_rad)
     vup_w = data["v_up_m_s"][m]
     x_w = data["x_m"][m]
     y_w = data["y_m"][m]
@@ -98,9 +108,11 @@ def _window_metrics(
         "min_roll_deg": float(np.nanmin(roll_w)),
         "max_abs_roll_deg": float(np.nanmax(np.abs(roll_w))),
         "max_abs_pitch_deg": float(np.nanmax(np.abs(pitch_w))),
+        "max_abs_yaw_dev_deg": float(np.nanmax(yaw_dev_w)),
         "min_v_xy_m_s": float(np.nanmin(vxy_w)),
         "max_v_xy_m_s": float(np.nanmax(vxy_w)),
         "min_vx_m_s": float(np.nanmin(vx_w)),
+        "min_v_fwd_m_s": float(np.nanmin(v_fwd_w)),
         "min_v_up_m_s": float(vup_w[idx_vup]),
         "t_min_v_up_s": float(t_w[idx_vup]),
         "min_h_m": float(h_w[idx_hmin]),
@@ -215,12 +227,15 @@ def compute_run_metrics(meta: dict[str, Any], data: dict[str, np.ndarray]) -> di
 
     # Multi-window metrics (evaluate up to crash time if crashed so ground-rest values don't pollute flight metrics,
     # while still capturing the crash peak itself at event_t_rel_s)
+    yaw_ref_deg = float(meta.get("yaw_ref_deg", 90.0))
+    yaw_ref_rad = math.radians(yaw_ref_deg)
+    yaw0_deg = float(entry["yaw_deg"])
     stop_t = (event_t_rel_s + 0.02) if outcome == "GROUND_IMPACT_CRASH" and event_t_rel_s is not None else None
     windows = {
-        "w_0_25s": _window_metrics(t_rel, data, h0, 0.25, stop_t),
-        "w_1_00s": _window_metrics(t_rel, data, h0, 1.00, stop_t),
-        "w_2_00s": _window_metrics(t_rel, data, h0, 2.00, stop_t),
-        "w_full": _window_metrics(t_rel, data, h0, eval_after_s, stop_t),
+        "w_0_25s": _window_metrics(t_rel, data, h0, yaw0_deg, yaw_ref_rad, 0.25, stop_t),
+        "w_1_00s": _window_metrics(t_rel, data, h0, yaw0_deg, yaw_ref_rad, 1.00, stop_t),
+        "w_2_00s": _window_metrics(t_rel, data, h0, yaw0_deg, yaw_ref_rad, 2.00, stop_t),
+        "w_full": _window_metrics(t_rel, data, h0, yaw0_deg, yaw_ref_rad, eval_after_s, stop_t),
     }
 
     # T3 reference continuity metrics (from cached setpoint columns in trace)
@@ -239,12 +254,14 @@ def compute_run_metrics(meta: dict[str, Any], data: dict[str, np.ndarray]) -> di
             )
         )
     if meta.get("trajectory") == "stale_reentry":
-        # Snapback toward point A (x=0): maximum negative displacement relative to entry x0
+        # Snapback toward point A (0, 0) along forward axis (cos(yaw_ref), sin(yaw_ref)):
         # Evaluated over the same pre-impact flight window as w_full so figures and JSON match exactly.
         snap_end = min(eval_after_s, stop_t) if stop_t is not None else eval_after_s
         snap_mask = (t_rel >= 0.0) & (t_rel <= snap_end)
-        x_ev = data["x_m"][snap_mask]
-        t3_max_snapback_disp_m = float(max(0.0, x0 - float(np.nanmin(x_ev)))) if len(x_ev) else math.nan
+        fx, fy = math.cos(yaw_ref_rad), math.sin(yaw_ref_rad)
+        s0_fwd = x0 * fx + y0 * fy
+        s_ev_fwd = data["x_m"][snap_mask] * fx + data["y_m"][snap_mask] * fy
+        t3_max_snapback_disp_m = float(max(0.0, s0_fwd - float(np.nanmin(s_ev_fwd)))) if len(s_ev_fwd) else math.nan
 
     # T4 authority delivery & Gazebo application metrics (from trace + header timestamps)
     t_sw_sim_s = float(meta["t_sw_sim_s"])
@@ -326,6 +343,7 @@ def compute_run_metrics(meta: dict[str, Any], data: dict[str, np.ndarray]) -> di
         "trajectory": meta["trajectory"],
         "px4_variant": meta["px4_variant"],
         "seed": int(meta["seed"]),
+        "yaw_ref_deg": yaw_ref_deg,
         "t_sw_sim_s": t_sw_sim_s,
         "eval_after_s": eval_after_s,
         "hold_duration_ms": float(meta.get("hold_duration_ms", 0.0)),

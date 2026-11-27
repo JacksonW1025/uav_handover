@@ -2,7 +2,9 @@
 """
 Completely offline verification gate for PX4 mc_nn_control handover evidence.
 Checks:
-  Gate 1: Pre-switch twin-prefix consistency (|dpos_xy|<0.05m, |dh|<0.03m, |dv_xy|<0.05m/s, |dtilt|<0.5deg)
+  Gate 1: Pre-switch twin-prefix consistency (|dpos_xy|<0.05m, |dh|<0.03m, |dv_xy|<0.05m/s,
+          |dtilt|<0.5deg, |dyaw|<1.0deg) AND global heading alignment (|entry_yaw - 90.0|<2.0deg
+          for all main yaw-aligned runs, |entry_yaw - 0.0|<2.0deg for T3-C North-heading runs).
   Gate 2: Mode authority & flight outcome integrity (nav_state / failsafe / crash alignment)
   Gate 3: Single-source offline recomputation from traces/*.csv.gz matches metrics.json (<1e-6)
           AND all files match manifest.sha256.
@@ -17,30 +19,33 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from metrics_core import compute_run_metrics, load_trace_gz
+from metrics_core import compute_run_metrics, load_trace_gz, wrap_deg_180
 
 EVIDENCE_DIR = Path(__file__).resolve().parent.parent
 TRACES_DIR = EVIDENCE_DIR / "traces"
 
 # Twin comparison groups: (group_name, reference_run_id, [twin_run_ids])
 TWIN_GROUPS = [
+    ("T1_benign", "T1_benign_classic", ["T1_benign_mcnn"]),
     ("T1_turn_w0", "T1_turn_w0_classic", ["T1_turn_w0_mcnn"]),
     ("T1_wind_w0", "T1_wind_w0_classic", ["T1_wind_w0_mcnn"]),
-    ("T1_wind_w80", "T1_wind_w80_classic", ["T1_wind_w80_mcnn"]),
+    ("T1_wind_w90", "T1_wind_w90_classic", ["T1_wind_w90_mcnn"]),
     ("T1_straight_brake", "T1_straight_brake_classic", ["T1_straight_brake_mcnn"]),
     ("T2_nom", "T2_nom_classic", ["T2_nom_mcnn"]),
-    ("T2_wind80", "T2_wind80_classic", ["T2_wind80_mcnn"]),
-    ("T2_com35", "T2_com35_classic", ["T2_com35_mcnn", "T2_cf_probe_com35"]),
+    ("T2_wind85", "T2_wind85_classic", ["T2_wind85_mcnn"]),
+    ("T2_com40", "T2_com40_classic", ["T2_com40_mcnn", "T2_cf_probe_com40"]),
     ("T3A_d20_moving", "T3A_stale_d20_moving_classic", ["T3A_stale_d20_moving_mcnn"]),
     (
         "T3B_gap_sweep",
         "T3B_gap_classic",
         ["T3B_gap_0ms", "T3B_gap_80ms", "T3B_gap_160ms", "T3B_gap_240ms"],
     ),
+    ("T3C_yaw0_hover", "T3C_yaw0_hover_classic", ["T3C_yaw0_hover_mcnn"]),
+    ("T3C_yaw0_turn", "T3C_yaw0_turn_classic", ["T3C_yaw0_turn_mcnn"]),
     (
-        "T4_roll_hold_sweep",
-        "T4_roll_classic",
-        ["T4_roll_hold0", "T4_roll_hold24", "T4_roll_hold40", "T4_roll_hold60", "T4_roll_hold80"],
+        "T4_turn_hold_sweep",
+        "T4_turn_classic",
+        ["T4_turn_hold0", "T4_turn_hold40", "T4_turn_hold80", "T4_turn_hold120", "T4_turn_hold160"],
     ),
     (
         "ATTR_ladder",
@@ -58,6 +63,8 @@ THRESH_XY_M = 0.05
 THRESH_H_M = 0.03
 THRESH_VXY_M_S = 0.05
 THRESH_TILT_DEG = 0.50
+THRESH_YAW_TWIN_DEG = 1.00
+THRESH_YAW_REF_DEG = 2.00
 
 
 def sha256_file(path: Path) -> str:
@@ -107,7 +114,6 @@ def main() -> None:
             continue
         meta, data = load_trace_gz(tpath)
         recomp = compute_run_metrics(meta, data)
-        # JSON round-trip normalizes NaN handling identically
         recomp_rt = json.loads(json.dumps(recomp))
         compare_nested(stored, recomp_rt, rid, recomp_errs, tol=1e-6)
     if recomp_errs:
@@ -118,8 +124,31 @@ def main() -> None:
     else:
         print(f"PASS: All {len(runs)} runs recomputed offline with max numerical error < 1e-6.")
 
-    # === GATE 1: Pre-switch twin-prefix consistency ===
-    print("\n=== Gate 1: Pre-switch twin-prefix consistency ===")
+    # === GATE 1A: Global pre-switch heading alignment (yaw=+90 deg for main runs, 0 deg for T3-C) ===
+    print("\n=== Gate 1A: Pre-switch heading alignment (|entry_yaw - yaw_ref| < 2.0 deg) ===")
+    yaw_errs: list[str] = []
+    for rid, r in sorted(runs.items()):
+        if r["arm"] == "mcnn_preentered":
+            # Pre-entered arm is already under neural control before t_sw (no Classic yaw hold)
+            continue
+        yaw_ref = float(r.get("yaw_ref_deg", 90.0))
+        yaw0 = float(r["entry"]["yaw_deg"])
+        dyaw_ref = abs(float(wrap_deg_180(yaw0 - yaw_ref)))
+        if dyaw_ref >= THRESH_YAW_REF_DEG:
+            yaw_errs.append(
+                f"{rid}: entry_yaw={yaw0:.2f}deg vs target yaw_ref={yaw_ref:.1f}deg (|err|={dyaw_ref:.2f}deg >= {THRESH_YAW_REF_DEG})"
+            )
+    if yaw_errs:
+        all_ok = False
+        print(f"FAIL: {len(yaw_errs)} heading alignment violations:")
+        for e in yaw_errs:
+            print("  ", e)
+    else:
+        checked_yaw = sum(1 for r in runs.values() if r["arm"] != "mcnn_preentered")
+        print(f"PASS: All {checked_yaw} Classic-prefix runs aligned within < {THRESH_YAW_REF_DEG:.1f} deg of yaw_ref.")
+
+    # === GATE 1B: Pre-switch twin-prefix consistency ===
+    print("\n=== Gate 1B: Pre-switch twin-prefix consistency ===")
     prefix_errs: list[str] = []
     for gname, ref_id, twins in TWIN_GROUPS:
         if ref_id not in runs:
@@ -135,21 +164,24 @@ def main() -> None:
             dh = abs(cur["h_m"] - ref["h_m"])
             dv = abs(cur["v_xy_m_s"] - ref["v_xy_m_s"])
             dtilt = abs(cur["tilt_deg"] - ref["tilt_deg"])
+            dyaw = abs(float(wrap_deg_180(cur["yaw_deg"] - ref["yaw_deg"])))
             ok = (
                 dxy < THRESH_XY_M
                 and dh < THRESH_H_M
                 and dv < THRESH_VXY_M_S
                 and dtilt < THRESH_TILT_DEG
+                and dyaw < THRESH_YAW_TWIN_DEG
             )
             status = "PASS" if ok else "FAIL"
             print(
                 f"  [{status}] {gname}: {tid} vs {ref_id} | "
                 f"dxy={dxy:.4f}m (<{THRESH_XY_M}), dh={dh:.4f}m (<{THRESH_H_M}), "
-                f"dv={dv:.4f}m/s (<{THRESH_VXY_M_S}), dtilt={dtilt:.3f}deg (<{THRESH_TILT_DEG})"
+                f"dv={dv:.4f}m/s (<{THRESH_VXY_M_S}), dtilt={dtilt:.3f}deg (<{THRESH_TILT_DEG}), "
+                f"dyaw={dyaw:.3f}deg (<{THRESH_YAW_TWIN_DEG})"
             )
             if not ok:
                 prefix_errs.append(
-                    f"{gname} {tid}: dxy={dxy:.4f}, dh={dh:.4f}, dv={dv:.4f}, dtilt={dtilt:.3f}"
+                    f"{gname} {tid}: dxy={dxy:.4f}, dh={dh:.4f}, dv={dv:.4f}, dtilt={dtilt:.3f}, dyaw={dyaw:.3f}"
                 )
     if prefix_errs:
         all_ok = False
@@ -195,7 +227,6 @@ def main() -> None:
             if actual_sha != expected_sha:
                 sha_errs.append(f"SHA-256 mismatch for {rel}: {actual_sha} != {expected_sha}")
             checked += 1
-        # Check no unlisted files exist in evidence dir
         listed = {ln.split(None, 1)[1] for ln in lines}
         for p in sorted(EVIDENCE_DIR.rglob("*")):
             if "__pycache__" in p.parts or p.suffix == ".pyc":
